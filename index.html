@@ -132,9 +132,7 @@
     <!-- شاشة التسجيل الجديد -->
     <div id="screen-new" class="screen">
         <div class="w-full max-w-md">
-            <button class="back-btn mb-6" onclick="showScreen('screen-welcome')">
-                <i class="fas fa-arrow-right"></i> رجوع
-            </button>
+            <button class="back-btn mb-6" onclick="showScreen('screen-welcome')"><i class="fas fa-arrow-right"></i> رجوع</button>
             <div class="glass-card p-8">
                 <h2 class="text-2xl font-black mb-1">تسجيل بث جديد</h2>
                 <p class="text-sm mb-7" style="color: var(--text-muted);">أدخل بيانات البث لحفظها</p>
@@ -258,50 +256,64 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
 <script>
     const SUPABASE_URL = 'https://jtwdanpxhkkqssjgnonp.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_9FjA5hRl_83m6zh5nbnZNQ_Ndu2ZX5k';
-    const YOUTUBE_API_KEY = 'AIzaSyCzX3_-OPo7oiDpBNmUS5mLBdzBBSFDsfc';
+    
+    // ⚡️ 54 مفتاح API
+    const YOUTUBE_API_KEYS = [
+      'AIzaSyCzX3_-OPo7oiDpBNmUS5mLBdzBBSFDsfc', 'AIzaSyCGI4VMJvCnoHBNafvcV7F78_Q89zKp-sU',
+      'AIzaSyAGlgZQYCqH1G444RIGukYkAMAJ1v0q3_w', 'AIzaSyAxwIl9DH1QddmcUMHTZyhECw2uax5si-k',
+      'AIzaSyCUJ6GTpUWolRui1lLI5k3SjK_VU5A-2D8', 'AIzaSyBsw1AoUisoR4lZBtGOXToR_pZCZYXqeDs',
+      'AIzaSyBMR1BaijCNXV_x_pihYgQCjExdKQDUh7Q', 'AIzaSyAwr2ZbhttD4ULqw42PaBJumTTgAaFJKgU',
+      'AIzaSyC24ppt2DAqw_I1CBqK41naR0MbdQiXZkA', 'AIzaSyBwFvUqBawzQpORTPnPvlRvDg1PJcEDu6g',
+      'AIzaSyCbM4KBisBwOeXsNwCCIYhfJQqDtv8gmbM', 'AIzaSyCeehXFLZJ3CcgReTbd3V5qrqgyJOiMpc0',
+      'AIzaSyDkbMN-4Xu8HOKHgMzW6QzJFkemkOvBEJw', 'AIzaSyBBZt22Mo1aUAfATmz6r6ZBoxemWxLZBFk',
+      'AIzaSyDvDeRtB-LopQ5WhiMIrLy1UITNunJ5t3M', 'AIzaSyDlFf8toYcLG3nEIsWgmLirg7ALZLN6SF4',
+      'AIzaSyAqtG1TUBToZz_Wv-COtEGU-zf4jBKVryU', 'AIzaSyAq4dwYebVqiQGRkGaEjuGSX6vLaDtL_0w',
+      'AIzaSyB2cJs59JAjb-9aPvU2iJJZ5_YQvuBiUAA', 'AIzaSyDL0Pysw8xbrt4RsC4VChTbrRLa0EcoXd4',
+      'AIzaSyAvVkHWkHktYO_8BCYpRZ-mHBcd0quECTU', 'AIzaSyCR91s-QU1qoW4WhGkPrK13YfM37vkGon8',
+      'AIzaSyDiT6xru-D7qigGIZedLhize1NkvoHZzoU', 'AIzaSyBtaw-wKdp_M4NCfStuuU5Yv2vyyXVwWPo',
+      'AIzaSyCi1_7OyRBqkVXHPQ85QmJkEhEgSepacfY', 'AIzaSyDIG3FhSoh5KdSUG5e1iwurz9lSJy1mFBU',
+      'AIzaSyB1bqvtt2wW3lh1sZiM4zkGVZgc3A8BAxo', 'AIzaSyAfbfCrJGPNzGc5qEhp5gzFR8pIKhMHFKg',
+      'AIzaSyCmIn_MqhFRzhSXOy49nNTiDKOi4UI6pew', 'AIzaSyDWE3x7a-v5hJFKfrRzUXITpEHp7unOG8A',
+      'AIzaSyDGxiGVJMz8kP-d2zKaeSP4IH32B3fnl54', 'AIzaSyB3RzG0txVtmSldwmvLO5XuqoSUCZEMi_A',
+      'AIzaSyBUiFJ45xjzCuSrKSoTOM6z2yQYpnzQDSs', 'AIzaSyDKIvjAn-7FDHPvMKSVBrxDYOy7l24E7_w',
+      'AIzaSyB73eC1eMqnU9mv3kkKnWheuRkONrg3LB0', 'AIzaSyA6-nYOOcNBvPjJ4CSueWYkuiFayTY2M8I',
+      'AIzaSyBjwhSfL7dgAnB_19VMEd-RRSiBQRpANxA', 'AIzaSyAKSOVM9FtTlgYTfOCiM1Ydq7kNOIKzLw8',
+      'AIzaSyCKiwiLZpzptvxGZvTbDCx4KGd2hcikoiQ', 'AIzaSyD24XfFbwWZYuzhFeTD9cOn2on7CLjPYTk',
+      'AIzaSyCnKUv79SkgtAtHfmeyNBh9R8FPX4bgmic', 'AIzaSyDYAjKF7rd58ap2Pbh6wm5Z_a7GSGrwUY4',
+      'AIzaSyBSag1jDBGC_8D1SmZwbMedy1hk1EIbwtM', 'AIzaSyArqLUE6Z4bcwzRwAm9IYiwPfUsXJRyef4',
+      'AIzaSyCMe_CHwtM00ZFRfn5lZtR6OZF1umywL1w', 'AIzaSyDSyQ9LedGSGDJtbXmLr5H7vMo6iTjhS1I',
+      'AIzaSyBEyPTV5ze4OBWP8XOFU3UcRDQJR2bBVaE', 'AIzaSyDUMAPA3II3RPwIsdbXawX_DFZeahYBGi8',
+      'AIzaSyCj5eaRy4_IBj7UyhzWZ915cc_IJq0qdyo', 'AIzaSyB8X5oaEKzkN7452-4oRMLsFHWjKuZWXx8',
+      'AIzaSyBDd-Q9_jxKrvaBua1PnlJXdGB7e4ljGpI', 'AIzaSyAWhzU8PnQSctAoprp_h385kxaNoslx6Ek',
+      'AIzaSyBPpZ8OHnQ4co8-pZUyAdBGflYClrJSHJ0', 'AIzaSyDMjufpiZLlf_DAXKfo3So_6JciaSeUAc8',
+      'AIzaSyBLV8gPAwtYMU88Mm_qzvN19bkq4mrTgOk'
+    ];
+    let currentKeyIndex = 0;
 
     let supabaseClient = null;
-    try { 
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); 
-    } catch(e) { 
-        console.error('Supabase Error:', e); 
-    }
+    try { supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { realtime: { params: { eventsPerSecond: 10 } } }); } catch(e) { console.error('Supabase Error:', e); }
 
     // === حالة التطبيق ===
     let currentVideoId = null;
     let liveChatId = null;
     let nextPageToken = '';
-    let pollTimer = null;       // جلب البيانات من يوتيوب (كل 5 ثوانٍ)
-    let uiRenderTimer = null;   // عرض البيانات للمستخدم (كل 1 ثانية)
-    let pollDelay = 5000;       // وقت آمن لتجنب حظر يوتيوب
+    let youtubePollTimer = null;
+    let leaderCheckTimer = null;
+    let realtimeChannel = null;
+    let isLeader = false;
+    let clientId = Math.random().toString(36).substring(2, 15);
     let commentsTotal = 0;
     let isAtBottom = true;
     let searchDebounce = null;
     let tempLoginData = null;
-    
-    // === حالة التخزين المؤقت للتعليقات (الخدعة لعرض تعليق كل ثانية) ===
-    let commentBuffer = [];
+    let renderedComments = new Set(); // لمنع تكرار العرض
 
     const AVATAR_COLORS = ['#e8a838', '#ef4444', '#34d399', '#60a5fa', '#a78bfa', '#f472b6', '#2dd4bf', '#fb923c', '#38bdf8', '#c084fc'];
     function getAvatarColor(name) { let hash = 0; for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash); return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]; }
     function getVideoId(url) { if (!url) return null; const patterns = [/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/live\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/, /^([a-zA-Z0-9_-]{11})$/]; for (const pattern of patterns) { const match = url.match(pattern); if (match) return match[1]; } return null; }
 
-    function showScreen(screenId) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        const target = document.getElementById(screenId);
-        if (target) target.classList.add('active');
-    }
-
-    function showToast(message, type = 'info') {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        const icons = { success: 'check-circle', error: 'exclamation-circle', info: 'info-circle' };
-        toast.className = `toast toast-${type}`;
-        toast.innerHTML = `<i class="fas fa-${icons[type] || 'info-circle'}"></i><span>${message}</span>`;
-        container.appendChild(toast);
-        requestAnimationFrame(() => toast.classList.add('show'));
-        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 350); }, 3500);
-    }
+    function showScreen(screenId) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); const target = document.getElementById(screenId); if (target) target.classList.add('active'); }
+    function showToast(message, type = 'info') { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); const icons = { success: 'check-circle', error: 'exclamation-circle', info: 'info-circle' }; toast.className = `toast toast-${type}`; toast.innerHTML = `<i class="fas fa-${icons[type] || 'info-circle'}"></i><span>${message}</span>`; container.appendChild(toast); requestAnimationFrame(() => toast.classList.add('show')); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 350); }, 3500); }
 
     async function checkTableExists() { 
         if (!supabaseClient) return false; 
@@ -319,7 +331,6 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
     function closeSetupModal() { document.getElementById('setup-modal').classList.remove('show'); }
     async function verifySetup() { const result = await checkTableExists(); if (result === true) { closeSetupModal(); showToast('الجداول جاهزة', 'success'); } else { showToast('الجداول غير موجودة', 'error'); } }
 
-    // التسجيل الجديد
     async function handleNewRegister() {
         const url = document.getElementById('new-url').value.trim();
         const user = document.getElementById('new-user').value.trim();
@@ -327,126 +338,88 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
         if (!url || !user || !pass) { showToast('يرجى ملء جميع الحقول', 'error'); return; }
         const videoId = getVideoId(url);
         if (!videoId) { showToast('رابط يوتيوب غير صالح', 'error'); return; }
-
-        const tableCheck = await checkTableExists();
-        if (tableCheck === false) { showSetupModal(); return; }
-
         try {
             const { data: existingStreams } = await supabaseClient.from('saved_streams').select('stream_url').ilike('stream_url', `%${videoId}%`);
             if (existingStreams && existingStreams.length > 0) { showToast('هذا البث مسجل مسبقاً!', 'error'); return; }
-
             const { error } = await supabaseClient.from('saved_streams').insert([{ username: user, password: pass, stream_url: url }]);
             if (error) throw error;
-            
             showToast('تم الحفظ بنجاح', 'success');
             startLiveStream(videoId);
         } catch(e) { showToast('فشل الحفظ: ' + (e.message || ''), 'error'); }
     }
 
-    // عرض قائمة البثوث
     async function showStreamList() {
         showScreen('screen-list');
         const container = document.getElementById('streams-list-container');
         container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p style="color: var(--text-muted);">جاري التحميل...</p></div>';
-
         try {
             const { data, error } = await supabaseClient.from('saved_streams').select('username, stream_url').order('created_at', { ascending: false });
             if (error) throw error;
-
-            if (!data || data.length === 0) {
-                container.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i><p class="font-bold mt-4">لا توجد بثوث محفوظة</p></div>';
-                return;
-            }
-
+            if (!data || data.length === 0) { container.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i><p class="font-bold mt-4">لا توجد بثوث محفوظة</p></div>'; return; }
             container.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>';
             const grid = container.firstChild;
-            
             data.forEach(stream => {
                 const videoId = getVideoId(stream.stream_url);
                 const card = document.createElement('div');
                 card.className = 'glass-card p-4 flex items-center justify-between';
-                card.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-glow);"><i class="fas fa-video text-sm" style="color: var(--accent);"></i></div>
-                        <div><h3 class="font-bold text-sm">${stream.username}</h3><p class="text-xs" style="color: var(--text-muted);">${videoId}</p></div>
-                    </div>
-                    <button class="btn-ghost text-xs" onclick="openPasswordModal('${stream.username}', '${stream.stream_url}')">دخول</button>
-                `;
+                card.innerHTML = `<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-glow);"><i class="fas fa-video text-sm" style="color: var(--accent);"></i></div><div><h3 class="font-bold text-sm">${stream.username}</h3><p class="text-xs" style="color: var(--text-muted);">${videoId}</p></div></div><button class="btn-ghost text-xs" onclick="openPasswordModal('${stream.username}', '${stream.stream_url}')">دخول</button>`;
                 grid.appendChild(card);
             });
-        } catch(e) {
-            container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p class="mt-4">خطأ في التحميل</p></div>';
-        }
+        } catch(e) { container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p class="mt-4">خطأ في التحميل</p></div>'; }
     }
 
-    // المودال الخاص بكلمة المرور
-    function openPasswordModal(username, streamUrl) {
-        tempLoginData = { username, streamUrl };
-        document.getElementById('modal-pass-input').value = '';
-        document.getElementById('password-modal').classList.add('show');
-        setTimeout(() => document.getElementById('modal-pass-input').focus(), 100);
-    }
+    function openPasswordModal(username, streamUrl) { tempLoginData = { username, streamUrl }; document.getElementById('modal-pass-input').value = ''; document.getElementById('password-modal').classList.add('show'); setTimeout(() => document.getElementById('modal-pass-input').focus(), 100); }
+    function closePasswordModal() { document.getElementById('password-modal').classList.remove('show'); tempLoginData = null; }
 
-    function closePasswordModal() {
-        document.getElementById('password-modal').classList.remove('show');
-        tempLoginData = null;
-    }
-
-    // تأكيد الدخول من المودال
     async function confirmLoginFromList() {
         if (!tempLoginData) return;
         const pass = document.getElementById('modal-pass-input').value.trim();
         if (!pass) { showToast('أدخل كلمة المرور', 'error'); return; }
-
         try {
-            const { data, error } = await supabaseClient
-                .from('saved_streams')
-                .select('*')
-                .eq('username', tempLoginData.username)
-                .eq('password', pass)
-                .single();
-
+            const { data, error } = await supabaseClient.from('saved_streams').select('*').eq('username', tempLoginData.username).eq('password', pass).single();
             if (error || !data) { showToast('كلمة المرور غير صحيحة', 'error'); return; }
-
             const videoId = getVideoId(tempLoginData.streamUrl);
             if (!videoId) { showToast('رابط البث غير صالح', 'error'); return; }
-
             closePasswordModal();
             showToast('تم تسجيل الدخول', 'success');
             startLiveStream(videoId);
         } catch(e) { showToast('خطأ في الدخول', 'error'); }
     }
 
-    // بدء البث (تعليقات فقط)
+    // === بدء البث (هندسة القائد والتابع) ===
     async function startLiveStream(videoId) {
         currentVideoId = videoId;
-        commentsTotal = 0; nextPageToken = ''; liveChatId = null;
-        commentBuffer = []; // تفريغ الذاكرة المؤقتة
-
+        commentsTotal = 0; nextPageToken = ''; liveChatId = null; isLeader = false;
+        renderedComments.clear();
+        
         document.getElementById('comments-list').innerHTML = '';
         document.getElementById('comments-loading').style.display = 'flex';
         document.getElementById('comments-empty').style.display = 'none';
         document.getElementById('comments-error').style.display = 'none';
         document.getElementById('comments-count').textContent = '0 تعليق';
         document.getElementById('status-text').textContent = 'جاري الاتصال...';
-
         showScreen('screen-comments');
 
+        // 1. الاستماع للبث المباشر (Realtime) للتعليقات القادمة من القائد
+        if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
+        realtimeChannel = supabaseClient.channel('public:archived_comments')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'archived_comments', filter: `stream_id=eq.${videoId}` }, payload => {
+              addCommentToUI(payload.new, true);
+          }).subscribe();
+
+        // 2. محاولة الحصول على معرف الدردشة من يوتيوب
         try {
-            const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${YOUTUBE_API_KEY}`);
+            const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${YOUTUBE_API_KEYS[0]}`);
             const data = await resp.json();
             if (data.error) throw new Error(data.error.message);
             if (!data.items || data.items.length === 0) throw new Error('الفيديو غير موجود');
-
             const liveDetails = data.items[0].liveStreamingDetails;
             if (!liveDetails) throw new Error('هذا الفيديو ليس بثاً مباشراً');
-
             liveChatId = liveDetails.activeLiveChatId || liveDetails.liveChatId;
-            if (!liveChatId) throw new Error('لا تتوفر دردشة حية');
-
-            document.getElementById('status-text').textContent = 'متصل - جاري الأرشفة والعرض';
-            await fetchComments();
-            startPolling();
+            
+            // 3. بدء دورة انتخاب القائد
+            startLeaderElection();
+            
         } catch(e) {
             document.getElementById('comments-loading').style.display = 'none';
             document.getElementById('comments-error').style.display = 'flex';
@@ -455,15 +428,65 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
         }
     }
 
-    // === جلب التعليقات (يحدث كل 5 ثوانٍ لحماية الـ API) ===
-    async function fetchComments() {
-        if (!liveChatId) return;
+    // === انتخاب القائد (Leader Election) ===
+    function startLeaderElection() {
+        checkLeadership(); // فحص فوري
+        leaderCheckTimer = setInterval(checkLeadership, 5000); // فحص كل 5 ثوانٍ
+    }
+
+    async function checkLeadership() {
+        if (!currentVideoId) return;
         try {
-            let apiUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=200&key=${YOUTUBE_API_KEY}`;
+            const { data, error } = await supabaseClient.rpc('try_acquire_lock', { p_stream_id: currentVideoId, p_client_id: clientId });
+            if (error) throw error;
+            
+            const gotLeadership = data === true;
+            
+            if (gotLeadership && !isLeader) {
+                // أصبحت القائد! ابدأ بسحب التعليقات من يوتيوب
+                isLeader = true;
+                document.getElementById('status-text').textContent = 'أنت القائد - جلب مباشر من يوتيوب';
+                startYouTubePolling();
+            } else if (!gotLeadership && isLeader) {
+                // فقدت القيادة، أصبحت تابعاً
+                isLeader = false;
+                stopYouTubePolling();
+                document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر';
+            } else if (!gotLeadership && !isLeader) {
+                document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر';
+                if (commentsTotal === 0) {
+                    document.getElementById('comments-loading').style.display = 'none';
+                    document.getElementById('comments-empty').style.display = 'flex';
+                }
+            }
+        } catch(e) { console.error('Lock error:', e); }
+    }
+
+    function startYouTubePolling() {
+        if (youtubePollTimer) clearInterval(youtubePollTimer);
+        fetchComments(); // فوري
+        youtubePollTimer = setInterval(fetchComments, 1000); // كل ثانية
+    }
+
+    function stopYouTubePolling() {
+        if (youtubePollTimer) { clearInterval(youtubePollTimer); youtubePollTimer = null; }
+    }
+
+    // === جلب التعليقات (للقائد فقط) ===
+    async function fetchComments() {
+        if (!liveChatId || !isLeader) return;
+        try {
+            const currentApiKey = YOUTUBE_API_KEYS[currentKeyIndex];
+            let apiUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=200&key=${currentApiKey}`;
             if (nextPageToken) apiUrl += `&pageToken=${nextPageToken}`;
 
             const resp = await fetch(apiUrl);
             const data = await resp.json();
+            
+            if (data.error && (data.error.code === 403 || data.error.errors?.[0]?.reason === 'quotaExceeded')) {
+                currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length;
+                return fetchComments(); 
+            }
             if (data.error) throw new Error(data.error.message);
 
             if (data.nextPageToken) nextPageToken = data.nextPageToken;
@@ -471,43 +494,23 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
             if (data.items && data.items.length > 0) {
                 document.getElementById('comments-loading').style.display = 'none';
                 document.getElementById('comments-empty').style.display = 'none';
-
                 const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt));
                 
-                // إضافة التعليقات إلى قائمة الانتظار (Buffer) بدلاً من عرضها مباشرة
-                sorted.forEach(item => {
-                    commentBuffer.push(item);
-                });
-
-                // أرشفة التعليقات فوراً في الخلفية
+                // إرسال التعليقات لقاعدة البيانات لتصل للتابعين
                 await archiveCommentsToSupabase(sorted);
 
-                commentsTotal += sorted.length;
-                document.getElementById('comments-count').textContent = `${commentsTotal} تعليق`;
-                document.getElementById('status-text').textContent = `متصل - يتم الأرشفة والعرض كل ثانية`;
-            } else if (commentsTotal === 0 && commentBuffer.length === 0) {
-                document.getElementById('comments-loading').style.display = 'none';
-                document.getElementById('comments-empty').style.display = 'flex';
+                // عرضها للقائد فوراً
+                sorted.forEach(item => {
+                    const newItem = {
+                        stream_id: currentVideoId,
+                        author_name: item.authorDetails?.displayName || 'مجهول',
+                        comment_text: item.snippet?.displayMessage || '',
+                        published_at: item.snippet?.publishedAt || new Date().toISOString()
+                    };
+                    addCommentToUI(newItem, true);
+                });
             }
-        } catch(e) {
-            if (commentsTotal === 0) {
-                document.getElementById('comments-loading').style.display = 'none';
-                document.getElementById('comments-error').style.display = 'flex';
-                document.getElementById('error-message').textContent = e.message;
-            }
-        }
-    }
-
-    // === عرض التعليقات للمستخدم كل ثانية واحدة ===
-    function startUIRenderer() {
-        if (uiRenderTimer) clearInterval(uiRenderTimer);
-        uiRenderTimer = setInterval(() => {
-            if (commentBuffer.length > 0) {
-                // إخراج أول تعليق من قائمة الانتظار وعرضه
-                const item = commentBuffer.shift();
-                addCommentToUI(item);
-            }
-        }, 1000); // 1000 مللي ثانية = ثانية واحدة
+        } catch(e) { console.error('Fetch error:', e); }
     }
 
     async function archiveCommentsToSupabase(comments) {
@@ -518,56 +521,41 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
             comment_text: item.snippet?.displayMessage || '',
             published_at: item.snippet?.publishedAt || new Date().toISOString()
         })).filter(c => c.comment_text !== '');
-
         if (batchData.length === 0) return;
-        try { await supabaseClient.from('archived_comments').insert(batchData); } catch (e) { console.error(e); }
+        try { await supabaseClient.from('archived_comments').upsert(batchData, { onConflict: 'stream_id,author_name,published_at,comment_text', ignoreDuplicates: true }); } catch (e) { console.error(e); }
     }
 
-    function addCommentToUI(item) {
+    // === عرض التعليقات (للقائد والتابع) ===
+    function addCommentToUI(item, countIncrement = false) {
+        // منع التكرار
+        const uniqueId = item.stream_id + item.author_name + item.published_at + item.comment_text;
+        if (renderedComments.has(uniqueId)) return;
+        renderedComments.add(uniqueId);
+
         const list = document.getElementById('comments-list');
-        const author = item.authorDetails || {};
-        const snippet = item.snippet || {};
-        const displayName = author.displayName || 'مجهول';
-        const message = snippet.displayMessage || '';
+        const displayName = item.author_name || 'مجهول';
+        const message = item.comment_text || '';
         const color = getAvatarColor(displayName);
         
         const card = document.createElement('div');
         card.className = 'comment-card';
         card.style.setProperty('--c-accent', color);
-        card.innerHTML = `
-            <div class="comment-avatar" style="background: ${color};">${displayName.charAt(0).toUpperCase()}</div>
-            <div style="flex:1; min-width:0;">
-                <div class="flex items-center" style="margin-bottom:2px;">
-                    <span class="comment-username" style="color:${color};">${escapeHtml(displayName)}</span>
-                    <span class="comment-time">${formatTime(snippet.publishedAt)}</span>
-                </div>
-                <div class="comment-text">${escapeHtml(message)}</div>
-            </div>
-        `;
+        card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${displayName.charAt(0).toUpperCase()}</div><div style="flex:1; min-width:0;"><div class="flex items-center" style="margin-bottom:2px;"><span class="comment-username" style="color:${color};">${escapeHtml(displayName)}</span><span class="comment-time">${formatTime(item.published_at)}</span></div><div class="comment-text">${escapeHtml(message)}</div></div>`;
         list.appendChild(card);
+        
+        if (countIncrement) {
+            commentsTotal++;
+            document.getElementById('comments-count').textContent = `${commentsTotal} تعليق`;
+        }
+        
+        document.getElementById('comments-loading').style.display = 'none';
+        document.getElementById('comments-empty').style.display = 'none';
         if (isAtBottom) list.parentElement.scrollTop = list.parentElement.scrollHeight;
     }
 
     function formatTime(iso) { if(!iso) return ''; const d = Math.floor((Date.now() - new Date(iso).getTime())/1000); if(d<10) return 'الآن'; if(d<60) return `منذ ${d} ث`; if(d<3600) return `منذ ${Math.floor(d/60)} د`; return `منذ ${Math.floor(d/3600)} س`; }
     function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
-    
-    // === بدء الجلب الدوري ===
-    function startPolling() {
-        stopPolling();
-        // جلب التعليقات من يوتيوب كل 5 ثوانٍ (آمن للحساب)
-        pollTimer = setInterval(fetchComments, pollDelay); 
-        // عرض التعليقات المخزنة في الذاكرة كل ثانية واحدة للمستخدم
-        startUIRenderer();
-    }
-
-    // === إيقاف الجلب ===
-    function stopPolling() { 
-        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-        if (uiRenderTimer) { clearInterval(uiRenderTimer); uiRenderTimer = null; }
-    }
-
     function retryFetchComments() { startLiveStream(currentVideoId); }
-    
     function openArchiveScreen() { showScreen('screen-archive'); loadArchivedComments(''); }
 
     async function loadArchivedComments(searchTerm) {
@@ -587,42 +575,29 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
                 const card = document.createElement('div');
                 card.className = 'comment-card archived';
                 card.style.setProperty('--c-accent', color);
-                card.innerHTML = `
-                    <div class="comment-avatar" style="background: ${color};">${item.author_name.charAt(0).toUpperCase()}</div>
-                    <div style="flex:1; min-width:0;">
-                        <div class="flex items-center"><span class="comment-username" style="color:${color};">${escapeHtml(item.author_name)}</span><span class="comment-time">${new Date(item.published_at).toLocaleTimeString('ar-EG')}</span></div>
-                        <div class="comment-text">${escapeHtml(item.comment_text)}</div>
-                    </div>`;
+                card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${item.author_name.charAt(0).toUpperCase()}</div><div style="flex:1; min-width:0;"><div class="flex items-center"><span class="comment-username" style="color:${color};">${escapeHtml(item.author_name)}</span><span class="comment-time">${new Date(item.published_at).toLocaleTimeString('ar-EG')}</span></div><div class="comment-text">${escapeHtml(item.comment_text)}</div></div>`;
                 list.appendChild(card);
             });
         } catch(e) { status.textContent = 'خطأ في التحميل'; }
     }
 
-    function searchArchivedComments() {
-        clearTimeout(searchDebounce);
-        const term = document.getElementById('search-archive-input').value.trim();
-        searchDebounce = setTimeout(() => loadArchivedComments(term), 300);
-    }
+    function searchArchivedComments() { clearTimeout(searchDebounce); const term = document.getElementById('search-archive-input').value.trim(); searchDebounce = setTimeout(() => loadArchivedComments(term), 300); }
 
     function handleExit() {
-        stopPolling();
-        currentVideoId = null; liveChatId = null; commentsTotal = 0;
-        commentBuffer = [];
+        stopYouTubePolling();
+        if (leaderCheckTimer) clearInterval(leaderCheckTimer);
+        if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
+        currentVideoId = null; liveChatId = null; isLeader = false;
         document.getElementById('comments-list').innerHTML = '';
         document.getElementById('archive-list').innerHTML = '';
-        document.getElementById('search-archive-input').value = '';
         showScreen('screen-welcome');
     }
 
-    // دعم زر Enter في حقول الإدخال
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('new-pass').addEventListener('keydown', e => { if (e.key === 'Enter') handleNewRegister(); });
         document.getElementById('modal-pass-input').addEventListener('keydown', e => { if (e.key === 'Enter') confirmLoginFromList(); });
-        
         const container = document.getElementById('comments-container');
-        container.addEventListener('scroll', () => {
-            isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-        });
+        container.addEventListener('scroll', () => { isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100; });
     });
 </script>
 </body>
