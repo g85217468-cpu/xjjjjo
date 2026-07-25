@@ -400,24 +400,38 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
         document.getElementById('status-text').textContent = 'جاري الاتصال...';
         showScreen('screen-comments');
 
-        // 1. الاستماع للبث المباشر (Realtime) للتعليقات القادمة من القائد
+        // 1. تحميل التعليقات المؤرشفة الموجودة فوراً (لإظهار ما فاتنا بدل الانتظار)
+        await loadExistingComments(videoId);
+
+        // 2. الاستماع للبث المباشر (Realtime)
         if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
         realtimeChannel = supabaseClient.channel('public:archived_comments')
           .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'archived_comments', filter: `stream_id=eq.${videoId}` }, payload => {
               addCommentToUI(payload.new, true);
           }).subscribe();
 
-        // 2. محاولة الحصول على معرف الدردشة من يوتيوب
+        // 3. محاولة الحصول على معرف الدردشة من يوتيوب (مع تدوير المفاتيح)
         try {
-            const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${YOUTUBE_API_KEYS[0]}`);
-            const data = await resp.json();
-            if (data.error) throw new Error(data.error.message);
-            if (!data.items || data.items.length === 0) throw new Error('الفيديو غير موجود');
-            const liveDetails = data.items[0].liveStreamingDetails;
+            let vidData = null;
+            for (let i = 0; i < YOUTUBE_API_KEYS.length; i++) {
+                const keyIndex = (currentKeyIndex + i) % YOUTUBE_API_KEYS.length;
+                const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${YOUTUBE_API_KEYS[keyIndex]}`);
+                const data = await resp.json();
+                if (!data.error) {
+                    vidData = data;
+                    currentKeyIndex = keyIndex;
+                    break;
+                }
+            }
+            
+            if (!vidData) throw new Error('فشل في جلب بيانات الفيديو');
+            if (!vidData.items || vidData.items.length === 0) throw new Error('الفيديو غير موجود');
+            
+            const liveDetails = vidData.items[0].liveStreamingDetails;
             if (!liveDetails) throw new Error('هذا الفيديو ليس بثاً مباشراً');
             liveChatId = liveDetails.activeLiveChatId || liveDetails.liveChatId;
             
-            // 3. بدء دورة انتخاب القائد
+            // 4. بدء دورة انتخاب القائد
             startLeaderElection();
             
         } catch(e) {
@@ -426,6 +440,27 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
             document.getElementById('error-title').textContent = 'فشل الاتصال';
             document.getElementById('error-message').textContent = e.message;
         }
+    }
+
+    // === تحميل التعليقات الموجودة من قاعدة البيانات فوراً ===
+    async function loadExistingComments(videoId) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('archived_comments')
+                .select('*')
+                .eq('stream_id', videoId)
+                .order('published_at', { ascending: true })
+                .limit(50);
+            
+            if (error || !data || data.length === 0) return;
+            
+            document.getElementById('comments-loading').style.display = 'none';
+            document.getElementById('comments-empty').style.display = 'none';
+            
+            data.forEach(item => {
+                addCommentToUI(item, true);
+            });
+        } catch(e) { console.error('Load existing error:', e); }
     }
 
     // === انتخاب القائد (Leader Election) ===
