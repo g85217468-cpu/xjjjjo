@@ -200,7 +200,7 @@
         </div>
     </div>
 
-    <!-- شاشة التعليقات الحية -->
+    <!-- شاشة التعليقات الحية (تم إزالة زر الجرس منها) -->
     <div id="screen-comments" class="screen screen-comments">
         <header class="w-full flex items-center justify-between px-4 py-3" style="background: rgba(8,8,14,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);">
             <button class="back-btn" onclick="handleExit()"><i class="fas fa-arrow-right"></i> خروج</button>
@@ -209,10 +209,6 @@
                 <span class="text-sm font-bold" style="color: #ef4444;">مباشر</span>
             </div>
             <div class="flex items-center gap-2">
-                <button class="header-btn notif-btn" onclick="openNotificationsModal()">
-                    <i class="fas fa-bell"></i>
-                    <div id="notif-dot" class="notif-dot"></div>
-                </button>
                 <button class="header-btn" onclick="openArchiveScreen()"><i class="fas fa-archive"></i><span class="hidden sm:inline">المؤرشف</span></button>
                 <button class="header-btn" onclick="openChatScreen()"><i class="fas fa-comments"></i><span class="hidden sm:inline">الرسائل</span></button>
                 <div id="user-circle-btn" class="user-circle" onclick="handleUserCircleClick()">
@@ -250,12 +246,15 @@
         </div>
     </div>
 
-    <!-- شاشة الأرشيف -->
+    <!-- شاشة الأرشيف (تم نقل زر الجرس إليها) -->
     <div id="screen-archive" class="screen screen-comments" style="z-index: 50; background: rgba(8,8,14,0.98);">
         <header class="w-full flex items-center justify-between px-4 py-3" style="background: rgba(8,8,14,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);">
             <button class="back-btn" onclick="showScreen('screen-comments')"><i class="fas fa-arrow-right"></i> رجوع للبث</button>
             <div class="text-sm font-bold">الرسائل المؤرشفة</div>
-            <div class="w-8"></div>
+            <button class="header-btn notif-btn" onclick="openNotificationsModal()">
+                <i class="fas fa-bell"></i>
+                <div id="notif-dot" class="notif-dot"></div>
+            </button>
         </header>
         <div class="w-full p-4 max-w-2xl mx-auto" style="border-bottom: 1px solid var(--border);">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
