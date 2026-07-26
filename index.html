@@ -70,8 +70,7 @@
 
         .comment-card { display: flex; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.025); border-right: 3px solid var(--c-accent, #e8a838); margin-bottom: 8px; animation: commentSlide 0.35s ease; }
         .comment-card.archived { background: rgba(255,255,255,0.015); border-right-color: #4a4a5e; }
-        .comment-card.chat { background: rgba(255,255,255,0.04); border-right-color: var(--success); }
-        .comment-card.chat.me { background: rgba(232,168,56,0.05); border-right-color: var(--accent); }
+        
         @keyframes commentSlide { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
 
         .comment-avatar { min-width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #0a0a0f; }
@@ -109,6 +108,22 @@
         
         .auth-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 10px; font-size: 14px; transition: all 0.3s ease; }
         .auth-tab.active { background: var(--accent); color: #0a0a0f; font-weight: 700; }
+
+        /* أنماط المحادثة (Chat) */
+        .chat-wrapper { display: flex; width: 100%; margin-bottom: 8px; }
+        .chat-wrapper.me { justify-content: flex-start; } /* اليسار في RTL */
+        .chat-wrapper.other { justify-content: flex-end; } /* اليمين في RTL */
+        
+        .chat-card { max-width: 80%; padding: 10px 14px; border-radius: 16px; animation: commentSlide 0.35s ease; }
+        .chat-card.me { background: rgba(232,168,56,0.15); border: 1px solid rgba(232,168,56,0.2); border-bottom-left-radius: 2px; }
+        .chat-card.other { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-bottom-right-radius: 2px; }
+
+        /* زر الإشعارات */
+        .notif-btn { position: relative; }
+        .notif-dot { position: absolute; top: 0; right: 0; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; border: 2px solid var(--bg); display: none; }
+        .notif-dot.show { display: block; animation: livePulse 1.5s ease-in-out infinite; }
+
+        .keyword-highlight { background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 0 4px; border-radius: 4px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -194,6 +209,10 @@
                 <span class="text-sm font-bold" style="color: #ef4444;">مباشر</span>
             </div>
             <div class="flex items-center gap-2">
+                <button class="header-btn notif-btn" onclick="openNotificationsModal()">
+                    <i class="fas fa-bell"></i>
+                    <div id="notif-dot" class="notif-dot"></div>
+                </button>
                 <button class="header-btn" onclick="openArchiveScreen()"><i class="fas fa-archive"></i><span class="hidden sm:inline">المؤرشف</span></button>
                 <button class="header-btn" onclick="openChatScreen()"><i class="fas fa-comments"></i><span class="hidden sm:inline">الرسائل</span></button>
                 <div id="user-circle-btn" class="user-circle" onclick="handleUserCircleClick()">
@@ -256,13 +275,70 @@
                 <div class="auth-tab" onclick="switchAuthTab('signup')">حساب جديد</div>
                 <div class="auth-tab" onclick="switchAuthTab('quick')">تسجيل سريع</div>
             </div>
-            
-            <div id="auth-fields">
-                <!-- يتم ملؤها بواسطة JS -->
-            </div>
-            
+            <div id="auth-fields"></div>
             <button id="auth-submit-btn" class="btn-primary mt-4" onclick="handleAuthAction()">متابعة</button>
             <button class="btn-ghost mt-2" onclick="closeAuthModal()">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- مودال الملف الشخصي (Profile) -->
+    <div id="profile-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-lg font-bold mb-1">الملف الشخصي</h3>
+            <p class="text-sm mb-5" style="color: var(--text-muted);">إدارة معلومات حسابك.</p>
+            
+            <div id="profile-view">
+                <div class="space-y-3 mb-6">
+                    <div class="input-field" id="profile-name-display" style="cursor: default; background: rgba(255,255,255,0.02);"></div>
+                    <div class="input-field" id="profile-user-display" style="cursor: default; background: rgba(255,255,255,0.02);"></div>
+                    <div class="flex items-center gap-2">
+                        <input type="password" id="profile-pass-display" class="input-field" style="cursor: default; background: rgba(255,255,255,0.02);" disabled>
+                        <button class="btn-ghost" onclick="togglePassVisibility()"><i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button class="btn-ghost flex-1" onclick="closeProfileModal()">إغلاق</button>
+                    <button class="btn-primary flex-1" style="width: auto; background: transparent; border: 1px solid var(--accent); color: var(--accent);" onclick="toggleEditMode(true)">تعديل المعلومات</button>
+                    <button class="btn-danger flex-1" style="width: auto;" onclick="handleLogout()">خروج</button>
+                </div>
+            </div>
+
+            <div id="profile-edit" style="display: none;">
+                <div class="space-y-3 mb-6">
+                    <input type="text" id="edit-name" class="input-field" placeholder="الاسم الظاهر الجديد">
+                    <input type="text" id="edit-user" class="input-field" placeholder="اسم المستخدم (اليوزر) الجديد">
+                    <p class="text-xs" style="color: var(--text-muted);">* كلمة المرور لا يمكن تغييرها من هنا.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button class="btn-ghost flex-1" onclick="toggleEditMode(false)">إلغاء</button>
+                    <button class="btn-primary flex-1" style="width: auto;" onclick="saveProfileChanges()">حفظ التغييرات</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال الإشعارات والمراقب الذكي -->
+    <div id="notifications-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-bold"><i class="fas fa-bell ml-1"></i> المراقب الذكي والإشعارات</h3>
+                <button onclick="closeNotificationsModal()" style="background:none;border:none;color:var(--text-muted);font-size:20px;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="mb-6 p-4 rounded-xl" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border);">
+                <h4 class="text-sm font-bold mb-3">إضافة كلمات مفتاحية للمراقبة (للبث الحالي)</h4>
+                <div class="flex gap-2 mb-3">
+                    <input id="keyword-input" type="text" class="input-field" placeholder="مثال: تحدي، هدية، سؤال..." style="text-align: right;">
+                    <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="addKeyword()"><i class="fas fa-plus"></i></button>
+                </div>
+                <div id="keywords-list" class="flex flex-wrap gap-2"></div>
+                <p class="text-xs mt-3" style="color: var(--text-muted);">سيتم إشعارك فوراً (حتى لو المتصفح مغلق) عند كتابة أي من هذه الكلمات في التعليقات.</p>
+            </div>
+
+            <h4 class="text-sm font-bold mb-3">سجل الإشعارات</h4>
+            <div id="notifications-list" style="max-height: 300px; overflow-y: auto;">
+                <div class="empty-state" style="padding: 20px;"><i class="fas fa-bell-slash"></i><p style="color: var(--text-muted);">لا توجد إشعارات بعد.</p></div>
+            </div>
         </div>
     </div>
 
@@ -342,6 +418,7 @@
     let leaderCheckTimer = null;
     let realtimeChannel = null;
     let chatChannel = null;
+    let notifChannel = null;
     let isLeader = false;
     let clientId = Math.random().toString(36).substring(2, 15);
     let commentsTotal = 0;
@@ -360,13 +437,13 @@
     function showScreen(screenId) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); const target = document.getElementById(screenId); if (target) target.classList.add('active'); }
     function showToast(message, type = 'info') { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); const icons = { success: 'check-circle', error: 'exclamation-circle', info: 'info-circle' }; toast.className = `toast toast-${type}`; toast.innerHTML = `<i class="fas fa-${icons[type] || 'info-circle'}"></i><span>${message}</span>`; container.appendChild(toast); requestAnimationFrame(() => toast.classList.add('show')); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 350); }, 3500); }
 
-    // === نظام تسجيل الدخول والعضويات ===
+    // === نظام الملف الشخصي وتسجيل الدخول ===
     function updateUserCircle() {
         const btn = document.getElementById('user-circle-btn');
         if (currentUser) {
             btn.innerHTML = currentUser.display_name.charAt(0).toUpperCase();
             btn.style.background = getAvatarColor(currentUser.display_name);
-            btn.title = `مرحباً ${currentUser.display_name} (${currentUser.username})`;
+            btn.title = `مرحباً ${currentUser.display_name}`;
         } else {
             btn.innerHTML = '<i class="fas fa-user"></i>';
             btn.style.background = 'var(--accent)';
@@ -376,49 +453,73 @@
 
     function handleUserCircleClick() {
         if (currentUser) {
-            if (confirm(`أنت مسجل دخول باسم: ${currentUser.display_name} (${currentUser.username})\n\nهل تريد تسجيل الخروج؟`)) {
-                localStorage.removeItem('vrtx_user');
-                currentUser = null;
-                updateUserCircle();
-                showToast('تم تسجيل الخروج بنجاح', 'info');
-            }
+            document.getElementById('profile-name-display').value = currentUser.display_name;
+            document.getElementById('profile-user-display').value = currentUser.username;
+            document.getElementById('profile-pass-display').value = currentUser.password;
+            toggleEditMode(false);
+            document.getElementById('profile-modal').classList.add('show');
         } else {
             openAuthModal();
         }
     }
+    function closeProfileModal() { document.getElementById('profile-modal').classList.remove('show'); }
 
-    function openAuthModal() {
-        document.getElementById('auth-modal').classList.add('show');
-        switchAuthTab('signin');
+    function toggleEditMode(enable) {
+        document.getElementById('profile-view').style.display = enable ? 'none' : 'block';
+        document.getElementById('profile-edit').style.display = enable ? 'block' : 'none';
+        if (enable) {
+            document.getElementById('edit-name').value = currentUser.display_name;
+            document.getElementById('edit-user').value = currentUser.username;
+        }
     }
+
+    function togglePassVisibility() {
+        const passInput = document.getElementById('profile-pass-display');
+        passInput.type = passInput.type === 'password' ? 'text' : 'password';
+    }
+
+    async function saveProfileChanges() {
+        const newName = document.getElementById('edit-name').value.trim();
+        const newUser = document.getElementById('edit-user').value.trim();
+        if (!newName || !newUser) { showToast('يرجى ملء الحقول', 'error'); return; }
+
+        try {
+            const { data, error } = await supabaseClient.from('users').update({ display_name: newName, username: newUser }).eq('id', currentUser.id).select().single();
+            if (error) { showToast('اسم المستخدم مستخدم مسبقاً', 'error'); return; }
+            
+            currentUser = data;
+            localStorage.setItem('vrtx_user', JSON.stringify(data));
+            updateUserCircle();
+            handleUserCircleClick(); // Refresh modal
+            showToast('تم تحديث المعلومات بنجاح', 'success');
+        } catch(e) { showToast('خطأ في التحديث', 'error'); }
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('vrtx_user');
+        currentUser = null;
+        updateUserCircle();
+        closeProfileModal();
+        showToast('تم تسجيل الخروج بنجاح', 'info');
+    }
+
+    function openAuthModal() { document.getElementById('auth-modal').classList.add('show'); switchAuthTab('signin'); }
     function closeAuthModal() { document.getElementById('auth-modal').classList.remove('show'); }
 
     function switchAuthTab(mode) {
         currentAuthMode = mode;
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
         event.target.classList.add('active');
-        
         const fieldsDiv = document.getElementById('auth-fields');
         const submitBtn = document.getElementById('auth-submit-btn');
-        
         if (mode === 'signin') {
-            fieldsDiv.innerHTML = `
-                <input id="auth-username" type="text" class="input-field mb-3" placeholder="اسم المستخدم (اليوزر)">
-                <input id="auth-password" type="password" class="input-field mb-3" placeholder="كلمة المرور">
-            `;
+            fieldsDiv.innerHTML = `<input id="auth-username" type="text" class="input-field mb-3" placeholder="اسم المستخدم (اليوزر)"><input id="auth-password" type="password" class="input-field mb-3" placeholder="كلمة المرور">`;
             submitBtn.innerText = 'تسجيل الدخول';
         } else if (mode === 'signup') {
-            fieldsDiv.innerHTML = `
-                <input id="auth-display" type="text" class="input-field mb-3" placeholder="الاسم الظاهر (أي اسم تختاره)">
-                <input id="auth-username" type="text" class="input-field mb-3" placeholder="اسم المستخدم (يوزر لا يمكن تكراره)">
-                <input id="auth-password" type="password" class="input-field mb-3" placeholder="كلمة المرور">
-            `;
+            fieldsDiv.innerHTML = `<input id="auth-display" type="text" class="input-field mb-3" placeholder="الاسم الظاهر (أي اسم تختاره)"><input id="auth-username" type="text" class="input-field mb-3" placeholder="اسم المستخدم (يوزر لا يمكن تكراره)"><input id="auth-password" type="password" class="input-field mb-3" placeholder="كلمة المرور">`;
             submitBtn.innerText = 'إنشاء حساب';
         } else if (mode === 'quick') {
-            fieldsDiv.innerHTML = `
-                <input id="auth-display" type="text" class="input-field mb-3" placeholder="أدخل اسماً ظاهراً فقط">
-                <p class="text-xs text-center" style="color: var(--text-muted);">سيتم توليد اليوزر والباسورد تلقائياً وحفظها.</p>
-            `;
+            fieldsDiv.innerHTML = `<input id="auth-display" type="text" class="input-field mb-3" placeholder="أدخل اسماً ظاهراً فقط"><p class="text-xs text-center" style="color: var(--text-muted);">سيتم توليد اليوزر والباسورد تلقائياً وحفظها.</p>`;
             submitBtn.innerText = 'تسجيل سريع';
         }
     }
@@ -428,86 +529,49 @@
             const username = document.getElementById('auth-username').value.trim();
             const password = document.getElementById('auth-password').value.trim();
             if (!username || !password) { showToast('يرجى ملء الحقول', 'error'); return; }
-            
             const { data, error } = await supabaseClient.from('users').select('*').eq('username', username).eq('password', password).single();
             if (error || !data) { showToast('بيانات الدخول غير صحيحة', 'error'); return; }
-            
-            currentUser = data;
-            localStorage.setItem('vrtx_user', JSON.stringify(data));
-            updateUserCircle();
-            closeAuthModal();
-            showToast('تم تسجيل الدخول بنجاح', 'success');
-            
+            currentUser = data; localStorage.setItem('vrtx_user', JSON.stringify(data)); updateUserCircle(); closeAuthModal(); showToast('تم تسجيل الدخول بنجاح', 'success');
         } else if (currentAuthMode === 'signup') {
-            const display = document.getElementById('auth-display').value.trim();
-            const username = document.getElementById('auth-username').value.trim();
-            const password = document.getElementById('auth-password').value.trim();
+            const display = document.getElementById('auth-display').value.trim(); const username = document.getElementById('auth-username').value.trim(); const password = document.getElementById('auth-password').value.trim();
             if (!display || !username || !password) { showToast('يرجى ملء جميع الحقول', 'error'); return; }
-            
             const { data, error } = await supabaseClient.from('users').insert([{ display_name: display, username: username, password: password }]).select().single();
             if (error) { showToast('اسم المستخدم مستخدم مسبقاً', 'error'); return; }
-            
-            currentUser = data;
-            localStorage.setItem('vrtx_user', JSON.stringify(data));
-            updateUserCircle();
-            closeAuthModal();
-            showToast('تم إنشاء الحساب وتسجيل الدخول', 'success');
-            
+            currentUser = data; localStorage.setItem('vrtx_user', JSON.stringify(data)); updateUserCircle(); closeAuthModal(); showToast('تم إنشاء الحساب وتسجيل الدخول', 'success');
         } else if (currentAuthMode === 'quick') {
             const display = document.getElementById('auth-display').value.trim();
             if (!display) { showToast('يرجى إدخال الاسم الظاهر', 'error'); return; }
-            
-            const randomUser = 'user_' + Math.random().toString(36).substring(2, 8);
-            const randomPass = Math.random().toString(36).substring(2, 10);
-            
+            const randomUser = 'user_' + Math.random().toString(36).substring(2, 8); const randomPass = Math.random().toString(36).substring(2, 10);
             const { data, error } = await supabaseClient.from('users').insert([{ display_name: display, username: randomUser, password: randomPass }]).select().single();
             if (error) { showToast('خطأ في التسجيل السريع، حاول مرة أخرى', 'error'); return; }
-            
-            currentUser = data;
-            localStorage.setItem('vrtx_user', JSON.stringify(data));
-            updateUserCircle();
-            closeAuthModal();
-            showToast(`تم التسجيل السريع! يوزرك هو: ${randomUser}`, 'success');
+            currentUser = data; localStorage.setItem('vrtx_user', JSON.stringify(data)); updateUserCircle(); closeAuthModal(); showToast(`تم التسجيل السريع! يوزرك هو: ${randomUser}`, 'success');
         }
     }
 
     // === التسجيل الجديد للبث ===
     async function handleNewRegister() {
-        const url = document.getElementById('new-url').value.trim();
-        const user = document.getElementById('new-user').value.trim();
-        const pass = document.getElementById('new-pass').value.trim();
+        const url = document.getElementById('new-url').value.trim(); const user = document.getElementById('new-user').value.trim(); const pass = document.getElementById('new-pass').value.trim();
         if (!url || !user || !pass) { showToast('يرجى ملء جميع الحقول', 'error'); return; }
-        const videoId = getVideoId(url);
-        if (!videoId) { showToast('رابط يوتيوب غير صالح', 'error'); return; }
-        
+        const videoId = getVideoId(url); if (!videoId) { showToast('رابط يوتيوب غير صالح', 'error'); return; }
         try {
             const { count, error: countError } = await supabaseClient.from('saved_streams').select('*', { count: 'exact', head: true });
-            if (countError) throw countError;
-            if (count >= 12) { showToast('لا يمكن إنشاء أكثر من 12 بث!', 'error'); return; }
-
+            if (countError) throw countError; if (count >= 12) { showToast('لا يمكن إنشاء أكثر من 12 بث!', 'error'); return; }
             const { data: existingStreams } = await supabaseClient.from('saved_streams').select('stream_url').ilike('stream_url', `%${videoId}%`);
             if (existingStreams && existingStreams.length > 0) { showToast('هذا البث مسجل مسبقاً!', 'error'); return; }
-            
             const { error } = await supabaseClient.from('saved_streams').insert([{ username: user, password: pass, stream_url: url }]);
-            if (error) throw error;
-            showToast('تم الحفظ بنجاح', 'success');
-            startLiveStream(videoId);
+            if (error) throw error; showToast('تم الحفظ بنجاح', 'success'); startLiveStream(videoId);
         } catch(e) { showToast('فشل الحفظ: ' + (e.message || ''), 'error'); }
     }
 
     async function showStreamList() {
-        showScreen('screen-list');
-        const container = document.getElementById('streams-list-container');
+        showScreen('screen-list'); const container = document.getElementById('streams-list-container');
         container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p style="color: var(--text-muted);">جاري التحميل...</p></div>';
         try {
             const { data, error } = await supabaseClient.from('saved_streams').select('username, stream_url').order('created_at', { ascending: false });
-            if (error) throw error;
-            if (!data || data.length === 0) { container.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i><p class="font-bold mt-4">لا توجد بثوث محفوظة</p></div>'; return; }
-            container.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>';
-            const grid = container.firstChild;
+            if (error) throw error; if (!data || data.length === 0) { container.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i><p class="font-bold mt-4">لا توجد بثوث محفوظة</p></div>'; return; }
+            container.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>'; const grid = container.firstChild;
             data.forEach(stream => {
-                const videoId = getVideoId(stream.stream_url);
-                const card = document.createElement('div');
+                const videoId = getVideoId(stream.stream_url); const card = document.createElement('div');
                 card.className = 'glass-card p-4 flex items-center justify-between';
                 card.innerHTML = `<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-glow);"><i class="fas fa-video text-sm" style="color: var(--accent);"></i></div><div><h3 class="font-bold text-sm">${stream.username}</h3><p class="text-xs" style="color: var(--text-muted);">${videoId}</p></div></div><button class="btn-ghost text-xs" onclick="openPasswordModal('${stream.username}', '${stream.stream_url}')">دخول</button>`;
                 grid.appendChild(card);
@@ -515,37 +579,26 @@
         } catch(e) { container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p class="mt-4">خطأ في التحميل</p></div>'; }
     }
 
-    function openAdminModal() {
-        document.getElementById('admin-user-input').value = '';
-        document.getElementById('admin-pass-input').value = '';
-        document.getElementById('admin-modal').classList.add('show');
-    }
+    function openAdminModal() { document.getElementById('admin-user-input').value = ''; document.getElementById('admin-pass-input').value = ''; document.getElementById('admin-modal').classList.add('show'); }
     function closeAdminModal() { document.getElementById('admin-modal').classList.remove('show'); }
 
     async function handleAdminDelete() {
-        const streamUser = document.getElementById('admin-user-input').value.trim();
-        const adminPass = document.getElementById('admin-pass-input').value.trim();
+        const streamUser = document.getElementById('admin-user-input').value.trim(); const adminPass = document.getElementById('admin-pass-input').value.trim();
         if (!streamUser || !adminPass) { showToast('يرجى إدخال البيانات', 'error'); return; }
-
         try {
             const { data: settings, error: settingsError } = await supabaseClient.from('app_settings').select('admin_password').eq('id', 1).single();
-            if (settingsError || !settings || settings.admin_password !== adminPass) {
-                showToast('كلمة مرور الأدمن غير صحيحة', 'error'); return;
-            }
+            if (settingsError || !settings || settings.admin_password !== adminPass) { showToast('كلمة مرور الأدمن غير صحيحة', 'error'); return; }
             const { data: stream, error: streamError } = await supabaseClient.from('saved_streams').select('stream_url').eq('username', streamUser).single();
             if (streamError || !stream) { showToast('اسم المستخدم غير موجود', 'error'); return; }
-
             const videoId = getVideoId(stream.stream_url);
-            if (videoId) {
-                await supabaseClient.from('archived_comments').delete().eq('stream_id', videoId);
+            if (videoId) { 
+                await supabaseClient.from('archived_comments').delete().eq('stream_id', videoId); 
                 await supabaseClient.from('stream_messages').delete().eq('stream_id', videoId);
+                await supabaseClient.from('monitor_keywords').delete().eq('stream_id', videoId);
+                await supabaseClient.from('monitor_notifications').delete().eq('stream_id', videoId);
             }
             const { error: deleteError } = await supabaseClient.from('saved_streams').delete().eq('username', streamUser);
-            if (deleteError) throw deleteError;
-
-            showToast('تم حذف البث وجميع تعليقاته بنجاح', 'success');
-            closeAdminModal();
-            showStreamList();
+            if (deleteError) throw deleteError; showToast('تم حذف البث وجميع تعليقاته بنجاح', 'success'); closeAdminModal(); showStreamList();
         } catch(e) { showToast('خطأ في الحذف: ' + (e.message || ''), 'error'); }
     }
 
@@ -553,95 +606,52 @@
     function closePasswordModal() { document.getElementById('password-modal').classList.remove('show'); tempLoginData = null; }
 
     async function confirmLoginFromList() {
-        if (!tempLoginData) return;
-        const pass = document.getElementById('modal-pass-input').value.trim();
+        if (!tempLoginData) return; const pass = document.getElementById('modal-pass-input').value.trim();
         if (!pass) { showToast('أدخل كلمة المرور', 'error'); return; }
         try {
             const { data, error } = await supabaseClient.from('saved_streams').select('*').eq('username', tempLoginData.username).eq('password', pass).single();
             if (error || !data) { showToast('كلمة المرور غير صحيحة', 'error'); return; }
-            const videoId = getVideoId(tempLoginData.streamUrl);
-            if (!videoId) { showToast('رابط البث غير صالح', 'error'); return; }
-            closePasswordModal();
-            showToast('تم تسجيل الدخول', 'success');
-            startLiveStream(videoId);
+            const videoId = getVideoId(tempLoginData.streamUrl); if (!videoId) { showToast('رابط البث غير صالح', 'error'); return; }
+            closePasswordModal(); showToast('تم تسجيل الدخول', 'success'); startLiveStream(videoId);
         } catch(e) { showToast('خطأ في الدخول', 'error'); }
     }
 
-    // === البث الحي (هندسة القائد والتابع) ===
+    // === البث الحي والمراقب الذكي ===
     async function startLiveStream(videoId) {
-        currentVideoId = videoId;
-        localStorage.setItem('vrtx_last_stream', videoId); // حفظ البث للعودة له بعد الرفرش
-        commentsTotal = 0; nextPageToken = ''; liveChatId = null; isLeader = false;
-        renderedComments.clear();
+        currentVideoId = videoId; localStorage.setItem('vrtx_last_stream', videoId);
+        commentsTotal = 0; nextPageToken = ''; liveChatId = null; isLeader = false; renderedComments.clear();
+        document.getElementById('comments-list').innerHTML = ''; document.getElementById('comments-loading').style.display = 'flex'; document.getElementById('comments-empty').style.display = 'none'; document.getElementById('comments-error').style.display = 'none'; document.getElementById('comments-count').textContent = '0 تعليق'; document.getElementById('status-text').textContent = 'جاري الاتصال...';
+        showScreen('screen-comments'); await loadExistingComments(videoId);
         
-        document.getElementById('comments-list').innerHTML = '';
-        document.getElementById('comments-loading').style.display = 'flex';
-        document.getElementById('comments-empty').style.display = 'none';
-        document.getElementById('comments-error').style.display = 'none';
-        document.getElementById('comments-count').textContent = '0 تعليق';
-        document.getElementById('status-text').textContent = 'جاري الاتصال...';
-        showScreen('screen-comments');
-
-        await loadExistingComments(videoId);
-
         if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
-        realtimeChannel = supabaseClient.channel('public:archived_comments')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'archived_comments', filter: `stream_id=eq.${videoId}` }, payload => {
-              addCommentToUI(payload.new, true);
-          }).subscribe();
+        realtimeChannel = supabaseClient.channel('public:archived_comments').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'archived_comments', filter: `stream_id=eq.${videoId}` }, payload => { addCommentToUI(payload.new, true); }).subscribe();
+
+        // الاستماع للإشعارات القادمة من الخلفية (الروبوت)
+        if (notifChannel) supabaseClient.removeChannel(notifChannel);
+        notifChannel = supabaseClient.channel('public:monitor_notifications').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'monitor_notifications', filter: `stream_id=eq.${videoId}` }, payload => {
+            const notif = payload.new;
+            document.getElementById('notif-dot').classList.add('show');
+            showToast(`🔔 المراقب الذكي: تم استخدام "${notif.keyword}" بواسطة ${notif.author_name}`, 'info');
+            if (document.getElementById('notifications-modal').classList.contains('show')) renderNotifications();
+        }).subscribe();
 
         try {
             let vidData = null;
-            for (let i = 0; i < YOUTUBE_API_KEYS.length; i++) {
-                const keyIndex = (currentKeyIndex + i) % YOUTUBE_API_KEYS.length;
-                const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${YOUTUBE_API_KEYS[keyIndex]}`);
-                const data = await resp.json();
-                if (!data.error) { vidData = data; currentKeyIndex = keyIndex; break; }
-            }
-            if (!vidData) throw new Error('فشل في جلب بيانات الفيديو');
-            if (!vidData.items || vidData.items.length === 0) throw new Error('الفيديو غير موجود');
-            const liveDetails = vidData.items[0].liveStreamingDetails;
-            if (!liveDetails) throw new Error('هذا الفيديو ليس بثاً مباشراً');
-            liveChatId = liveDetails.activeLiveChatId || liveDetails.liveChatId;
-            startLeaderElection();
-        } catch(e) {
-            document.getElementById('comments-loading').style.display = 'none';
-            document.getElementById('comments-error').style.display = 'flex';
-            document.getElementById('error-title').textContent = 'فشل الاتصال';
-            document.getElementById('error-message').textContent = e.message;
-        }
+            for (let i = 0; i < YOUTUBE_API_KEYS.length; i++) { const keyIndex = (currentKeyIndex + i) % YOUTUBE_API_KEYS.length; const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${YOUTUBE_API_KEYS[keyIndex]}`); const data = await resp.json(); if (!data.error) { vidData = data; currentKeyIndex = keyIndex; break; } }
+            if (!vidData) throw new Error('فشل في جلب بيانات الفيديو'); if (!vidData.items || vidData.items.length === 0) throw new Error('الفيديو غير موجود');
+            const liveDetails = vidData.items[0].liveStreamingDetails; if (!liveDetails) throw new Error('هذا الفيديو ليس بثاً مباشراً');
+            liveChatId = liveDetails.activeLiveChatId || liveDetails.liveChatId; startLeaderElection();
+        } catch(e) { document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-error').style.display = 'flex'; document.getElementById('error-title').textContent = 'فشل الاتصال'; document.getElementById('error-message').textContent = e.message; }
     }
 
     async function loadExistingComments(videoId) {
-        try {
-            const { data, error } = await supabaseClient.from('archived_comments').select('*').eq('stream_id', videoId).order('published_at', { ascending: true }).limit(50);
-            if (error || !data || data.length === 0) return;
-            document.getElementById('comments-loading').style.display = 'none';
-            document.getElementById('comments-empty').style.display = 'none';
-            data.forEach(item => addCommentToUI(item, true));
-        } catch(e) { console.error('Load existing error:', e); }
+        try { const { data, error } = await supabaseClient.from('archived_comments').select('*').eq('stream_id', videoId).order('published_at', { ascending: true }).limit(50); if (error || !data || data.length === 0) return; document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-empty').style.display = 'none'; data.forEach(item => addCommentToUI(item, true)); } catch(e) { console.error('Load existing error:', e); }
     }
 
     function startLeaderElection() { checkLeadership(); leaderCheckTimer = setInterval(checkLeadership, 5000); }
     async function checkLeadership() {
         if (!currentVideoId) return;
-        try {
-            const { data, error } = await supabaseClient.rpc('try_acquire_lock', { p_stream_id: currentVideoId, p_client_id: clientId });
-            if (error) throw error;
-            const gotLeadership = data === true;
-            if (gotLeadership && !isLeader) {
-                isLeader = true;
-                document.getElementById('status-text').textContent = 'أنت القائد - جلب مباشر من يوتيوب';
-                startYouTubePolling();
-            } else if (!gotLeadership && isLeader) {
-                isLeader = false;
-                stopYouTubePolling();
-                document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر';
-            } else if (!gotLeadership && !isLeader) {
-                document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر';
-                if (commentsTotal === 0) { document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-empty').style.display = 'flex'; }
-            }
-        } catch(e) { console.error('Lock error:', e); }
+        try { const { data, error } = await supabaseClient.rpc('try_acquire_lock', { p_stream_id: currentVideoId, p_client_id: clientId }); if (error) throw error; const gotLeadership = data === true; if (gotLeadership && !isLeader) { isLeader = true; document.getElementById('status-text').textContent = 'أنت القائد - جلب مباشر من يوتيوب'; startYouTubePolling(); } else if (!gotLeadership && isLeader) { isLeader = false; stopYouTubePolling(); document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر'; } else if (!gotLeadership && !isLeader) { document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر'; if (commentsTotal === 0) { document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-empty').style.display = 'flex'; } } } catch(e) { console.error('Lock error:', e); }
     }
 
     function startYouTubePolling() { if (youtubePollTimer) clearInterval(youtubePollTimer); fetchComments(); youtubePollTimer = setInterval(fetchComments, 1000); }
@@ -649,160 +659,132 @@
 
     async function fetchComments() {
         if (!liveChatId || !isLeader) return;
-        try {
-            const currentApiKey = YOUTUBE_API_KEYS[currentKeyIndex];
-            let apiUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=200&key=${currentApiKey}`;
-            if (nextPageToken) apiUrl += `&pageToken=${nextPageToken}`;
-            const resp = await fetch(apiUrl);
-            const data = await resp.json();
-            if (data.error && (data.error.code === 403 || data.error.errors?.[0]?.reason === 'quotaExceeded')) {
-                currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length; return fetchComments(); 
-            }
-            if (data.error) throw new Error(data.error.message);
-            if (data.nextPageToken) nextPageToken = data.nextPageToken;
-            if (data.items && data.items.length > 0) {
-                document.getElementById('comments-loading').style.display = 'none';
-                document.getElementById('comments-empty').style.display = 'none';
-                const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt));
-                await archiveCommentsToSupabase(sorted);
-                sorted.forEach(item => {
-                    const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() };
-                    addCommentToUI(newItem, true);
-                });
-            }
-        } catch(e) { console.error('Fetch error:', e); }
+        try { const currentApiKey = YOUTUBE_API_KEYS[currentKeyIndex]; let apiUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=200&key=${currentApiKey}`; if (nextPageToken) apiUrl += `&pageToken=${nextPageToken}`; const resp = await fetch(apiUrl); const data = await resp.json(); if (data.error && (data.error.code === 403 || data.error.errors?.[0]?.reason === 'quotaExceeded')) { currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length; return fetchComments(); } if (data.error) throw new Error(data.error.message); if (data.nextPageToken) nextPageToken = data.nextPageToken; if (data.items && data.items.length > 0) { document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-empty').style.display = 'none'; const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt)); await archiveCommentsToSupabase(sorted); sorted.forEach(item => { const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() }; addCommentToUI(newItem, true); }); } } catch(e) { console.error('Fetch error:', e); }
     }
 
     async function archiveCommentsToSupabase(comments) {
-        if (!supabaseClient || !currentVideoId) return;
-        const batchData = comments.map(item => ({ stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() })).filter(c => c.comment_text !== '');
-        if (batchData.length === 0) return;
-        try { await supabaseClient.from('archived_comments').upsert(batchData, { onConflict: 'stream_id,author_name,published_at,comment_text', ignoreDuplicates: true }); } catch (e) { console.error(e); }
+        if (!supabaseClient || !currentVideoId) return; const batchData = comments.map(item => ({ stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() })).filter(c => c.comment_text !== ''); if (batchData.length === 0) return; try { await supabaseClient.from('archived_comments').upsert(batchData, { onConflict: 'stream_id,author_name,published_at,comment_text', ignoreDuplicates: true }); } catch (e) { console.error(e); }
     }
 
     function addCommentToUI(item, countIncrement = false) {
-        const uniqueId = item.stream_id + item.author_name + item.published_at + item.comment_text;
-        if (renderedComments.has(uniqueId)) return;
-        renderedComments.add(uniqueId);
-        const list = document.getElementById('comments-list');
-        const displayName = item.author_name || 'مجهول';
-        const message = item.comment_text || '';
-        const color = getAvatarColor(displayName);
-        const card = document.createElement('div');
-        card.className = 'comment-card';
-        card.style.setProperty('--c-accent', color);
+        const uniqueId = item.stream_id + item.author_name + item.published_at + item.comment_text; if (renderedComments.has(uniqueId)) return; renderedComments.add(uniqueId);
+        const list = document.getElementById('comments-list'); const displayName = item.author_name || 'مجهول'; const message = item.comment_text || ''; const color = getAvatarColor(displayName);
+        const card = document.createElement('div'); card.className = 'comment-card'; card.style.setProperty('--c-accent', color);
         card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${displayName.charAt(0).toUpperCase()}</div><div style="flex:1; min-width:0;"><div class="flex items-center" style="margin-bottom:2px;"><span class="comment-username" style="color:${color};">${escapeHtml(displayName)}</span><span class="comment-time">${formatTime(item.published_at)}</span></div><div class="comment-text">${escapeHtml(message)}</div></div>`;
-        list.appendChild(card);
-        if (countIncrement) { commentsTotal++; document.getElementById('comments-count').textContent = `${commentsTotal} تعليق`; }
-        document.getElementById('comments-loading').style.display = 'none';
-        document.getElementById('comments-empty').style.display = 'none';
-        if (isAtBottom) list.parentElement.scrollTop = list.parentElement.scrollHeight;
+        list.appendChild(card); if (countIncrement) { commentsTotal++; document.getElementById('comments-count').textContent = `${commentsTotal} تعليق`; }
+        document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-empty').style.display = 'none'; if (isAtBottom) list.parentElement.scrollTop = list.parentElement.scrollHeight;
+    }
+
+    // === نظام المراقب الذكي (Synced with Supabase) ===
+    function openNotificationsModal() {
+        document.getElementById('notif-dot').classList.remove('show');
+        document.getElementById('notifications-modal').classList.add('show');
+        renderKeywords(); renderNotifications();
+    }
+    function closeNotificationsModal() { document.getElementById('notifications-modal').classList.remove('show'); }
+
+    async function addKeyword() {
+        const input = document.getElementById('keyword-input');
+        const kw = input.value.trim();
+        if (!kw || !currentVideoId) return;
+        try {
+            await supabaseClient.from('monitor_keywords').insert([{ stream_id: currentVideoId, keyword: kw }]);
+            input.value = '';
+            renderKeywords();
+        } catch(e) { showToast('خطأ في إضافة الكلمة', 'error'); }
+    }
+
+    async function removeKeyword(kw) {
+        if (!currentVideoId) return;
+        try {
+            await supabaseClient.from('monitor_keywords').delete().eq('stream_id', currentVideoId).eq('keyword', kw);
+            renderKeywords();
+        } catch(e) { showToast('خطأ في الحذف', 'error'); }
+    }
+
+    async function renderKeywords() {
+        const container = document.getElementById('keywords-list');
+        container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">جاري التحميل...</p>';
+        if (!currentVideoId) return;
+        const { data } = await supabaseClient.from('monitor_keywords').select('keyword').eq('stream_id', currentVideoId);
+        container.innerHTML = '';
+        if (!data || data.length === 0) { container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">لا توجد كلمات مراقبة حالياً.</p>'; return; }
+        data.forEach(k => {
+            const tag = document.createElement('div');
+            tag.className = 'flex items-center gap-2 px-3 py-1 rounded-full text-xs';
+            tag.style.background = 'rgba(239, 68, 68, 0.1)'; tag.style.border = '1px solid rgba(239, 68, 68, 0.2)'; tag.style.color = '#f87171';
+            tag.innerHTML = `<span>${escapeHtml(k.keyword)}</span><button onclick="removeKeyword('${k.keyword.replace(/'/g, "")}')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;">&times;</button>`;
+            container.appendChild(tag);
+        });
+    }
+
+    async function renderNotifications() {
+        const list = document.getElementById('notifications-list');
+        list.innerHTML = '<div class="empty-state" style="padding: 20px;"><i class="fas fa-spinner fa-spin"></i></div>';
+        if (!currentVideoId) return;
+        const { data } = await supabaseClient.from('monitor_notifications').select('*').eq('stream_id', currentVideoId).order('created_at', { ascending: false }).limit(50);
+        if (!data || data.length === 0) {
+            list.innerHTML = '<div class="empty-state" style="padding: 20px;"><i class="fas fa-bell-slash"></i><p style="color: var(--text-muted);">لا توجد إشعارات بعد.</p></div>';
+            return;
+        }
+        list.innerHTML = '';
+        data.forEach(notif => {
+            const color = getAvatarColor(notif.author_name);
+            const highlightedMsg = escapeHtml(notif.comment_text).replace(new RegExp(escapeHtml(notif.keyword), 'gi'), `<span class="keyword-highlight">$&</span>`);
+            const card = document.createElement('div');
+            card.className = 'comment-card';
+            card.style.setProperty('--c-accent', color);
+            card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${notif.author_name.charAt(0).toUpperCase()}</div><div style="flex:1; min-width:0;"><div class="flex items-center"><span class="comment-username" style="color:${color};">${escapeHtml(notif.author_name)}</span><span class="comment-time">${formatTime(notif.created_at)}</span></div><div class="comment-text">${highlightedMsg}</div></div>`;
+            list.appendChild(card);
+        });
     }
 
     // === نظام المحادثة (Chat) ===
     function openChatScreen() {
         if (!currentUser) { showToast('يجب تسجيل الدخول أولاً للمشاركة في المحادثة', 'error'); openAuthModal(); return; }
-        showScreen('screen-chat');
-        loadChatMessages();
+        showScreen('screen-chat'); loadChatMessages();
         if (chatChannel) supabaseClient.removeChannel(chatChannel);
-        chatChannel = supabaseClient.channel('public:stream_messages')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stream_messages', filter: `stream_id=eq.${currentVideoId}` }, payload => {
-              addChatMessageToUI(payload.new);
-          }).subscribe();
+        chatChannel = supabaseClient.channel('public:stream_messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stream_messages', filter: `stream_id=eq.${currentVideoId}` }, payload => { addChatMessageToUI(payload.new); }).subscribe();
     }
 
     async function loadChatMessages() {
-        const list = document.getElementById('chat-list');
-        list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>';
-        renderedChats.clear();
-        try {
-            const { data, error } = await supabaseClient.from('stream_messages').select('*').eq('stream_id', currentVideoId).order('created_at', { ascending: true }).limit(100);
-            if (error) throw error;
-            list.innerHTML = '';
-            if (data.length === 0) { list.innerHTML = '<div class="empty-state"><i class="fas fa-comment-slash"></i><p style="color: var(--text-muted);">لا توجد رسائل بعد. كن أول من يبدأ المحادثة!</p></div>'; return; }
-            data.forEach(msg => addChatMessageToUI(msg));
-        } catch(e) { list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>خطأ في تحميل المحادثة</p></div>'; }
+        const list = document.getElementById('chat-list'); list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>'; renderedChats.clear();
+        try { const { data, error } = await supabaseClient.from('stream_messages').select('*').eq('stream_id', currentVideoId).order('created_at', { ascending: true }).limit(100); if (error) throw error; list.innerHTML = ''; if (data.length === 0) { list.innerHTML = '<div class="empty-state"><i class="fas fa-comment-slash"></i><p style="color: var(--text-muted);">لا توجد رسائل بعد. كن أول من يبدأ المحادثة!</p></div>'; return; } data.forEach(msg => addChatMessageToUI(msg)); } catch(e) { list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>خطأ في تحميل المحادثة</p></div>'; }
     }
 
     function addChatMessageToUI(msg) {
-        const uniqueId = `chat_${msg.id}`;
-        if (renderedChats.has(uniqueId)) return;
-        renderedChats.add(uniqueId);
-
-        const list = document.getElementById('chat-list');
-        const isMe = currentUser && msg.user_id === currentUser.id;
-        const color = getAvatarColor(msg.display_name);
-        
-        const card = document.createElement('div');
-        card.className = `comment-card chat ${isMe ? 'me' : ''}`;
-        card.style.setProperty('--c-accent', color);
-        card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${msg.display_name.charAt(0).toUpperCase()}</div><div style="flex:1; min-width:0;"><div class="flex items-center" style="margin-bottom:2px;"><span class="comment-username" style="color:${color};">${escapeHtml(msg.display_name)}</span><span class="text-xs mr-2" style="color: var(--text-muted);">@${escapeHtml(msg.username)}</span><span class="comment-time">${formatTime(msg.created_at)}</span></div><div class="comment-text">${escapeHtml(msg.message_text)}</div></div>`;
-        list.appendChild(card);
-        list.parentElement.scrollTop = list.parentElement.scrollHeight;
+        const uniqueId = `chat_${msg.id}`; if (renderedChats.has(uniqueId)) return; renderedChats.add(uniqueId);
+        const list = document.getElementById('chat-list'); const isMe = currentUser && msg.user_id === currentUser.id; const color = getAvatarColor(msg.display_name);
+        const wrapper = document.createElement('div'); wrapper.className = `chat-wrapper ${isMe ? 'me' : 'other'}`;
+        const card = document.createElement('div'); card.className = `chat-card ${isMe ? 'me' : 'other'}`; card.style.setProperty('--c-accent', color);
+        card.innerHTML = `<div class="flex items-center" style="margin-bottom:2px;"><span class="comment-username" style="color:${color}; font-size: 12px;">${escapeHtml(msg.display_name)}</span><span class="comment-time" style="margin-right: 5px;">${formatTime(msg.created_at)}</span></div><div class="comment-text" style="font-size: 14px;">${escapeHtml(msg.message_text)}</div>`;
+        wrapper.appendChild(card); list.appendChild(wrapper); list.parentElement.scrollTop = list.parentElement.scrollHeight;
     }
 
     async function sendChatMessage() {
-        const input = document.getElementById('chat-input');
-        const text = input.value.trim();
-        if (!text || !currentUser || !currentVideoId) return;
-        
+        const input = document.getElementById('chat-input'); const text = input.value.trim(); if (!text || !currentUser || !currentVideoId) return;
         input.value = '';
-        try {
-            const { error } = await supabaseClient.from('stream_messages').insert([{
-                stream_id: currentVideoId,
-                user_id: currentUser.id,
-                display_name: currentUser.display_name,
-                username: currentUser.username,
-                message_text: text
-            }]);
-            if (error) throw error;
-        } catch(e) { showToast('فشل إرسال الرسالة', 'error'); input.value = text; }
+        try { const { error } = await supabaseClient.from('stream_messages').insert([{ stream_id: currentVideoId, user_id: currentUser.id, display_name: currentUser.display_name, username: currentUser.username, message_text: text }]); if (error) throw error; } catch(e) { showToast('فشل إرسال الرسالة', 'error'); input.value = text; }
     }
 
     // === الأرشيف والبحث ===
     function openArchiveScreen() { showScreen('screen-archive'); loadArchivedComments('', ''); }
     async function loadArchivedComments(searchTerm = '', searchUser = '') {
-        const list = document.getElementById('archive-list');
-        const status = document.getElementById('archive-status');
-        list.innerHTML = '';
-        status.textContent = 'جاري التحميل...';
+        const list = document.getElementById('archive-list'); const status = document.getElementById('archive-status'); list.innerHTML = ''; status.textContent = 'جاري التحميل...';
         try {
             let query = supabaseClient.from('archived_comments').select('*').eq('stream_id', currentVideoId);
-            if (searchTerm) query = query.ilike('comment_text', `%${searchTerm}%`);
-            if (searchUser) query = query.ilike('author_name', `%${searchUser}%`);
-            query = query.order('published_at', { ascending: true });
-            const { data, error } = await query;
-            if (error) throw error;
+            if (searchTerm) query = query.ilike('comment_text', `%${searchTerm}%`); if (searchUser) query = query.ilike('author_name', `%${searchUser}%`);
+            query = query.order('published_at', { ascending: true }); const { data, error } = await query; if (error) throw error;
             if (data.length === 0) { status.textContent = 'لا توجد نتائج مطابقة'; return; }
             status.textContent = `التعليقات: ${data.length}`;
-            data.forEach(item => {
-                const color = getAvatarColor(item.author_name);
-                const card = document.createElement('div');
-                card.className = 'comment-card archived';
-                card.style.setProperty('--c-accent', color);
-                card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${item.author_name.charAt(0).toUpperCase()}</div><div style="flex:1; min-width:0;"><div class="flex items-center"><span class="comment-username" style="color:${color};">${escapeHtml(item.author_name)}</span><span class="comment-time">${new Date(item.published_at).toLocaleTimeString('ar-EG')}</span></div><div class="comment-text">${escapeHtml(item.comment_text)}</div></div>`;
-                list.appendChild(card);
-            });
+            data.forEach(item => { const color = getAvatarColor(item.author_name); const card = document.createElement('div'); card.className = 'comment-card archived'; card.style.setProperty('--c-accent', color); card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${item.author_name.charAt(0).toUpperCase()}</div><div style="flex:1; min-width:0;"><div class="flex items-center"><span class="comment-username" style="color:${color};">${escapeHtml(item.author_name)}</span><span class="comment-time">${new Date(item.published_at).toLocaleTimeString('ar-EG')}</span></div><div class="comment-text">${escapeHtml(item.comment_text)}</div></div>`; list.appendChild(card); });
         } catch(e) { status.textContent = 'خطأ في التحميل'; }
     }
-    function searchArchivedComments() {
-        clearTimeout(searchDebounce);
-        const term = document.getElementById('search-archive-input').value.trim();
-        const user = document.getElementById('search-archive-user').value.trim();
-        searchDebounce = setTimeout(() => loadArchivedComments(term, user), 300);
-    }
+    function searchArchivedComments() { clearTimeout(searchDebounce); const term = document.getElementById('search-archive-input').value.trim(); const user = document.getElementById('search-archive-user').value.trim(); searchDebounce = setTimeout(() => loadArchivedComments(term, user), 300); }
 
     function handleExit() {
-        stopYouTubePolling();
-        if (leaderCheckTimer) clearInterval(leaderCheckTimer);
-        if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
-        if (chatChannel) supabaseClient.removeChannel(chatChannel);
-        currentVideoId = null; liveChatId = null; isLeader = false;
-        localStorage.removeItem('vrtx_last_stream');
-        document.getElementById('comments-list').innerHTML = '';
-        document.getElementById('archive-list').innerHTML = '';
-        document.getElementById('chat-list').innerHTML = '';
-        showScreen('screen-welcome');
+        stopYouTubePolling(); if (leaderCheckTimer) clearInterval(leaderCheckTimer); if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel); if (chatChannel) supabaseClient.removeChannel(chatChannel); if (notifChannel) supabaseClient.removeChannel(notifChannel);
+        currentVideoId = null; liveChatId = null; isLeader = false; localStorage.removeItem('vrtx_last_stream'); document.getElementById('comments-list').innerHTML = ''; document.getElementById('archive-list').innerHTML = ''; document.getElementById('chat-list').innerHTML = ''; showScreen('screen-welcome');
     }
 
     function formatTime(iso) { if(!iso) return ''; const d = Math.floor((Date.now() - new Date(iso).getTime())/1000); if(d<10) return 'الآن'; if(d<60) return `منذ ${d} ث`; if(d<3600) return `منذ ${Math.floor(d/60)} د`; return `منذ ${Math.floor(d/3600)} س`; }
@@ -810,19 +792,13 @@
     function retryFetchComments() { startLiveStream(currentVideoId); }
 
     document.addEventListener('DOMContentLoaded', () => {
-        updateUserCircle(); // تحديث زر العضوية
-        
-        // العودة للبث السابق بعد الرفرش
-        const lastStream = localStorage.getItem('vrtx_last_stream');
-        if (lastStream) { startLiveStream(lastStream); }
-
+        updateUserCircle(); const lastStream = localStorage.getItem('vrtx_last_stream'); if (lastStream) { startLiveStream(lastStream); }
         document.getElementById('new-pass').addEventListener('keydown', e => { if (e.key === 'Enter') handleNewRegister(); });
         document.getElementById('modal-pass-input').addEventListener('keydown', e => { if (e.key === 'Enter') confirmLoginFromList(); });
         document.getElementById('admin-pass-input').addEventListener('keydown', e => { if (e.key === 'Enter') handleAdminDelete(); });
         document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
-        
-        const container = document.getElementById('comments-container');
-        container.addEventListener('scroll', () => { isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100; });
+        document.getElementById('keyword-input').addEventListener('keydown', e => { if (e.key === 'Enter') addKeyword(); });
+        const container = document.getElementById('comments-container'); container.addEventListener('scroll', () => { isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100; });
     });
 </script>
 </body>
