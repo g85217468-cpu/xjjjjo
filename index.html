@@ -54,8 +54,15 @@
         .btn-primary { width: 100%; padding: 15px; background: linear-gradient(135deg, #e8a838, #d4952e); color: #0a0a0f; font-family: 'Tajawal', sans-serif; font-size: 16px; font-weight: 700; border: none; border-radius: 14px; cursor: pointer; transition: all 0.3s ease; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(232,168,56,0.3); }
         .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .btn-danger { width: 100%; padding: 15px; background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; font-family: 'Tajawal', sans-serif; font-size: 16px; font-weight: 700; border: none; border-radius: 14px; cursor: pointer; transition: all 0.3s ease; }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(239,68,68,0.3); }
+
         .btn-ghost { padding: 10px 20px; background: transparent; border: 1.5px solid var(--border); border-radius: 12px; color: var(--text-muted); font-family: 'Tajawal', sans-serif; font-size: 14px; cursor: pointer; transition: all 0.3s ease; }
         .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+        
+        .btn-admin { padding: 10px 20px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; color: #f87171; font-family: 'Tajawal', sans-serif; font-size: 14px; cursor: pointer; transition: all 0.3s ease; }
+        .btn-admin:hover { background: rgba(239, 68, 68, 0.2); }
 
         .comments-container { flex: 1; overflow-y: auto; padding: 16px; scroll-behavior: smooth; width: 100%; max-width: 800px; margin: 0 auto; }
         .comments-container::-webkit-scrollbar { width: 5px; }
@@ -135,7 +142,7 @@
             <button class="back-btn mb-6" onclick="showScreen('screen-welcome')"><i class="fas fa-arrow-right"></i> رجوع</button>
             <div class="glass-card p-8">
                 <h2 class="text-2xl font-black mb-1">تسجيل بث جديد</h2>
-                <p class="text-sm mb-7" style="color: var(--text-muted);">أدخل بيانات البث لحفظها</p>
+                <p class="text-sm mb-7" style="color: var(--text-muted);">أدخل بيانات البث لحفظها (الحد الأقصى 12 بث)</p>
                 <div class="space-y-5">
                     <div>
                         <label class="block text-sm font-medium mb-2" style="color: var(--text-muted);"><i class="fas fa-link ml-1" style="color: var(--accent);"></i> رابط البث</label>
@@ -164,6 +171,9 @@
         </header>
         <div class="w-full max-w-2xl p-4 mx-auto" style="flex: 1; overflow-y: auto;">
             <div id="streams-list-container"></div>
+            <div class="mt-6 text-center">
+                <button class="btn-admin" onclick="openAdminModal()"><i class="fas fa-shield-alt ml-1"></i> Admin Panel</button>
+            </div>
         </div>
     </div>
 
@@ -197,7 +207,10 @@
             <div class="w-8"></div>
         </header>
         <div class="w-full p-4 max-w-2xl mx-auto" style="border-bottom: 1px solid var(--border);">
-            <input id="search-archive-input" type="text" class="input-field" placeholder="ابحث في نص التعليقات..." oninput="searchArchivedComments()">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input id="search-archive-input" type="text" class="input-field" placeholder="ابحث في نص التعليقات..." oninput="searchArchivedComments()">
+                <input id="search-archive-user" type="text" class="input-field" placeholder="ابحث باسم مستخدم معين..." oninput="searchArchivedComments()">
+            </div>
             <div id="archive-status" class="text-xs mt-2" style="color: var(--text-muted);">جاري تحميل الأرشيف...</div>
         </div>
         <div id="archive-container" class="comments-container"><div id="archive-list"></div></div>
@@ -212,6 +225,20 @@
             <div class="flex gap-3">
                 <button class="btn-ghost flex-1" onclick="closePasswordModal()">إلغاء</button>
                 <button class="btn-primary flex-1" style="width: auto;" onclick="confirmLoginFromList()">تأكيد الدخول</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال لوحة تحكم الأدمن -->
+    <div id="admin-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-lg font-bold mb-1 text-red-400"><i class="fas fa-shield-alt ml-1"></i> لوحة تحكم الأدمن</h3>
+            <p class="text-sm mb-5" style="color: var(--text-muted);">أدخل اسم مستخدم البث وكلمة مرور الأدمن لحذف البث وكل تعليقاته.</p>
+            <input id="admin-user-input" type="text" class="input-field mb-3" placeholder="يوزر البث المراد حذفه">
+            <input id="admin-pass-input" type="password" class="input-field mb-4" placeholder="كلمة مرور الأدمن">
+            <div class="flex gap-3">
+                <button class="btn-ghost flex-1" onclick="closeAdminModal()">إلغاء</button>
+                <button class="btn-danger flex-1" style="width: auto;" onclick="handleAdminDelete()"><i class="fas fa-trash ml-1"></i> حذف البث نهائياً</button>
             </div>
         </div>
     </div>
@@ -331,6 +358,7 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
     function closeSetupModal() { document.getElementById('setup-modal').classList.remove('show'); }
     async function verifySetup() { const result = await checkTableExists(); if (result === true) { closeSetupModal(); showToast('الجداول جاهزة', 'success'); } else { showToast('الجداول غير موجودة', 'error'); } }
 
+    // === التسجيل الجديد (مع منع تجاوز 12 بث) ===
     async function handleNewRegister() {
         const url = document.getElementById('new-url').value.trim();
         const user = document.getElementById('new-user').value.trim();
@@ -338,9 +366,16 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
         if (!url || !user || !pass) { showToast('يرجى ملء جميع الحقول', 'error'); return; }
         const videoId = getVideoId(url);
         if (!videoId) { showToast('رابط يوتيوب غير صالح', 'error'); return; }
+        
         try {
+            // التحقق من عدد البثوث
+            const { count, error: countError } = await supabaseClient.from('saved_streams').select('*', { count: 'exact', head: true });
+            if (countError) throw countError;
+            if (count >= 12) { showToast('لا يمكن إنشاء أكثر من 12 بث!', 'error'); return; }
+
             const { data: existingStreams } = await supabaseClient.from('saved_streams').select('stream_url').ilike('stream_url', `%${videoId}%`);
             if (existingStreams && existingStreams.length > 0) { showToast('هذا البث مسجل مسبقاً!', 'error'); return; }
+            
             const { error } = await supabaseClient.from('saved_streams').insert([{ username: user, password: pass, stream_url: url }]);
             if (error) throw error;
             showToast('تم الحفظ بنجاح', 'success');
@@ -368,6 +403,48 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
         } catch(e) { container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p class="mt-4">خطأ في التحميل</p></div>'; }
     }
 
+    // === لوحة تحكم الأدمن ===
+    function openAdminModal() {
+        document.getElementById('admin-user-input').value = '';
+        document.getElementById('admin-pass-input').value = '';
+        document.getElementById('admin-modal').classList.add('show');
+    }
+    function closeAdminModal() { document.getElementById('admin-modal').classList.remove('show'); }
+
+    async function handleAdminDelete() {
+        const streamUser = document.getElementById('admin-user-input').value.trim();
+        const adminPass = document.getElementById('admin-pass-input').value.trim();
+        if (!streamUser || !adminPass) { showToast('يرجى إدخال البيانات', 'error'); return; }
+
+        try {
+            // 1. التحقق من كلمة مرور الأدمن
+            const { data: settings, error: settingsError } = await supabaseClient.from('app_settings').select('admin_password').eq('id', 1).single();
+            if (settingsError || !settings || settings.admin_password !== adminPass) {
+                showToast('كلمة مرور الأدمن غير صحيحة', 'error'); return;
+            }
+
+            // 2. البحث عن البث للحصول على الـ ID
+            const { data: stream, error: streamError } = await supabaseClient.from('saved_streams').select('stream_url').eq('username', streamUser).single();
+            if (streamError || !stream) { showToast('اسم المستخدم غير موجود', 'error'); return; }
+
+            const videoId = getVideoId(stream.stream_url);
+            
+            // 3. حذف التعليقات المرتبطة بالبث
+            if (videoId) {
+                await supabaseClient.from('archived_comments').delete().eq('stream_id', videoId);
+            }
+            
+            // 4. حذف البث نفسه
+            const { error: deleteError } = await supabaseClient.from('saved_streams').delete().eq('username', streamUser);
+            if (deleteError) throw deleteError;
+
+            showToast('تم حذف البث وجميع تعليقاته بنجاح', 'success');
+            closeAdminModal();
+            showStreamList(); // تحديث القائمة
+        } catch(e) { showToast('خطأ في الحذف: ' + (e.message || ''), 'error'); }
+    }
+
+    // === تسجيل الدخول للبث ===
     function openPasswordModal(username, streamUrl) { tempLoginData = { username, streamUrl }; document.getElementById('modal-pass-input').value = ''; document.getElementById('password-modal').classList.add('show'); setTimeout(() => document.getElementById('modal-pass-input').focus(), 100); }
     function closePasswordModal() { document.getElementById('password-modal').classList.remove('show'); tempLoginData = null; }
 
@@ -400,17 +477,14 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
         document.getElementById('status-text').textContent = 'جاري الاتصال...';
         showScreen('screen-comments');
 
-        // 1. تحميل التعليقات المؤرشفة الموجودة فوراً (لإظهار ما فاتنا بدل الانتظار)
         await loadExistingComments(videoId);
 
-        // 2. الاستماع للبث المباشر (Realtime)
         if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
         realtimeChannel = supabaseClient.channel('public:archived_comments')
           .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'archived_comments', filter: `stream_id=eq.${videoId}` }, payload => {
               addCommentToUI(payload.new, true);
           }).subscribe();
 
-        // 3. محاولة الحصول على معرف الدردشة من يوتيوب (مع تدوير المفاتيح)
         try {
             let vidData = null;
             for (let i = 0; i < YOUTUBE_API_KEYS.length; i++) {
@@ -431,7 +505,6 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
             if (!liveDetails) throw new Error('هذا الفيديو ليس بثاً مباشراً');
             liveChatId = liveDetails.activeLiveChatId || liveDetails.liveChatId;
             
-            // 4. بدء دورة انتخاب القائد
             startLeaderElection();
             
         } catch(e) {
@@ -442,31 +515,19 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
         }
     }
 
-    // === تحميل التعليقات الموجودة من قاعدة البيانات فوراً ===
     async function loadExistingComments(videoId) {
         try {
-            const { data, error } = await supabaseClient
-                .from('archived_comments')
-                .select('*')
-                .eq('stream_id', videoId)
-                .order('published_at', { ascending: true })
-                .limit(50);
-            
+            const { data, error } = await supabaseClient.from('archived_comments').select('*').eq('stream_id', videoId).order('published_at', { ascending: true }).limit(50);
             if (error || !data || data.length === 0) return;
-            
             document.getElementById('comments-loading').style.display = 'none';
             document.getElementById('comments-empty').style.display = 'none';
-            
-            data.forEach(item => {
-                addCommentToUI(item, true);
-            });
+            data.forEach(item => addCommentToUI(item, true));
         } catch(e) { console.error('Load existing error:', e); }
     }
 
-    // === انتخاب القائد (Leader Election) ===
     function startLeaderElection() {
-        checkLeadership(); // فحص فوري
-        leaderCheckTimer = setInterval(checkLeadership, 5000); // فحص كل 5 ثوانٍ
+        checkLeadership(); 
+        leaderCheckTimer = setInterval(checkLeadership, 5000); 
     }
 
     async function checkLeadership() {
@@ -474,16 +535,12 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
         try {
             const { data, error } = await supabaseClient.rpc('try_acquire_lock', { p_stream_id: currentVideoId, p_client_id: clientId });
             if (error) throw error;
-            
             const gotLeadership = data === true;
-            
             if (gotLeadership && !isLeader) {
-                // أصبحت القائد! ابدأ بسحب التعليقات من يوتيوب
                 isLeader = true;
                 document.getElementById('status-text').textContent = 'أنت القائد - جلب مباشر من يوتيوب';
                 startYouTubePolling();
             } else if (!gotLeadership && isLeader) {
-                // فقدت القيادة، أصبحت تابعاً
                 isLeader = false;
                 stopYouTubePolling();
                 document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر';
@@ -499,15 +556,14 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
 
     function startYouTubePolling() {
         if (youtubePollTimer) clearInterval(youtubePollTimer);
-        fetchComments(); // فوري
-        youtubePollTimer = setInterval(fetchComments, 1000); // كل ثانية
+        fetchComments(); 
+        youtubePollTimer = setInterval(fetchComments, 1000); 
     }
 
     function stopYouTubePolling() {
         if (youtubePollTimer) { clearInterval(youtubePollTimer); youtubePollTimer = null; }
     }
 
-    // === جلب التعليقات (للقائد فقط) ===
     async function fetchComments() {
         if (!liveChatId || !isLeader) return;
         try {
@@ -530,11 +586,7 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
                 document.getElementById('comments-loading').style.display = 'none';
                 document.getElementById('comments-empty').style.display = 'none';
                 const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt));
-                
-                // إرسال التعليقات لقاعدة البيانات لتصل للتابعين
                 await archiveCommentsToSupabase(sorted);
-
-                // عرضها للقائد فوراً
                 sorted.forEach(item => {
                     const newItem = {
                         stream_id: currentVideoId,
@@ -560,9 +612,7 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
         try { await supabaseClient.from('archived_comments').upsert(batchData, { onConflict: 'stream_id,author_name,published_at,comment_text', ignoreDuplicates: true }); } catch (e) { console.error(e); }
     }
 
-    // === عرض التعليقات (للقائد والتابع) ===
     function addCommentToUI(item, countIncrement = false) {
-        // منع التكرار
         const uniqueId = item.stream_id + item.author_name + item.published_at + item.comment_text;
         if (renderedComments.has(uniqueId)) return;
         renderedComments.add(uniqueId);
@@ -591,19 +641,24 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
     function formatTime(iso) { if(!iso) return ''; const d = Math.floor((Date.now() - new Date(iso).getTime())/1000); if(d<10) return 'الآن'; if(d<60) return `منذ ${d} ث`; if(d<3600) return `منذ ${Math.floor(d/60)} د`; return `منذ ${Math.floor(d/3600)} س`; }
     function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
     function retryFetchComments() { startLiveStream(currentVideoId); }
-    function openArchiveScreen() { showScreen('screen-archive'); loadArchivedComments(''); }
+    function openArchiveScreen() { showScreen('screen-archive'); loadArchivedComments('', ''); }
 
-    async function loadArchivedComments(searchTerm) {
+    // === البحث المتقدم في الأرشيف (نص واسم مستخدم) ===
+    async function loadArchivedComments(searchTerm = '', searchUser = '') {
         const list = document.getElementById('archive-list');
         const status = document.getElementById('archive-status');
         list.innerHTML = '';
         status.textContent = 'جاري التحميل...';
         try {
-            let query = supabaseClient.from('archived_comments').select('*').eq('stream_id', currentVideoId).order('published_at', { ascending: true });
+            let query = supabaseClient.from('archived_comments').select('*').eq('stream_id', currentVideoId);
             if (searchTerm) query = query.ilike('comment_text', `%${searchTerm}%`);
+            if (searchUser) query = query.ilike('author_name', `%${searchUser}%`);
+            
+            query = query.order('published_at', { ascending: true });
             const { data, error } = await query;
             if (error) throw error;
-            if (data.length === 0) { status.textContent = searchTerm ? 'لا نتائج' : 'لا يوجد أرشيف'; return; }
+            
+            if (data.length === 0) { status.textContent = 'لا توجد نتائج مطابقة'; return; }
             status.textContent = `التعليقات: ${data.length}`;
             data.forEach(item => {
                 const color = getAvatarColor(item.author_name);
@@ -616,7 +671,12 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
         } catch(e) { status.textContent = 'خطأ في التحميل'; }
     }
 
-    function searchArchivedComments() { clearTimeout(searchDebounce); const term = document.getElementById('search-archive-input').value.trim(); searchDebounce = setTimeout(() => loadArchivedComments(term), 300); }
+    function searchArchivedComments() {
+        clearTimeout(searchDebounce);
+        const term = document.getElementById('search-archive-input').value.trim();
+        const user = document.getElementById('search-archive-user').value.trim();
+        searchDebounce = setTimeout(() => loadArchivedComments(term, user), 300);
+    }
 
     function handleExit() {
         stopYouTubePolling();
@@ -631,6 +691,7 @@ CREATE POLICY "public_archived" ON archived_comments FOR ALL USING (true) WITH C
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('new-pass').addEventListener('keydown', e => { if (e.key === 'Enter') handleNewRegister(); });
         document.getElementById('modal-pass-input').addEventListener('keydown', e => { if (e.key === 'Enter') confirmLoginFromList(); });
+        document.getElementById('admin-pass-input').addEventListener('keydown', e => { if (e.key === 'Enter') handleAdminDelete(); });
         const container = document.getElementById('comments-container');
         container.addEventListener('scroll', () => { isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100; });
     });
