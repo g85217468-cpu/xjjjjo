@@ -68,7 +68,8 @@
         .comments-container::-webkit-scrollbar { width: 5px; }
         .comments-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
 
-        .comment-card { display: flex; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.025); border-right: 3px solid var(--c-accent, #e8a838); margin-bottom: 8px; animation: commentSlide 0.35s ease; }
+        .comment-card { display: flex; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.025); border-right: 3px solid var(--c-accent, #e8a838); margin-bottom: 8px; animation: commentSlide 0.35s ease; transition: background 0.2s ease; }
+        .comment-card:hover { background: rgba(255,255,255,0.04); }
         .comment-card.archived { background: rgba(255,255,255,0.015); border-right-color: #4a4a5e; }
         
         @keyframes commentSlide { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
@@ -190,11 +191,11 @@
         .chat-wrapper { 
             display: flex; 
             width: 100%; 
-            margin-bottom: 6px; 
+            margin-bottom: 10px; 
             animation: chatFadeIn 0.3s ease;
         }
-        .chat-wrapper.me { justify-content: flex-start; padding-left: 32px; }  /* اليسار في RTL */
-        .chat-wrapper.other { justify-content: flex-end; padding-right: 32px; }  /* اليمين في RTL */
+        .chat-wrapper.me { justify-content: flex-start; padding-left: 40px; }  /* اليسار في RTL */
+        .chat-wrapper.other { justify-content: flex-end; padding-right: 40px; }  /* اليمين في RTL */
         
         @keyframes chatFadeIn { 
             from { opacity: 0; transform: translateY(8px); } 
@@ -203,30 +204,30 @@
         
         .chat-card { 
             max-width: 78%; 
-            padding: 10px 14px; 
+            padding: 12px 16px; 
             border-radius: 18px; 
             animation: commentSlide 0.35s ease;
             position: relative;
             word-break: break-word;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             transition: transform 0.15s ease;
         }
         .chat-card:hover { transform: translateY(-1px); }
         
-        /* فقاعة رسائلي - ذهبية */
+        /* فقاعة رسائلي - ذهبية دافئة */
         .chat-card.me { 
-            background: linear-gradient(135deg, rgba(232,168,56,0.18), rgba(232,168,56,0.10)); 
-            border: 1px solid rgba(232,168,56,0.25); 
+            background: linear-gradient(135deg, rgba(232,168,56,0.15), rgba(212,149,46,0.08)); 
+            border: 1px solid rgba(232,168,56,0.2); 
             border-bottom-left-radius: 4px;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(6px);
         }
         
-        /* فقاعة رسائل الآخرين - رمادية زجاجية */
+        /* فقاعة رسائل الآخرين - أزرق دافئ زجاجي */
         .chat-card.other { 
-            background: rgba(255,255,255,0.06); 
-            border: 1px solid var(--border); 
+            background: rgba(80,100,180,0.06); 
+            border: 1px solid rgba(80,100,180,0.12); 
             border-bottom-right-radius: 4px;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(6px);
         }
         
         /* صورة المستخدم الدائرية الصغيرة داخل الفقاعة */
@@ -278,21 +279,20 @@
         .archive-pane { display: none; }
         .archive-pane.active { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; overflow: hidden; }
 
-        /* === واجهة تيرمينال رمادية هادئ — تُطبّق على البث والمحادثة والأرشيف === */
-        /* ألوان ثابتة محلية، خط مونوسبيس من النظام، بدون صور أو طلبات شبكة */
+        /* === واجهة داكنة دافئة مريحة للعين — تُطبّق على البث والمحادثة والأرشيف === */
         .screen-comments {
-            --hx-bg: #0c0d10;
-            --hx-bg-soft: #14161a;
-            --hx-fg: #c8c9cd;
-            --hx-fg-dim: #6e7178;
-            --hx-fg-mute: #4a4d54;
-            --hx-border: #25282e;
-            --hx-border-soft: #1c1f24;
-            --hx-accent: #9fa2a8;
-            --hx-warn: #b8860b;
-            --hx-err: #a04040;
-            --hx-live: #b54545;
-            --hx-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+            --hx-bg: #10111a;
+            --hx-bg-soft: #181924;
+            --hx-fg: #d4d5dc;
+            --hx-fg-dim: #8a8d9a;
+            --hx-fg-mute: #565a68;
+            --hx-border: #2a2d3a;
+            --hx-border-soft: #1f2230;
+            --hx-accent: #a8b0c0;
+            --hx-warn: #c99530;
+            --hx-err: #b55050;
+            --hx-live: #d04545;
+            --hx-mono: 'Tajawal', ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 
             background: var(--hx-bg) !important;
             font-family: var(--hx-mono) !important;
@@ -317,12 +317,11 @@
             background: transparent !important;
             border: 1px solid var(--hx-border) !important;
             color: var(--hx-fg-dim) !important;
-            font-family: var(--hx-mono) !important;
-            border-radius: 2px !important;
-            padding: 4px 10px !important;
-            font-size: 12px !important;
-            transition: color .12s ease, border-color .12s ease, background .12s ease !important;
-            letter-spacing: 0.3px;
+            font-family: 'Tajawal', sans-serif !important;
+            border-radius: 8px !important;
+            padding: 6px 14px !important;
+            font-size: 13px !important;
+            transition: color .15s ease, border-color .15s ease, background .15s ease !important;
         }
         .screen-comments .header-btn:hover,
         .screen-comments .back-btn:hover {
@@ -331,16 +330,16 @@
             border-color: var(--hx-accent) !important;
         }
         .screen-comments .user-circle {
-            background: var(--hx-bg) !important;
+            background: var(--hx-bg-soft) !important;
             border: 1px solid var(--hx-border) !important;
             color: var(--hx-fg-dim) !important;
-            font-family: var(--hx-mono) !important;
-            border-radius: 2px !important;
-            width: 26px !important;
-            height: 26px !important;
-            font-size: 11px !important;
+            font-family: 'Tajawal', sans-serif !important;
+            border-radius: 50% !important;
+            width: 28px !important;
+            height: 28px !important;
+            font-size: 12px !important;
             font-weight: 600 !important;
-            transition: color .12s ease, border-color .12s ease !important;
+            transition: color .15s ease, border-color .15s ease !important;
         }
         .screen-comments .user-circle:hover {
             background: var(--hx-bg-soft) !important;
@@ -348,76 +347,73 @@
             border-color: var(--hx-accent) !important;
         }
         .screen-comments .comments-container { background: var(--hx-bg) !important; }
-        .screen-comments .comments-container::-webkit-scrollbar-thumb { background: var(--hx-border) !important; }
+        .screen-comments .comments-container::-webkit-scrollbar-thumb { background: var(--hx-border) !important; border-radius: 6px !important; }
         .screen-comments .comment-card {
             background: transparent !important;
             border: none !important;
             border-right: 1px solid var(--hx-border-soft) !important;
-            border-radius: 0 !important;
-            padding: 5px 12px !important;
-            margin: 1px 0 !important;
+            border-radius: 6px !important;
+            padding: 6px 14px !important;
+            margin: 2px 0 !important;
             box-shadow: none !important;
             display: block !important;
-            transition: background .08s ease;
+            transition: background .15s ease;
         }
         .screen-comments .comment-card:hover { background: var(--hx-bg-soft) !important; }
-        .screen-comments .comment-card.archived { border-right-color: var(--hx-fg-mute) !important; opacity: 0.7; }
+        .screen-comments .comment-card.archived { border-right-color: var(--hx-fg-mute) !important; opacity: 0.75; }
         .screen-comments .comment-avatar { display: none !important; }
         .screen-comments .comment-username {
             color: var(--hx-fg) !important;
             font-weight: 600 !important;
-            font-family: var(--hx-mono) !important;
-            font-size: 12px !important;
-            letter-spacing: 0.2px;
+            font-family: 'Tajawal', sans-serif !important;
+            font-size: 13px !important;
         }
         .screen-comments .comment-time {
             color: var(--hx-fg-mute) !important;
-            font-family: var(--hx-mono) !important;
-            font-size: 10.5px !important;
+            font-family: 'Tajawal', sans-serif !important;
+            font-size: 11px !important;
         }
         .screen-comments .comment-text {
             color: var(--hx-fg) !important;
-            font-family: 'Tajawal', var(--hx-mono) !important;
-            font-size: 13.5px !important;
-            margin-top: 2px !important;
-            line-height: 1.55 !important;
+            font-family: 'Tajawal', sans-serif !important;
+            font-size: 14px !important;
+            margin-top: 3px !important;
+            line-height: 1.6 !important;
         }
         .screen-comments .status-bar {
             background: var(--hx-bg) !important;
             border-top: 1px solid var(--hx-border) !important;
             color: var(--hx-fg-dim) !important;
-            font-family: var(--hx-mono) !important;
-            font-size: 11.5px !important;
-            letter-spacing: 0.2px;
+            font-family: 'Tajawal', sans-serif !important;
+            font-size: 12.5px !important;
         }
         #screen-comments #stream-warning {
             background: var(--hx-bg) !important;
             border: 1px solid var(--hx-warn) !important;
             color: var(--hx-warn) !important;
-            font-family: var(--hx-mono) !important;
-            border-radius: 2px !important;
+            font-family: 'Tajawal', sans-serif !important;
+            border-radius: 8px !important;
         }
         .screen-comments .empty-state {
             color: var(--hx-fg-dim) !important;
-            font-family: var(--hx-mono) !important;
+            font-family: 'Tajawal', sans-serif !important;
         }
-        .screen-comments .empty-state p { color: var(--hx-fg-mute) !important; font-family: var(--hx-mono) !important; }
+        .screen-comments .empty-state p { color: var(--hx-fg-mute) !important; font-family: 'Tajawal', sans-serif !important; }
         .screen-comments .notif-dot { background: var(--hx-live) !important; border-color: var(--hx-bg) !important; }
         .screen-comments .hacker-blink {
             color: var(--hx-fg) !important;
-            font-family: var(--hx-mono) !important;
-            animation: hackerBlink 1.1s steps(2) infinite;
+            font-family: 'Tajawal', sans-serif !important;
+            animation: hackerBlink 1.5s ease-in-out infinite;
             font-size: 13px !important;
-            letter-spacing: 1.5px;
         }
-        @keyframes hackerBlink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0.35; } }
+        @keyframes hackerBlink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0.4; } }
         .screen-comments .btn-ghost {
             background: transparent !important;
             border: 1px solid var(--hx-border) !important;
             color: var(--hx-fg-dim) !important;
-            font-family: var(--hx-mono) !important;
-            border-radius: 2px !important;
-            transition: color .12s ease, border-color .12s ease, background .12s ease !important;
+            font-family: 'Tajawal', sans-serif !important;
+            border-radius: 8px !important;
+            transition: color .15s ease, border-color .15s ease, background .15s ease !important;
         }
         .screen-comments .btn-ghost:hover {
             background: var(--hx-bg-soft) !important;
@@ -439,10 +435,9 @@
             background: transparent;
             border: 1px solid var(--hx-border);
             color: var(--hx-fg-dim);
-            font-family: var(--hx-mono);
-            border-radius: 6px;
-            font-size: 12px;
-            letter-spacing: 0.3px;
+            font-family: 'Tajawal', sans-serif;
+            border-radius: 10px;
+            font-size: 12.5px;
         }
         .screen-comments .archive-tab:hover {
             background: var(--hx-bg-soft);
@@ -457,33 +452,32 @@
             background: var(--hx-bg-soft) !important;
             border: 1px solid var(--hx-border) !important;
             color: var(--hx-fg) !important;
-            font-family: var(--hx-mono) !important;
-            border-radius: 6px !important;
-            padding: 10px 14px !important;
-            font-size: 13px !important;
+            font-family: 'Tajawal', sans-serif !important;
+            border-radius: 10px !important;
+            padding: 12px 16px !important;
+            font-size: 14px !important;
         }
         .screen-comments .input-field:focus {
             border-color: var(--hx-accent) !important;
-            box-shadow: 0 0 0 2px rgba(159,162,168,0.12) !important;
+            box-shadow: 0 0 0 3px rgba(168,176,192,0.1) !important;
         }
         .screen-comments .input-field::placeholder { color: var(--hx-fg-mute) !important; }
         .screen-comments .btn-primary {
-            background: var(--hx-bg-soft) !important;
-            color: var(--hx-fg) !important;
-            border: 1px solid var(--hx-accent) !important;
-            font-family: var(--hx-mono) !important;
-            font-size: 13px !important;
-            border-radius: 6px !important;
+            background: linear-gradient(135deg, rgba(80,100,180,0.2), rgba(60,80,160,0.1)) !important;
+            color: #c0c8e0 !important;
+            border: 1px solid rgba(100,120,200,0.3) !important;
+            font-family: 'Tajawal', sans-serif !important;
+            font-size: 14px !important;
+            border-radius: 10px !important;
         }
         .screen-comments .btn-primary:hover {
-            background: var(--hx-bg) !important;
-            box-shadow: none !important;
+            background: linear-gradient(135deg, rgba(80,100,180,0.3), rgba(60,80,160,0.15)) !important;
+            box-shadow: 0 4px 16px rgba(80,100,180,0.15) !important;
         }
         .screen-comments #archive-status {
             color: var(--hx-fg-mute) !important;
-            font-family: var(--hx-mono) !important;
-            font-size: 11.5px !important;
-            letter-spacing: 0.2px;
+            font-family: 'Tajawal', sans-serif !important;
+            font-size: 12px !important;
         }
 
         /* === فقاعات المحادثة — تصميم رمادي مريح === */
@@ -494,60 +488,58 @@
         .screen-comments .chat-wrapper.other { padding-right: 48px; }
         .screen-comments .chat-card {
             max-width: 80%;
-            padding: 11px 15px;
-            border-radius: 14px;
-            box-shadow: none;
+            padding: 12px 16px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
             transition: transform .12s ease;
             border: 1px solid;
         }
         .screen-comments .chat-card:hover { transform: none; }
-        /* فقاعة رسائلي — رمادي فاتح مع لمسة أكثر بروزاً */
+        /* فقاعة رسائلي — تدرج أزرق دافئ */
         .screen-comments .chat-card.me {
-            background: var(--hx-bg-soft) !important;
-            border-color: var(--hx-accent) !important;
+            background: linear-gradient(135deg, rgba(80,100,180,0.12), rgba(60,80,160,0.06)) !important;
+            border-color: rgba(100,120,200,0.25) !important;
             border-bottom-right-radius: 4px;
             border-bottom-left-radius: 14px;
         }
-        /* فقاعة رسائل الآخرين — رمادي داكن أقل بروزاً */
+        /* فقاعة رسائل الآخرين — رمادي مزرق دافئ */
         .screen-comments .chat-card.other {
-            background: rgba(255,255,255,0.03) !important;
+            background: rgba(255,255,255,0.04) !important;
             border-color: var(--hx-border) !important;
             border-bottom-right-radius: 14px;
             border-bottom-left-radius: 4px;
         }
         .screen-comments .chat-avatar {
-            width: 28px;
-            height: 28px;
-            font-size: 11px;
-            box-shadow: none;
-            font-family: var(--hx-mono);
+            width: 30px;
+            height: 30px;
+            font-size: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            font-family: 'Tajawal', sans-serif;
         }
         .screen-comments .chat-card.me .chat-username {
-            color: var(--hx-fg) !important;
-            font-family: var(--hx-mono);
-            font-size: 12px;
-            letter-spacing: 0.2px;
+            color: #b0bce8 !important;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 12.5px;
         }
         .screen-comments .chat-card.other .chat-username {
             color: var(--hx-fg) !important;
-            font-family: var(--hx-mono);
-            font-size: 12px;
-            letter-spacing: 0.2px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 12.5px;
         }
         .screen-comments .chat-time {
             color: var(--hx-fg-mute) !important;
-            font-family: var(--hx-mono);
-            font-size: 10px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 10.5px;
             opacity: 0.8;
         }
         .screen-comments .chat-text {
             color: var(--hx-fg) !important;
-            font-family: 'Tajawal', var(--hx-mono);
-            font-size: 14px;
-            line-height: 1.6;
-            margin-top: 4px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 14.5px;
+            line-height: 1.65;
+            margin-top: 5px;
         }
-        .screen-comments .chat-card.me .chat-text { color: var(--hx-fg) !important; }
+        .screen-comments .chat-card.me .chat-text { color: #e8eaf2 !important; }
         .screen-comments .empty-state {
             color: var(--hx-fg-dim) !important;
         }
@@ -1137,7 +1129,7 @@
                 }
                 return;
             }
-            showToast(`تم الحفظ (${count + 1}/${MAX_ACTIVE_STREAMS} بث نشط)`, 'success');
+            showToast(`تم الحفظ (${(count || 0) + 1}/${MAX_ACTIVE_STREAMS} بث نشط)`, 'success');
             startLiveStream(videoId);
         } catch(e) { showToast('فشل الحفظ: ' + (e.message || ''), 'error'); }
     }
@@ -1161,7 +1153,7 @@
                 btn.addEventListener('click', () => openPasswordModal(stream.username, stream.stream_url));
                 card.appendChild(left); card.appendChild(btn); grid.appendChild(card);
             });
-        } catch(e) { container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p class="mt-4">فشل التحميل</p></div>'; }
+        } catch(e) { console.error('فشل تحميل قائمة البثوث:', e); container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p class="mt-4">فشل التحميل</p><p class="text-xs mt-2" style="color: var(--text-muted);">تحقق من اتصالك بالإنترنت وأعد المحاولة</p><button class="btn-ghost mt-4" onclick="showStreamList()"><i class="fas fa-redo ml-1"></i> إعادة المحاولة</button></div>'; }
     }
 
     function openAdminModal() { document.getElementById('admin-user-input').value = ''; document.getElementById('admin-pass-input').value = ''; document.getElementById('admin-modal').classList.add('show'); }
@@ -1858,7 +1850,25 @@
 
     async function loadChatMessages() {
         const list = document.getElementById('chat-list'); list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>'; renderedChats.clear();
-        try { const { data, error } = await supabaseClient.from('stream_messages').select('*').eq('stream_id', currentVideoId).order('created_at', { ascending: true }).limit(100); if (error) throw error; list.innerHTML = ''; if (data.length === 0) { list.innerHTML = '<div class="empty-state"><i class="fas fa-comment-slash"></i><p style="color: var(--text-muted);">لا توجد رسائل بعد. كن أول من يبدأ الحديث!</p></div>'; return; } data.forEach(msg => addChatMessageToUI(msg)); } catch(e) { list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>تعذّر تحميل المحادثة</p></div>'; }
+        try {
+            // تحميل كل الرسائل بدون حد — Supabase يرجع حتى 1000 صف بالصفحة الواحدة تلقائياً
+            let allMessages = [];
+            let page = 0;
+            let hasMore = true;
+            while (hasMore) {
+                const from = page * 1000;
+                const to = from + 999;
+                const { data, error } = await supabaseClient.from('stream_messages').select('*').eq('stream_id', currentVideoId).order('created_at', { ascending: true }).range(from, to);
+                if (error) throw error;
+                if (!data || data.length === 0) break;
+                allMessages = allMessages.concat(data);
+                if (data.length < 1000) hasMore = false;
+                page++;
+            }
+            list.innerHTML = '';
+            if (allMessages.length === 0) { list.innerHTML = '<div class="empty-state"><i class="fas fa-comment-slash"></i><p style="color: var(--text-muted);">لا توجد رسائل بعد. كن أول من يبدأ الحديث!</p></div>'; return; }
+            allMessages.forEach(msg => addChatMessageToUI(msg));
+        } catch(e) { console.error('Chat load error:', e); list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>تعذّر تحميل المحادثة</p></div>'; }
     }
 
     function addChatMessageToUI(msg) {
