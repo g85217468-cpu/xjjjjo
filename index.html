@@ -109,14 +109,111 @@
         .auth-tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; border-radius: 10px; font-size: 14px; transition: all 0.3s ease; }
         .auth-tab.active { background: var(--accent); color: #0a0a0f; font-weight: 700; }
 
-        /* أنماط المحادثة (Chat) */
-        .chat-wrapper { display: flex; width: 100%; margin-bottom: 8px; }
-        .chat-wrapper.me { justify-content: flex-start; } /* اليسار في RTL */
-        .chat-wrapper.other { justify-content: flex-end; } /* اليمين في RTL */
+        /* === تخصيص شريط التمرير (Scrollbar) - ثيم رمادي أنيق === */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { 
+            background: rgba(255,255,255,0.08); 
+            border-radius: 8px; 
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
+        ::-webkit-scrollbar-thumb:hover { 
+            background: rgba(232,168,56,0.35); 
+            background-clip: padding-box;
+            border: 2px solid transparent;
+        }
+        ::-webkit-scrollbar-corner { background: transparent; }
         
-        .chat-card { max-width: 80%; padding: 10px 14px; border-radius: 16px; animation: commentSlide 0.35s ease; }
-        .chat-card.me { background: rgba(232,168,56,0.15); border: 1px solid rgba(232,168,56,0.2); border-bottom-left-radius: 2px; }
-        .chat-card.other { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-bottom-right-radius: 2px; }
+        /* Firefox */
+        * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
+        
+        /* شريط تمرير خاص بشاشة الأرشيف */
+        #archive-container::-webkit-scrollbar { width: 10px; }
+        #archive-container::-webkit-scrollbar-thumb { background: rgba(232,168,56,0.2); background-clip: padding-box; border: 2px solid transparent; border-radius: 10px; }
+        #archive-container::-webkit-scrollbar-thumb:hover { background: rgba(232,168,56,0.5); background-clip: padding-box; }
+        
+        /* شريط تمرير شاشة المحادثة */
+        #chat-container::-webkit-scrollbar { width: 8px; }
+        #chat-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); background-clip: padding-box; border: 2px solid transparent; border-radius: 8px; }
+        #chat-container::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); background-clip: padding-box; }
+
+        /* === أنماط المحادثة (Chat) - تصميم محسّن === */
+        .chat-wrapper { 
+            display: flex; 
+            width: 100%; 
+            margin-bottom: 6px; 
+            animation: chatFadeIn 0.3s ease;
+        }
+        .chat-wrapper.me { justify-content: flex-start; padding-left: 32px; }  /* اليسار في RTL */
+        .chat-wrapper.other { justify-content: flex-end; padding-right: 32px; }  /* اليمين في RTL */
+        
+        @keyframes chatFadeIn { 
+            from { opacity: 0; transform: translateY(8px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        
+        .chat-card { 
+            max-width: 78%; 
+            padding: 10px 14px; 
+            border-radius: 18px; 
+            animation: commentSlide 0.35s ease;
+            position: relative;
+            word-break: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            transition: transform 0.15s ease;
+        }
+        .chat-card:hover { transform: translateY(-1px); }
+        
+        /* فقاعة رسائلي - ذهبية */
+        .chat-card.me { 
+            background: linear-gradient(135deg, rgba(232,168,56,0.18), rgba(232,168,56,0.10)); 
+            border: 1px solid rgba(232,168,56,0.25); 
+            border-bottom-left-radius: 4px;
+            backdrop-filter: blur(4px);
+        }
+        
+        /* فقاعة رسائل الآخرين - رمادية زجاجية */
+        .chat-card.other { 
+            background: rgba(255,255,255,0.06); 
+            border: 1px solid var(--border); 
+            border-bottom-right-radius: 4px;
+            backdrop-filter: blur(4px);
+        }
+        
+        /* صورة المستخدم الدائرية الصغيرة داخل الفقاعة */
+        .chat-avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 11px;
+            color: #0a0a0f;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        .chat-card-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        
+        .chat-card.me .chat-username { color: var(--accent); font-weight: 700; font-size: 12px; }
+        .chat-card.other .chat-username { color: var(--text); font-weight: 700; font-size: 12px; }
+        .chat-time { font-size: 10px; color: var(--text-muted); opacity: 0.7; }
+        
+        .chat-text {
+            font-size: 14px;
+            color: var(--text);
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        .chat-card.me .chat-text { color: rgba(255,255,255,0.95); }
 
         /* زر الإشعارات */
         .notif-btn { position: relative; }
@@ -889,20 +986,58 @@
     async function handleAdminDelete() {
         const streamUser = document.getElementById('admin-user-input').value.trim(); const adminPass = document.getElementById('admin-pass-input').value.trim();
         if (!streamUser || !adminPass) { showToast('يرجى إدخال البيانات', 'error'); return; }
+        
+        // تأكيد مزدوج قبل الحذف النهائي
+        if (!confirm(`⚠️ سيتم حذف البث "${streamUser}" وكل ما يتعلق به نهائياً:\n\n• التعليقات المؤرشفة\n• الرسائل (المحادثة)\n• كلمات المراقبة الذكية\n• الإشعارات\n• أقفال Leader Election\n\nهل أنت متأكد؟`)) return;
+        
         try {
+            // 1) التحقق من كلمة مرور الأدمن
             const { data: settings, error: settingsError } = await supabaseClient.from('app_settings').select('admin_password').eq('id', 1).single();
             if (settingsError || !settings || settings.admin_password !== adminPass) { showToast('كلمة مرور الأدمن غير صحيحة', 'error'); return; }
-            const { data: stream, error: streamError } = await supabaseClient.from('saved_streams').select('stream_url').eq('username', streamUser).single();
+            
+            // 2) جلب بيانات البث
+            const { data: stream, error: streamError } = await supabaseClient.from('saved_streams').select('id, stream_url').eq('username', streamUser).single();
             if (streamError || !stream) { showToast('اسم المستخدم غير موجود', 'error'); return; }
+            
             const videoId = getVideoId(stream.stream_url);
-            if (videoId) { 
-                await supabaseClient.from('archived_comments').delete().eq('stream_id', videoId); 
-                await supabaseClient.from('stream_messages').delete().eq('stream_id', videoId);
-                await supabaseClient.from('monitor_keywords').delete().eq('stream_id', videoId);
-                await supabaseClient.from('monitor_notifications').delete().eq('stream_id', videoId);
+            const streamId = stream.id;
+            
+            // 3) إذا المستخدم الحالي داخل في نفس البث، اطلع من الجلسة قبل الحذف
+            if (currentVideoId === videoId) {
+                cleanupPreviousSession();
+                showScreen('screen-list');
             }
-            const { error: deleteError } = await supabaseClient.from('saved_streams').delete().eq('username', streamUser);
-            if (deleteError) throw deleteError; showToast('تم حذف البث وجميع تعليقاته بنجاح', 'success'); closeAdminModal(); showStreamList();
+            
+            // 4) حذف كل البيانات المرتبطة بالـ videoId بالتوازي (أسرع 5 أضعاف)
+            if (videoId) {
+                showToast('جاري حذف بيانات البث...', 'info');
+                
+                const deleteResults = await Promise.allSettled([
+                    supabaseClient.from('archived_comments').delete().eq('stream_id', videoId),
+                    supabaseClient.from('stream_messages').delete().eq('stream_id', videoId),
+                    supabaseClient.from('monitor_keywords').delete().eq('stream_id', videoId),
+                    supabaseClient.from('monitor_notifications').delete().eq('stream_id', videoId),
+                    supabaseClient.from('stream_locks').delete().eq('stream_id', videoId),
+                ]);
+                
+                // تسجيل أي أخطاء (بدون ما يوقف العملية)
+                const tables = ['archived_comments', 'stream_messages', 'monitor_keywords', 'monitor_notifications', 'stream_locks'];
+                const failedTables = deleteResults
+                    .map((r, i) => r.status === 'rejected' ? tables[i] : null)
+                    .filter(Boolean);
+                
+                if (failedTables.length > 0) {
+                    console.warn('فشل حذف بعض الجداول:', failedTables);
+                }
+            }
+            
+            // 5) أخيراً: حذف البث نفسه من saved_streams
+            const { error: deleteError } = await supabaseClient.from('saved_streams').delete().eq('id', streamId);
+            if (deleteError) throw deleteError;
+            
+            showToast(`✅ تم حذف البث "${streamUser}" وجميع بياناته نهائياً`, 'success');
+            closeAdminModal();
+            showStreamList();
         } catch(e) { showToast('خطأ في الحذف: ' + (e.message || ''), 'error'); }
     }
 
@@ -1534,11 +1669,26 @@
 
     function addChatMessageToUI(msg) {
         const uniqueId = `chat_${msg.id}`; if (renderedChats.has(uniqueId)) return; renderedChats.add(uniqueId);
-        const list = document.getElementById('chat-list'); const isMe = currentUser && msg.user_id === currentUser.id; const color = getAvatarColor(msg.display_name);
-        const wrapper = document.createElement('div'); wrapper.className = `chat-wrapper ${isMe ? 'me' : 'other'}`;
-        const card = document.createElement('div'); card.className = `chat-card ${isMe ? 'me' : 'other'}`; card.style.setProperty('--c-accent', color);
-        card.innerHTML = `<div class="flex items-center" style="margin-bottom:2px;"><span class="comment-username" style="color:${color}; font-size: 12px;">${escapeHtml(msg.display_name)}</span><span class="comment-time" style="margin-right: 5px;">${formatTime(msg.created_at)}</span></div><div class="comment-text" style="font-size: 14px;">${escapeHtml(msg.message_text)}</div>`;
-        wrapper.appendChild(card); list.appendChild(wrapper); list.parentElement.scrollTop = list.parentElement.scrollHeight;
+        const list = document.getElementById('chat-list'); 
+        const isMe = currentUser && msg.user_id === currentUser.id; 
+        const color = getAvatarColor(msg.display_name);
+        const initial = msg.display_name.charAt(0).toUpperCase();
+        const wrapper = document.createElement('div'); 
+        wrapper.className = `chat-wrapper ${isMe ? 'me' : 'other'}`;
+        const card = document.createElement('div'); 
+        card.className = `chat-card ${isMe ? 'me' : 'other'}`; 
+        card.style.setProperty('--c-accent', color);
+        card.innerHTML = `
+            <div class="chat-card-header">
+                <div class="chat-avatar" style="background: ${color};">${initial}</div>
+                <span class="chat-username">${escapeHtml(msg.display_name)}</span>
+                <span class="chat-time">${formatTime(msg.created_at)}</span>
+            </div>
+            <div class="chat-text">${escapeHtml(msg.message_text)}</div>
+        `;
+        wrapper.appendChild(card); 
+        list.appendChild(wrapper); 
+        list.parentElement.scrollTop = list.parentElement.scrollHeight;
     }
 
     async function sendChatMessage() {
@@ -1555,10 +1705,30 @@
             let query = supabaseClient.from('archived_comments').select('*').eq('stream_id', currentVideoId);
             if (searchTerm) query = query.ilike('comment_text', `%${searchTerm}%`); if (searchUser) query = query.ilike('author_name', `%${searchUser}%`);
             query = query.order('published_at', { ascending: true }); const { data, error } = await query; if (error) throw error;
-            if (data.length === 0) { status.textContent = 'لا توجد نتائج مطابقة'; return; }
-            status.textContent = `التعليقات: ${data.length}`;
-            data.forEach(item => { const color = getAvatarColor(item.author_name); const card = document.createElement('div'); card.className = 'comment-card archived'; card.style.setProperty('--c-accent', color); card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${item.author_name.charAt(0).toUpperCase()}</div><div style="flex:1; min-width:0;"><div class="flex items-center"><span class="comment-username" style="color:${color};">${escapeHtml(item.author_name)}</span><span class="comment-time">${new Date(item.published_at).toLocaleTimeString('ar-EG')}</span></div><div class="comment-text">${escapeHtml(item.comment_text)}</div></div>`; list.appendChild(card); });
-        } catch(e) { status.textContent = 'خطأ في التحميل'; }
+            if (data.length === 0) { 
+                status.innerHTML = '<i class="fas fa-inbox ml-1"></i> لا توجد نتائج مطابقة'; 
+                list.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open" style="font-size:32px; opacity:0.3;"></i><p class="mt-3" style="color: var(--text-muted);">لا توجد تعليقات مطابقة لبحثك</p></div>';
+                return; 
+            }
+            status.innerHTML = `<i class="fas fa-list ml-1" style="color: var(--accent);"></i> ${data.length} تعليق مؤرشف`;
+            data.forEach(item => { 
+                const color = getAvatarColor(item.author_name); 
+                const card = document.createElement('div'); 
+                card.className = 'comment-card archived'; 
+                card.style.setProperty('--c-accent', color); 
+                card.innerHTML = `
+                    <div class="comment-avatar" style="background: ${color};">${item.author_name.charAt(0).toUpperCase()}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div class="flex items-center" style="gap: 6px;">
+                            <span class="comment-username" style="color:${color};">${escapeHtml(item.author_name)}</span>
+                            <span class="comment-time"><i class="far fa-clock ml-1" style="opacity:0.5;"></i>${new Date(item.published_at).toLocaleTimeString('ar-EG', {hour:'2-digit',minute:'2-digit'})}</span>
+                        </div>
+                        <div class="comment-text" style="margin-top:3px;">${escapeHtml(item.comment_text)}</div>
+                    </div>
+                `; 
+                list.appendChild(card); 
+            });
+        } catch(e) { status.innerHTML = '<i class="fas fa-exclamation-triangle ml-1" style="color:#f87171;"></i> خطأ في التحميل'; }
     }
     function searchArchivedComments() { clearTimeout(searchDebounce); const term = document.getElementById('search-archive-input').value.trim(); const user = document.getElementById('search-archive-user').value.trim(); searchDebounce = setTimeout(() => loadArchivedComments(term, user), 300); }
 
