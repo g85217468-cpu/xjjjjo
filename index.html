@@ -223,13 +223,13 @@
         .keyword-highlight { background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 0 4px; border-radius: 4px; font-weight: bold; }
 
         /* === تبويبات شاشة الأرشيف (الأرشيف / المراقب الذكي) === */
-        .archive-tabs { display: flex; gap: 8px; padding: 12px 16px; max-width: 768px; margin: 0 auto; border-bottom: 1px solid var(--border); }
+        .archive-tabs { display: flex; gap: 8px; padding: 12px 16px; max-width: 768px; margin: 0 auto; border-bottom: 1px solid var(--border); flex-shrink: 0; }
         .archive-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border-radius: 10px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s ease; font-family: 'Tajawal', sans-serif; }
         .archive-tab:hover { background: var(--card-hover); color: var(--text); }
         .archive-tab.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
         .archive-tab i { font-size: 14px; }
         .archive-pane { display: none; }
-        .archive-pane.active { display: block; }
+        .archive-pane.active { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; overflow: hidden; }
 
         /* === واجهة جلسة البث — تيرمينال رمادي هادئ === */
         /* ألوان ثابتة محلية، خط مونوسبيس من النظام، بدون صور أو طلبات شبكة */
@@ -489,7 +489,7 @@
             <button class="back-btn mb-6" onclick="showScreen('screen-welcome')"><i class="fas fa-arrow-right"></i> رجوع</button>
             <div class="glass-card p-8">
                 <h2 class="text-2xl font-black mb-1">تسجيل بث جديد</h2>
-                <p class="text-sm mb-7" style="color: var(--text-muted);">أدخل بيانات البث لحفظها (الحد الأقصى 12 بث)</p>
+                <p class="text-sm mb-7" style="color: var(--text-muted);">أدخل بيانات البث لحفظها (الحد الأقصى 15 بث نشط)</p>
                 <div class="space-y-5">
                     <div>
                         <label class="block text-sm font-medium mb-2" style="color: var(--text-muted);"><i class="fas fa-link ml-1" style="color: var(--accent);"></i> رابط البث</label>
@@ -606,7 +606,7 @@
 
         <!-- لوح الأرشيف: بحث + قائمة التعليقات المؤرشفة -->
         <div id="archive-pane" class="archive-pane active">
-            <div class="w-full p-4 max-w-2xl mx-auto">
+            <div class="w-full p-4 max-w-2xl mx-auto" style="flex-shrink: 0;">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <input id="search-archive-input" type="text" class="input-field" placeholder="ابحث في نص التعليقات..." oninput="searchArchivedComments()">
                     <input id="search-archive-user" type="text" class="input-field" placeholder="ابحث باسم مستخدم معين..." oninput="searchArchivedComments()">
@@ -636,9 +636,9 @@
     <div id="auth-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="flex gap-2 mb-5 p-1 rounded-xl" style="background: rgba(0,0,0,0.3);">
-                <div class="auth-tab active" onclick="switchAuthTab('signin')">تسجيل دخول</div>
-                <div class="auth-tab" onclick="switchAuthTab('signup')">حساب جديد</div>
-                <div class="auth-tab" onclick="switchAuthTab('quick')">تسجيل سريع</div>
+                <div class="auth-tab active" onclick="switchAuthTab('signin', event)">تسجيل دخول</div>
+                <div class="auth-tab" onclick="switchAuthTab('signup', event)">حساب جديد</div>
+                <div class="auth-tab" onclick="switchAuthTab('quick', event)">تسجيل سريع</div>
             </div>
             <div id="auth-fields"></div>
             <button id="auth-submit-btn" class="btn-primary mt-4" onclick="handleAuthAction()">متابعة</button>
@@ -883,10 +883,15 @@
     function openAuthModal() { document.getElementById('auth-modal').classList.add('show'); switchAuthTab('signin'); }
     function closeAuthModal() { document.getElementById('auth-modal').classList.remove('show'); }
 
-    function switchAuthTab(mode) {
+    function switchAuthTab(mode, evt) {
         currentAuthMode = mode;
         document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-        event.target.classList.add('active');
+        if (evt && evt.target) evt.target.classList.add('active');
+        else {
+            const idx = mode === 'signin' ? 0 : (mode === 'signup' ? 1 : 2);
+            const tabs = document.querySelectorAll('.auth-tab');
+            if (tabs[idx]) tabs[idx].classList.add('active');
+        }
         const fieldsDiv = document.getElementById('auth-fields');
         const submitBtn = document.getElementById('auth-submit-btn');
         if (mode === 'signin') {
@@ -1414,8 +1419,7 @@
 
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-    // === تحميل التعليقات المحفوظة (السلوك الأصلي + يُرجع العدد) ===
-    // رفع الحد إلى 200 لضمان توافق أفضل مع الكود القديم وتجنّب فقدان التعليقات
+    // === تحميل التعليقات المحفوظة (بدون حد — يجلب كل التعليقات) ===
     async function loadExistingComments(videoId) {
         if (!videoId) return 0;
         try {
@@ -1423,8 +1427,7 @@
                 .from('archived_comments')
                 .select('*')
                 .eq('stream_id', videoId)
-                .order('published_at', { ascending: true })
-                .limit(200);
+                .order('published_at', { ascending: true });
             if (error) throw error;
             if (!data || data.length === 0) return 0;
             document.getElementById('comments-loading').style.display = 'none';
@@ -1543,7 +1546,7 @@
         }
     }
 
-    function startYouTubePolling() { if (youtubePollTimer) clearInterval(youtubePollTimer); fetchComments(); youtubePollTimer = setInterval(fetchComments, 1000); }
+    function startYouTubePolling() { if (youtubePollTimer) clearInterval(youtubePollTimer); fetchComments(); youtubePollTimer = setInterval(fetchComments, 2000); }
     function stopYouTubePolling() { if (youtubePollTimer) { clearInterval(youtubePollTimer); youtubePollTimer = null; } }
 
     async function fetchComments() {
@@ -1552,7 +1555,19 @@
     }
 
     async function archiveCommentsToSupabase(comments) {
-        if (!supabaseClient || !currentVideoId) return; const batchData = comments.map(item => ({ stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() })).filter(c => c.comment_text !== ''); if (batchData.length === 0) return; try { await supabaseClient.from('archived_comments').upsert(batchData, { onConflict: 'stream_id,author_name,published_at,comment_text', ignoreDuplicates: true }); } catch (e) { console.error(e); }
+        if (!supabaseClient || !currentVideoId) return;
+        const batchData = comments.map(item => ({
+            stream_id: currentVideoId,
+            author_name: item.authorDetails?.displayName || 'مجهول',
+            comment_text: item.snippet?.displayMessage || '',
+            published_at: item.snippet?.publishedAt || new Date().toISOString()
+        })).filter(c => c.comment_text !== '');
+        if (batchData.length === 0) return;
+        try {
+            const { error } = await supabaseClient.from('archived_comments')
+                .upsert(batchData, { onConflict: 'stream_id,author_name,published_at,comment_text', ignoreDuplicates: true });
+            if (error) console.error('Archive upsert error:', error);
+        } catch (e) { console.error('Archive upsert exception:', e); }
     }
 
     function addCommentToUI(item, countIncrement = false) {
@@ -1670,6 +1685,9 @@
     function addChatMessageToUI(msg) {
         const uniqueId = `chat_${msg.id}`; if (renderedChats.has(uniqueId)) return; renderedChats.add(uniqueId);
         const list = document.getElementById('chat-list'); 
+        // إزالة empty-state إن وُجد عند وصول أول رسالة
+        const emptyState = list.querySelector('.empty-state');
+        if (emptyState) emptyState.remove();
         const isMe = currentUser && msg.user_id === currentUser.id; 
         const color = getAvatarColor(msg.display_name);
         const initial = msg.display_name.charAt(0).toUpperCase();
@@ -1692,9 +1710,29 @@
     }
 
     async function sendChatMessage() {
-        const input = document.getElementById('chat-input'); const text = input.value.trim(); if (!text || !currentUser || !currentVideoId) return;
+        const input = document.getElementById('chat-input'); const text = input.value.trim();
+        if (!text) return;
+        if (!currentUser) { showToast('يجب تسجيل الدخول أولاً', 'error'); openAuthModal(); return; }
+        if (!currentVideoId) { showToast('لا يوجد بث نشط', 'error'); return; }
         input.value = '';
-        try { const { error } = await supabaseClient.from('stream_messages').insert([{ stream_id: currentVideoId, user_id: currentUser.id, display_name: currentUser.display_name, username: currentUser.username, message_text: text }]); if (error) throw error; } catch(e) { showToast('فشل إرسال الرسالة', 'error'); input.value = text; }
+        try {
+            const { error } = await supabaseClient.from('stream_messages').insert([{
+                stream_id: currentVideoId,
+                user_id: currentUser.id,
+                display_name: currentUser.display_name,
+                username: currentUser.username,
+                message_text: text
+            }]);
+            if (error) {
+                console.error('Chat insert error:', error);
+                showToast('فشل الإرسال: ' + (error.message || 'خطأ غير معروف'), 'error');
+                input.value = text;
+            }
+        } catch(e) {
+            console.error('Chat send exception:', e);
+            showToast('فشل إرسال الرسالة: ' + (e.message || ''), 'error');
+            input.value = text;
+        }
     }
 
     // === الأرشيف والبحث ===
