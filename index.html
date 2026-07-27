@@ -124,6 +124,233 @@
         .notif-dot.show { display: block; animation: livePulse 1.5s ease-in-out infinite; }
 
         .keyword-highlight { background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 0 4px; border-radius: 4px; font-weight: bold; }
+
+        /* === تبويبات شاشة الأرشيف (الأرشيف / المراقب الذكي) === */
+        .archive-tabs { display: flex; gap: 8px; padding: 12px 16px; max-width: 768px; margin: 0 auto; border-bottom: 1px solid var(--border); }
+        .archive-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border-radius: 10px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s ease; font-family: 'Tajawal', sans-serif; }
+        .archive-tab:hover { background: var(--card-hover); color: var(--text); }
+        .archive-tab.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+        .archive-tab i { font-size: 14px; }
+        .archive-pane { display: none; }
+        .archive-pane.active { display: block; }
+
+        /* === واجهة جلسة البث — تيرمينال رمادي هادئ === */
+        /* ألوان ثابتة محلية، خط مونوسبيس من النظام، بدون صور أو طلبات شبكة */
+        #screen-comments {
+            --hx-bg: #0c0d10;
+            --hx-bg-soft: #14161a;
+            --hx-fg: #c8c9cd;
+            --hx-fg-dim: #6e7178;
+            --hx-fg-mute: #4a4d54;
+            --hx-border: #25282e;
+            --hx-border-soft: #1c1f24;
+            --hx-accent: #9fa2a8;
+            --hx-warn: #b8860b;
+            --hx-err: #a04040;
+            --hx-live: #b54545;
+            --hx-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+            background: var(--hx-bg) !important;
+            font-family: var(--hx-mono) !important;
+            color: var(--hx-fg) !important;
+        }
+        #screen-comments header {
+            background: var(--hx-bg) !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-bottom: 1px solid var(--hx-border) !important;
+        }
+        #screen-comments .live-dot {
+            background: var(--hx-live) !important;
+            box-shadow: none !important;
+            width: 6px !important;
+            height: 6px !important;
+        }
+        #screen-comments .header-btn,
+        #screen-comments .back-btn {
+            background: transparent !important;
+            border: 1px solid var(--hx-border) !important;
+            color: var(--hx-fg-dim) !important;
+            font-family: var(--hx-mono) !important;
+            border-radius: 2px !important;
+            padding: 4px 10px !important;
+            font-size: 12px !important;
+            transition: color .12s ease, border-color .12s ease, background .12s ease !important;
+            letter-spacing: 0.3px;
+        }
+        #screen-comments .header-btn:hover,
+        #screen-comments .back-btn:hover {
+            background: var(--hx-bg-soft) !important;
+            color: var(--hx-fg) !important;
+            border-color: var(--hx-accent) !important;
+        }
+        #screen-comments .user-circle {
+            background: var(--hx-bg) !important;
+            border: 1px solid var(--hx-border) !important;
+            color: var(--hx-fg-dim) !important;
+            font-family: var(--hx-mono) !important;
+            border-radius: 2px !important;
+            width: 26px !important;
+            height: 26px !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            transition: color .12s ease, border-color .12s ease !important;
+        }
+        #screen-comments .user-circle:hover {
+            background: var(--hx-bg-soft) !important;
+            color: var(--hx-fg) !important;
+            border-color: var(--hx-accent) !important;
+        }
+        #screen-comments .comments-container { background: var(--hx-bg) !important; }
+        #screen-comments .comments-container::-webkit-scrollbar-thumb { background: var(--hx-border) !important; }
+        #screen-comments .comment-card {
+            background: transparent !important;
+            border: none !important;
+            border-right: 1px solid var(--hx-border-soft) !important;
+            border-radius: 0 !important;
+            padding: 5px 12px !important;
+            margin: 1px 0 !important;
+            box-shadow: none !important;
+            display: block !important;
+            transition: background .08s ease;
+        }
+        #screen-comments .comment-card:hover { background: var(--hx-bg-soft) !important; }
+        #screen-comments .comment-card.archived { border-right-color: var(--hx-fg-mute) !important; opacity: 0.7; }
+        #screen-comments .comment-avatar { display: none !important; }
+        #screen-comments .comment-username {
+            color: var(--hx-fg) !important;
+            font-weight: 600 !important;
+            font-family: var(--hx-mono) !important;
+            font-size: 12px !important;
+            letter-spacing: 0.2px;
+        }
+        #screen-comments .comment-time {
+            color: var(--hx-fg-mute) !important;
+            font-family: var(--hx-mono) !important;
+            font-size: 10.5px !important;
+        }
+        #screen-comments .comment-text {
+            color: var(--hx-fg) !important;
+            font-family: 'Tajawal', var(--hx-mono) !important;
+            font-size: 13.5px !important;
+            margin-top: 2px !important;
+            line-height: 1.55 !important;
+        }
+        #screen-comments .status-bar {
+            background: var(--hx-bg) !important;
+            border-top: 1px solid var(--hx-border) !important;
+            color: var(--hx-fg-dim) !important;
+            font-family: var(--hx-mono) !important;
+            font-size: 11.5px !important;
+            letter-spacing: 0.2px;
+        }
+        #screen-comments #stream-warning {
+            background: var(--hx-bg) !important;
+            border: 1px solid var(--hx-warn) !important;
+            color: var(--hx-warn) !important;
+            font-family: var(--hx-mono) !important;
+            border-radius: 2px !important;
+        }
+        #screen-comments .empty-state {
+            color: var(--hx-fg-dim) !important;
+            font-family: var(--hx-mono) !important;
+        }
+        #screen-comments .empty-state p { color: var(--hx-fg-mute) !important; font-family: var(--hx-mono) !important; }
+        #screen-comments .notif-dot { background: var(--hx-live) !important; border-color: var(--hx-bg) !important; }
+        #screen-comments .hacker-blink {
+            color: var(--hx-fg) !important;
+            font-family: var(--hx-mono) !important;
+            animation: hackerBlink 1.1s steps(2) infinite;
+            font-size: 13px !important;
+            letter-spacing: 1.5px;
+        }
+        @keyframes hackerBlink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0.35; } }
+        #screen-comments .btn-ghost {
+            background: transparent !important;
+            border: 1px solid var(--hx-border) !important;
+            color: var(--hx-fg-dim) !important;
+            font-family: var(--hx-mono) !important;
+            border-radius: 2px !important;
+            transition: color .12s ease, border-color .12s ease, background .12s ease !important;
+        }
+        #screen-comments .btn-ghost:hover {
+            background: var(--hx-bg-soft) !important;
+            color: var(--hx-fg) !important;
+            border-color: var(--hx-accent) !important;
+        }
+        #screen-comments .keyword-highlight {
+            background: rgba(181, 69, 69, 0.14) !important;
+            color: var(--hx-live) !important;
+            border-radius: 1px !important;
+        }
+
+        /* === Entry Overlay (شاشة الدخول للبث) === */
+        #entry-overlay {
+            position: fixed; inset: 0; z-index: 200;
+            background: rgba(5, 5, 8, 0.96);
+            backdrop-filter: blur(20px);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.4s ease;
+            padding: 20px;
+        }
+        #entry-overlay.show { opacity: 1; pointer-events: all; }
+        .entry-content {
+            max-width: 420px; width: 100%; text-align: center;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 24px; padding: 40px 28px;
+        }
+        .entry-icon-wrap {
+            width: 72px; height: 72px; border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--accent-glow);
+            border: 2px solid rgba(232,168,56,0.2);
+            transition: all 0.4s ease;
+        }
+        .entry-icon-wrap.success { background: rgba(52,211,153,0.15); border-color: rgba(52,211,153,0.3); }
+        .entry-icon-wrap.error { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); }
+        .entry-icon-wrap i { font-size: 28px; color: var(--accent); transition: color 0.3s; }
+        .entry-icon-wrap.success i { color: var(--success); }
+        .entry-icon-wrap.error i { color: var(--error); }
+        .entry-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+        .entry-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+        .entry-steps { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+        .entry-step {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; border-radius: 12px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            font-size: 13px; color: var(--text-muted);
+            transition: all 0.3s ease;
+            text-align: right; direction: rtl;
+        }
+        .entry-step.active {
+            border-color: rgba(232,168,56,0.3);
+            background: rgba(232,168,56,0.06);
+            color: var(--text);
+        }
+        .entry-step.done { color: var(--success); border-color: rgba(52,211,153,0.2); }
+        .entry-step .step-icon {
+            width: 22px; height: 22px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; flex-shrink: 0;
+            background: rgba(255,255,255,0.05);
+        }
+        .entry-step.active .step-icon { background: var(--accent); color: #0a0a0f; }
+        .entry-step.done .step-icon { background: var(--success); color: #0a0a0f; }
+        .entry-spinner {
+            width: 28px; height: 28px;
+            border: 3px solid rgba(232,168,56,0.15);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: entrySpin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes entrySpin { to { transform: rotate(360deg); } }
+        .entry-actions { display: flex; gap: 10px; margin-top: 16px; }
+        .entry-actions button { flex: 1; }
     </style>
 </head>
 <body>
@@ -200,26 +427,42 @@
         </div>
     </div>
 
-    <!-- شاشة التعليقات الحية (تم إزالة زر الجرس منها) -->
+    <!-- شاشة التعليقات الحية (واجهة تيرمينال رمادية — بدون موارد شبكة) -->
     <div id="screen-comments" class="screen screen-comments">
-        <header class="w-full flex items-center justify-between px-4 py-3" style="background: rgba(8,8,14,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);">
+        <header class="w-full flex items-center justify-between px-4 py-3" style="background: var(--hx-bg); border-bottom: 1px solid var(--hx-border);">
             <button class="back-btn" onclick="handleExit()"><i class="fas fa-arrow-right"></i> خروج</button>
             <div class="flex items-center gap-2">
                 <span class="live-dot"></span>
-                <span class="text-sm font-bold" style="color: #ef4444;">مباشر</span>
+                <span class="text-xs font-bold" style="color: var(--hx-live); letter-spacing: 0.5px;">LIVE</span>
             </div>
             <div class="flex items-center gap-2">
-                <button class="header-btn" onclick="openArchiveScreen()"><i class="fas fa-archive"></i><span class="hidden sm:inline">المؤرشف</span></button>
-                <button class="header-btn" onclick="openChatScreen()"><i class="fas fa-comments"></i><span class="hidden sm:inline">الرسائل</span></button>
-                <div id="user-circle-btn" class="user-circle" onclick="handleUserCircleClick()">
+                <button class="header-btn notif-btn" onclick="openNotificationsModal()" title="الإشعارات">
+                    <i class="fas fa-bell"></i>
+                    <span class="hidden sm:inline"> الإشعارات</span>
+                    <div id="notif-dot" class="notif-dot"></div>
+                </button>
+                <button class="header-btn" onclick="openArchiveScreen()" title="الأرشيف">
+                    <i class="fas fa-folder-open"></i>
+                    <span class="hidden sm:inline"> الأرشيف</span>
+                </button>
+                <button class="header-btn" onclick="openChatScreen()" title="الرسائل">
+                    <i class="fas fa-comment-dots"></i>
+                    <span class="hidden sm:inline"> الرسائل</span>
+                </button>
+                <div id="user-circle-btn" class="user-circle" onclick="handleUserCircleClick()" title="تسجيل الدخول">
                     <i class="fas fa-user"></i>
                 </div>
             </div>
         </header>
         <div id="comments-container" class="comments-container">
-            <div id="comments-loading" class="empty-state"><i class="fas fa-spinner fa-spin"></i><p style="color: var(--text-muted);">جاري تحميل التعليقات...</p></div>
-            <div id="comments-empty" class="empty-state" style="display: none;"><i class="fas fa-comment-dots"></i><p class="font-bold mb-1">لا توجد تعليقات بعد</p></div>
-            <div id="comments-error" class="empty-state" style="display: none;"><i class="fas fa-exclamation-triangle"></i><p class="font-bold mb-1" id="error-title">حدث خطأ</p><p class="text-sm mb-4" id="error-message"></p><button class="btn-ghost" onclick="retryFetchComments()">إعادة المحاولة</button></div>
+            <div id="stream-warning" style="display:none; margin-bottom:12px; padding:10px 14px; border-radius:2px; background:var(--hx-bg); border:1px solid var(--hx-warn); color:var(--hx-warn); font-size:12px; align-items:center; gap:10px; font-family: var(--hx-mono);">
+                <i class="fas fa-info-circle"></i>
+                <span id="stream-warning-text" style="flex:1;">جاري الاتصال بيوتيوب في الخلفية...</span>
+                <button class="btn-ghost" style="padding:4px 12px; font-size:12px;" onclick="retryYouTubeConnection()">إعادة</button>
+            </div>
+            <div id="comments-loading" class="empty-state"><span class="hacker-blink">loading...</span></div>
+            <div id="comments-empty" class="empty-state" style="display: none;"><i class="fas fa-inbox" style="font-size:28px; color: var(--hx-fg-mute);"></i><p class="font-bold mb-1" style="margin-top:8px; color: var(--hx-fg-dim);">لا توجد تعليقات بعد</p></div>
+            <div id="comments-error" class="empty-state" style="display: none;"><i class="fas fa-exclamation-triangle" style="font-size:28px; color: var(--hx-err);"></i><p class="font-bold mb-1" id="error-title" style="margin-top:8px; color: var(--hx-err);">خطأ</p><p class="text-sm mb-4" id="error-message"></p><button class="btn-ghost" onclick="retryFetchComments()">إعادة المحاولة</button></div>
             <div id="comments-list"></div>
         </div>
         <div class="status-bar w-full">
@@ -246,24 +489,50 @@
         </div>
     </div>
 
-    <!-- شاشة الأرشيف (تم نقل زر الجرس إليها) -->
+    <!-- شاشة الأرشيف (الأرشيف فقط + تبويب المراقب الذكي كأحد الخيارات) -->
     <div id="screen-archive" class="screen screen-comments" style="z-index: 50; background: rgba(8,8,14,0.98);">
         <header class="w-full flex items-center justify-between px-4 py-3" style="background: rgba(8,8,14,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border);">
             <button class="back-btn" onclick="showScreen('screen-comments')"><i class="fas fa-arrow-right"></i> رجوع للبث</button>
-            <div class="text-sm font-bold">الرسائل المؤرشفة</div>
-            <button class="header-btn notif-btn" onclick="openNotificationsModal()">
-                <i class="fas fa-bell"></i>
-                <div id="notif-dot" class="notif-dot"></div>
-            </button>
+            <div class="text-sm font-bold">الأرشيف والمراقب الذكي</div>
+            <div class="w-8"></div>
         </header>
-        <div class="w-full p-4 max-w-2xl mx-auto" style="border-bottom: 1px solid var(--border);">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input id="search-archive-input" type="text" class="input-field" placeholder="ابحث في نص التعليقات..." oninput="searchArchivedComments()">
-                <input id="search-archive-user" type="text" class="input-field" placeholder="ابحث باسم مستخدم معين..." oninput="searchArchivedComments()">
-            </div>
-            <div id="archive-status" class="text-xs mt-2" style="color: var(--text-muted);">جاري تحميل الأرشيف...</div>
+
+        <!-- تبويبات الأرشيف: الأرشيف / المراقب الذكي -->
+        <div class="archive-tabs">
+            <button id="archive-tab-btn" class="archive-tab active" onclick="switchArchiveTab('archive')">
+                <i class="fas fa-archive"></i> الأرشيف
+            </button>
+            <button id="monitor-tab-btn" class="archive-tab" onclick="switchArchiveTab('monitor')">
+                <i class="fas fa-eye"></i> المراقب الذكي
+            </button>
         </div>
-        <div id="archive-container" class="comments-container"><div id="archive-list"></div></div>
+
+        <!-- لوح الأرشيف: بحث + قائمة التعليقات المؤرشفة -->
+        <div id="archive-pane" class="archive-pane active">
+            <div class="w-full p-4 max-w-2xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input id="search-archive-input" type="text" class="input-field" placeholder="ابحث في نص التعليقات..." oninput="searchArchivedComments()">
+                    <input id="search-archive-user" type="text" class="input-field" placeholder="ابحث باسم مستخدم معين..." oninput="searchArchivedComments()">
+                </div>
+                <div id="archive-status" class="text-xs mt-2" style="color: var(--text-muted);">جاري تحميل الأرشيف...</div>
+            </div>
+            <div id="archive-container" class="comments-container"><div id="archive-list"></div></div>
+        </div>
+
+        <!-- لوح المراقب الذكي: إدارة الكلمات المفتاحية -->
+        <div id="monitor-pane" class="archive-pane">
+            <div class="w-full p-4 max-w-2xl mx-auto">
+                <div class="mb-4 p-4 rounded-xl" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border);">
+                    <h4 class="text-sm font-bold mb-3"><i class="fas fa-eye ml-1" style="color: var(--accent);"></i> إضافة كلمات مفتاحية للمراقبة (للبث الحالي)</h4>
+                    <div class="flex gap-2 mb-3">
+                        <input id="keyword-input" type="text" class="input-field" placeholder="مثال: تحدي، هدية، سؤال..." style="text-align: right;">
+                        <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="addKeyword()"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="keywords-list" class="flex flex-wrap gap-2"></div>
+                    <p class="text-xs mt-3" style="color: var(--text-muted);">عند ذكر أي من هذه الكلمات في تعليقات البث، ستصل الإشعارات إلى زر الجرس <i class="fas fa-bell" style="color: var(--accent);"></i> في شريط البث.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- مودال تسجيل الدخول/الحساب -->
@@ -316,26 +585,16 @@
         </div>
     </div>
 
-    <!-- مودال الإشعارات والمراقب الذكي -->
+    <!-- مودال الإشعارات (يعرض سجل إشعارات الكلمات المفتاحية فقط) -->
     <div id="notifications-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 600px;">
             <div class="flex items-center justify-between mb-5">
-                <h3 class="text-lg font-bold"><i class="fas fa-bell ml-1"></i> المراقب الذكي والإشعارات</h3>
+                <h3 class="text-lg font-bold"><i class="fas fa-bell ml-1"></i> الإشعارات</h3>
                 <button onclick="closeNotificationsModal()" style="background:none;border:none;color:var(--text-muted);font-size:20px;"><i class="fas fa-times"></i></button>
             </div>
-            
-            <div class="mb-6 p-4 rounded-xl" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border);">
-                <h4 class="text-sm font-bold mb-3">إضافة كلمات مفتاحية للمراقبة (للبث الحالي)</h4>
-                <div class="flex gap-2 mb-3">
-                    <input id="keyword-input" type="text" class="input-field" placeholder="مثال: تحدي، هدية، سؤال..." style="text-align: right;">
-                    <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="addKeyword()"><i class="fas fa-plus"></i></button>
-                </div>
-                <div id="keywords-list" class="flex flex-wrap gap-2"></div>
-                <p class="text-xs mt-3" style="color: var(--text-muted);">سيتم إشعارك فوراً (حتى لو المتصفح مغلق) عند كتابة أي من هذه الكلمات في التعليقات.</p>
-            </div>
-
+            <p class="text-xs mb-4" style="color: var(--text-muted);">يتم عرض التعليقات التي تحتوي على الكلمات المفتاحية المُحدّدة في المراقب الذكي. لإدارة الكلمات، افتح <i class="fas fa-archive"></i> المؤرشف ثم تبويب <i class="fas fa-eye"></i> المراقب الذكي.</p>
             <h4 class="text-sm font-bold mb-3">سجل الإشعارات</h4>
-            <div id="notifications-list" style="max-height: 300px; overflow-y: auto;">
+            <div id="notifications-list" style="max-height: 400px; overflow-y: auto;">
                 <div class="empty-state" style="padding: 20px;"><i class="fas fa-bell-slash"></i><p style="color: var(--text-muted);">لا توجد إشعارات بعد.</p></div>
             </div>
         </div>
@@ -349,7 +608,7 @@
             <input id="modal-pass-input" type="password" class="input-field mb-4" placeholder="كلمة المرور">
             <div class="flex gap-3">
                 <button class="btn-ghost flex-1" onclick="closePasswordModal()">إلغاء</button>
-                <button class="btn-primary flex-1" style="width: auto;" onclick="confirmLoginFromList()">تأكيد الدخول</button>
+                <button id="confirm-login-btn" class="btn-primary flex-1" style="width: auto;" onclick="confirmLoginFromList()">تأكيد الدخول</button>
             </div>
         </div>
     </div>
@@ -369,6 +628,23 @@
     </div>
 
     <div id="toast-container"></div>
+
+    <!-- شاشة الدخول للبث (Entry Overlay) -->
+    <div id="entry-overlay">
+        <div class="entry-content">
+            <div id="entry-icon" class="entry-icon-wrap">
+                <i class="fas fa-video"></i>
+            </div>
+            <div id="entry-title" class="entry-title">جاري الدخول للبث</div>
+            <div id="entry-subtitle" class="entry-subtitle">يرجى الانتظار...</div>
+            <div id="entry-spinner" class="entry-spinner"></div>
+            <div id="entry-steps" class="entry-steps"></div>
+            <div id="entry-actions" class="entry-actions" style="display:none;">
+                <button class="btn-ghost" onclick="cancelEntry()">إلغاء</button>
+                <button class="btn-primary" style="width:auto;" onclick="retryEntry()">إعادة المحاولة</button>
+            </div>
+        </div>
+    </div>
 
 <script>
     const SUPABASE_URL = 'https://jtwdanpxhkkqssjgnonp.supabase.co';
@@ -439,13 +715,18 @@
     // === نظام الملف الشخصي وتسجيل الدخول ===
     function updateUserCircle() {
         const btn = document.getElementById('user-circle-btn');
+        if (!btn) return;
         if (currentUser) {
             btn.innerHTML = currentUser.display_name.charAt(0).toUpperCase();
-            btn.style.background = getAvatarColor(currentUser.display_name);
+            btn.style.background = 'var(--hx-bg)';
+            btn.style.borderColor = 'var(--hx-accent)';
+            btn.style.color = 'var(--hx-fg)';
             btn.title = `مرحباً ${currentUser.display_name}`;
         } else {
             btn.innerHTML = '<i class="fas fa-user"></i>';
-            btn.style.background = 'var(--accent)';
+            btn.style.background = 'var(--hx-bg)';
+            btn.style.borderColor = 'var(--hx-border)';
+            btn.style.color = 'var(--hx-fg-dim)';
             btn.title = 'تسجيل الدخول';
         }
     }
@@ -548,17 +829,35 @@
     }
 
     // === التسجيل الجديد للبث ===
+    // 🔒 حد أقصى 15 بث نشط (مطابق لـ SQL constraint في قاعدة البيانات)
+    const MAX_ACTIVE_STREAMS = 15;
+
     async function handleNewRegister() {
         const url = document.getElementById('new-url').value.trim(); const user = document.getElementById('new-user').value.trim(); const pass = document.getElementById('new-pass').value.trim();
         if (!url || !user || !pass) { showToast('يرجى ملء جميع الحقول', 'error'); return; }
         const videoId = getVideoId(url); if (!videoId) { showToast('رابط يوتيوب غير صالح', 'error'); return; }
         try {
-            const { count, error: countError } = await supabaseClient.from('saved_streams').select('*', { count: 'exact', head: true });
-            if (countError) throw countError; if (count >= 12) { showToast('لا يمكن إنشاء أكثر من 12 بث!', 'error'); return; }
+            // فحص العدد قبل الإضافة (طبقة أولى)
+            const { count, error: countError } = await supabaseClient.from('saved_streams').select('*', { count: 'exact', head: true }).eq('is_active', true);
+            if (countError) throw countError;
+            if (count >= MAX_ACTIVE_STREAMS) {
+                showToast(`🚫 تم الوصول للحد الأقصى (${MAX_ACTIVE_STREAMS} بث نشط). احذف بثاً قديماً لإضافة جديد.`, 'error');
+                return;
+            }
             const { data: existingStreams } = await supabaseClient.from('saved_streams').select('stream_url').ilike('stream_url', `%${videoId}%`);
             if (existingStreams && existingStreams.length > 0) { showToast('هذا البث مسجل مسبقاً!', 'error'); return; }
-            const { error } = await supabaseClient.from('saved_streams').insert([{ username: user, password: pass, stream_url: url }]);
-            if (error) throw error; showToast('تم الحفظ بنجاح', 'success'); startLiveStream(videoId);
+            const { error } = await supabaseClient.from('saved_streams').insert([{ username: user, password: pass, stream_url: url, is_active: true }]);
+            if (error) {
+                // طبقة ثانية: قاعدة البيانات ترفض لو الـ trigger ضبط محاولة تجاوز
+                if (error.message && error.message.includes('MAX_STREAMS_REACHED')) {
+                    showToast(`🚫 تم الوصول للحد الأقصى (${MAX_ACTIVE_STREAMS} بث نشط)`, 'error');
+                } else {
+                    throw error;
+                }
+                return;
+            }
+            showToast(`✅ تم الحفظ بنجاح (${count + 1}/${MAX_ACTIVE_STREAMS} بث نشط)`, 'success');
+            startLiveStream(videoId);
         } catch(e) { showToast('فشل الحفظ: ' + (e.message || ''), 'error'); }
     }
 
@@ -572,8 +871,14 @@
             data.forEach(stream => {
                 const videoId = getVideoId(stream.stream_url); const card = document.createElement('div');
                 card.className = 'glass-card p-4 flex items-center justify-between';
-                card.innerHTML = `<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-glow);"><i class="fas fa-video text-sm" style="color: var(--accent);"></i></div><div><h3 class="font-bold text-sm">${stream.username}</h3><p class="text-xs" style="color: var(--text-muted);">${videoId}</p></div></div><button class="btn-ghost text-xs" onclick="openPasswordModal('${stream.username}', '${stream.stream_url}')">دخول</button>`;
-                grid.appendChild(card);
+                const left = document.createElement('div'); left.className = 'flex items-center gap-3';
+                left.innerHTML = `<div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-glow);"><i class="fas fa-video text-sm" style="color: var(--accent);"></i></div><div><h3 class="font-bold text-sm"></h3><p class="text-xs" style="color: var(--text-muted);"></p></div>`;
+                left.querySelector('h3').textContent = stream.username;
+                left.querySelector('p').textContent = videoId || '—';
+                const btn = document.createElement('button');
+                btn.className = 'btn-ghost text-xs'; btn.textContent = 'دخول';
+                btn.addEventListener('click', () => openPasswordModal(stream.username, stream.stream_url));
+                card.appendChild(left); card.appendChild(btn); grid.appendChild(card);
             });
         } catch(e) { container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p class="mt-4">خطأ في التحميل</p></div>'; }
     }
@@ -601,56 +906,506 @@
         } catch(e) { showToast('خطأ في الحذف: ' + (e.message || ''), 'error'); }
     }
 
-    function openPasswordModal(username, streamUrl) { tempLoginData = { username, streamUrl }; document.getElementById('modal-pass-input').value = ''; document.getElementById('password-modal').classList.add('show'); setTimeout(() => document.getElementById('modal-pass-input').focus(), 100); }
-    function closePasswordModal() { document.getElementById('password-modal').classList.remove('show'); tempLoginData = null; }
+    function openPasswordModal(username, streamUrl) {
+        if (isEnteringSession) { showToast('جاري الدخول إلى بث آخر، يرجى الانتظار...', 'info'); return; }
+        tempLoginData = { username, streamUrl };
+        document.getElementById('modal-pass-input').value = '';
+        document.getElementById('password-modal').classList.add('show');
+        setTimeout(() => document.getElementById('modal-pass-input').focus(), 100);
+    }
+    function closePasswordModal() {
+        document.getElementById('password-modal').classList.remove('show');
+        tempLoginData = null;
+    }
 
+    // === المرحلة 1: التحقق من كلمة المرور فقط ===
+    // بعد نجاح التحقق، نعتمد على streamData كمصدر وحيد للحقيقة ولا نعود إلى tempLoginData.
     async function confirmLoginFromList() {
-        if (!tempLoginData) return; const pass = document.getElementById('modal-pass-input').value.trim();
+        if (isEnteringSession) { showToast('جاري الدخول إلى بث آخر، يرجى الانتظار...', 'info'); return; }
+        if (!tempLoginData) return;
+        const pass = document.getElementById('modal-pass-input').value.trim();
         if (!pass) { showToast('أدخل كلمة المرور', 'error'); return; }
+
+        const btn = document.getElementById('confirm-login-btn');
+        const originalText = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الدخول...'; }
+
+        // التقاط اسم المستخدم قبل تنظيف tempLoginData
+        const targetUsername = tempLoginData.username;
+
+        let streamData = null;
         try {
-            const { data, error } = await supabaseClient.from('saved_streams').select('*').eq('username', tempLoginData.username).eq('password', pass).single();
-            if (error || !data) { showToast('كلمة المرور غير صحيحة', 'error'); return; }
-            const videoId = getVideoId(tempLoginData.streamUrl); if (!videoId) { showToast('رابط البث غير صالح', 'error'); return; }
-            closePasswordModal(); showToast('تم تسجيل الدخول', 'success'); startLiveStream(videoId);
-        } catch(e) { showToast('خطأ في الدخول', 'error'); }
+            const { data, error } = await supabaseClient
+                .from('saved_streams')
+                .select('*')
+                .eq('username', targetUsername)
+                .eq('password', pass)
+                .single();
+            if (error || !data) {
+                showToast('كلمة المرور غير صحيحة أو البث غير موجود', 'error');
+                if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+                return;
+            }
+            streamData = data;
+        } catch(e) {
+            showToast('خطأ في التحقق: ' + (e.message || ''), 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+            return;
+        }
+
+        // استخراج videoId من streamData.stream_url (وليس من tempLoginData)
+        const videoId = getVideoId(streamData.stream_url);
+        if (!videoId) {
+            showToast('رابط البث في السجل غير صالح', 'error');
+            if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+            return;
+        }
+
+        // إغلاق المودال وتنظيف tempLoginData فوراً — streamData هو المصدر الوحيد الآن
+        closePasswordModal();
+        if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
+
+        // المرحلة 2: فتح الجلسة فوراً + تشغيل الخدمات في الخلفية
+        await startLiveStreamWithOverlay(videoId, streamData);
     }
 
     // === البث الحي والمراقب الذكي ===
+    // متغيرات إضافية لمتانة الجلسة
+    let youTubeConnectAttempt = 0;
+    let youTubeReconnectTimer = null;
+    let youTubeConnectionOk = false;
+    let entryOverlayActive = false;
+    let entryTargetVideoId = null;
+    // منع تكرار الدخول وحماية من race conditions
+    let isEnteringSession = false;
+    let sessionToken = 0;                // يُزاد عند كل جلسة جديدة لإبطال العمليات القديمة
+    let entryTargetStreamData = null;    // يحفظ streamData الكامل لإعادة المحاولة
+
+    function showStreamWarning(msg) {
+        const w = document.getElementById('stream-warning'); const t = document.getElementById('stream-warning-text');
+        if (w && t) { t.textContent = msg; w.style.display = 'flex'; }
+    }
+    function hideStreamWarning() {
+        const w = document.getElementById('stream-warning'); if (w) w.style.display = 'none';
+    }
+
+    // === Entry Overlay Helpers ===
+    function showEntryOverlay(title, subtitle) {
+        const overlay = document.getElementById('entry-overlay');
+        const titleEl = document.getElementById('entry-title');
+        const subEl = document.getElementById('entry-subtitle');
+        const iconWrap = document.getElementById('entry-icon');
+        const spinner = document.getElementById('entry-spinner');
+        const actions = document.getElementById('entry-actions');
+        if (titleEl) titleEl.textContent = title || 'جاري الدخول للبث';
+        if (subEl) subEl.textContent = subtitle || 'يرجى الانتظار...';
+        if (iconWrap) { iconWrap.className = 'entry-icon-wrap'; iconWrap.innerHTML = '<i class="fas fa-video"></i>'; }
+        if (spinner) spinner.style.display = 'block';
+        if (actions) actions.style.display = 'none';
+        if (overlay) overlay.classList.add('show');
+        entryOverlayActive = true;
+    }
+    function setEntryStep(stepIndex, state) {
+        const steps = document.querySelectorAll('#entry-steps .entry-step');
+        if (!steps[stepIndex]) return;
+        steps[stepIndex].classList.remove('active', 'done');
+        if (state) steps[stepIndex].classList.add(state);
+        const icon = steps[stepIndex].querySelector('.step-icon');
+        if (icon) {
+            if (state === 'done') icon.innerHTML = '<i class="fas fa-check"></i>';
+            else if (state === 'active') icon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            else icon.textContent = (stepIndex + 1);
+        }
+    }
+    function renderEntrySteps(stepsList) {
+        const container = document.getElementById('entry-steps');
+        if (!container) return;
+        container.innerHTML = '';
+        stepsList.forEach((text, i) => {
+            const step = document.createElement('div');
+            step.className = 'entry-step';
+            step.innerHTML = `<div class="step-icon">${i + 1}</div><span style="flex:1;">${escapeHtml(text)}</span>`;
+            container.appendChild(step);
+        });
+    }
+    function setEntryError(title, subtitle) {
+        const titleEl = document.getElementById('entry-title');
+        const subEl = document.getElementById('entry-subtitle');
+        const iconWrap = document.getElementById('entry-icon');
+        const spinner = document.getElementById('entry-spinner');
+        const actions = document.getElementById('entry-actions');
+        if (titleEl) titleEl.textContent = title || 'فشل الدخول';
+        if (subEl) subEl.textContent = subtitle || 'حدث خطأ غير متوقع';
+        if (iconWrap) { iconWrap.className = 'entry-icon-wrap error'; iconWrap.innerHTML = '<i class="fas fa-exclamation-triangle"></i>'; }
+        if (spinner) spinner.style.display = 'none';
+        if (actions) actions.style.display = 'flex';
+    }
+    function hideEntryOverlay() {
+        const overlay = document.getElementById('entry-overlay');
+        if (overlay) overlay.classList.remove('show');
+        entryOverlayActive = false;
+    }
+    function cancelEntry() {
+        sessionToken++;                   // إبطال أي عملية خلفية معلّقة
+        hideEntryOverlay();
+        isEnteringSession = false;
+        tempLoginData = null;
+        if (currentVideoId) handleExit();
+    }
+    function retryEntry() {
+        if (entryTargetStreamData) {
+            const vid = getVideoId(entryTargetStreamData.stream_url);
+            if (vid) {
+                startLiveStreamWithOverlay(vid, entryTargetStreamData);
+            } else {
+                hideEntryOverlay();
+            }
+        } else {
+            hideEntryOverlay();
+        }
+    }
+
+    // === التدفق الجديد للدخول للبث (مبسّط وغير حظر) ===
+    // الترتيب الصحيح:
+    //   1) التحقق من streamData
+    //   2) استخراج videoId من streamData.stream_url
+    //   3) تنظيف أي جلسة قديمة (لمنع التضارب وتكرار القنوات)
+    //   4) إنشاء حالة الجلسة الجديدة
+    //   5) إظهار شاشة البث فوراً + إخفاء overlay الدخول
+    //   6) تحميل الأرشيف في الخلفية
+    //   7) تشغيل Realtime في الخلفية
+    //   8) تشغيل Leader Election في الخلفية
+    //   9) محاولة الاتصال بيوتيوب في الخلفية
+    // فشل أي خدمة خلفية لا يمنع فتح الجلسة، فقط يُظهر تنبيه للخدمة الفاشلة.
+    async function startLiveStreamWithOverlay(videoId, streamData) {
+        if (isEnteringSession) {
+            showToast('جاري الدخول إلى بث آخر، يرجى الانتظار...', 'info');
+            return;
+        }
+
+        // === التحقق من streamData (المصدر الوحيد للحقيقة) ===
+        if (!streamData || !streamData.stream_url) {
+            renderEntrySteps(['إعداد الجلسة']);
+            showEntryOverlay('فشل الدخول', 'بيانات البث غير مكتملة في السجل.');
+            setEntryError('بيانات البث غير مكتملة', 'لم يتم العثور على رابط البث في سجل saved_streams. قد يكون البث قد حُذف أو لم يعد صالحاً.');
+            return;
+        }
+
+        const verifiedVideoId = getVideoId(streamData.stream_url);
+        if (!verifiedVideoId) {
+            renderEntrySteps(['إعداد الجلسة']);
+            showEntryOverlay('فشل الدخول', 'رابط البث غير صالح.');
+            setEntryError('رابط البث غير صالح', 'تعذّر استخراج معرّف الفيديو من streamData.stream_url: ' + (streamData.stream_url || '(فارغ)'));
+            return;
+        }
+        // استخدام videoId المُتحقق منه من streamData (وليس من أي مصدر آخر)
+        const effectiveVideoId = verifiedVideoId;
+
+        isEnteringSession = true;
+        // إصدار token جديد لإبطال أي عملية خلفية من جلسة سابقة
+        const myToken = ++sessionToken;
+        entryTargetVideoId = effectiveVideoId;
+        entryTargetStreamData = streamData;
+
+        // === تنظيف أي جلسة سابقة (منع تكرار القنوات والمؤقتات) ===
+        cleanupPreviousSession();
+
+        // === تهيئة متغيرات الجلسة الجديدة قبل أي async ===
+        currentVideoId = effectiveVideoId;
+        localStorage.setItem('vrtx_last_stream', effectiveVideoId);
+        commentsTotal = 0;
+        nextPageToken = streamData.next_page_token || '';
+        liveChatId = streamData.live_chat_id || null;
+        isLeader = false;
+        renderedComments.clear();
+        youTubeConnectAttempt = 0;
+        youTubeConnectionOk = false;
+        if (youTubeReconnectTimer) { clearTimeout(youTubeReconnectTimer); youTubeReconnectTimer = null; }
+
+        // === إعادة تعيين واجهة التعليقات ===
+        document.getElementById('comments-list').innerHTML = '';
+        document.getElementById('comments-loading').style.display = 'flex';
+        document.getElementById('comments-empty').style.display = 'none';
+        document.getElementById('comments-error').style.display = 'none';
+        document.getElementById('comments-count').textContent = '0 تعليق';
+        document.getElementById('status-text').textContent = 'جاري فتح الجلسة...';
+        hideStreamWarning();
+
+        // === إظهار شاشة البث فوراً + overlay الدخول ===
+        showScreen('screen-comments');
+        const steps = [
+            'إعداد الجلسة',
+            'تحميل الأرشيف (خلفية)',
+            'الاتصال بـ Realtime (خلفية)',
+            'الاتصال بيوتيوب (خلفية)'
+        ];
+        renderEntrySteps(steps);
+        showEntryOverlay('جاري الدخول للبث', 'معرف البث: ' + effectiveVideoId);
+        setEntryStep(0, 'active');
+
+        // === المرحلة 1: إعداد الجلسة (تم بالفعل أعلاه) ===
+        setEntryStep(0, 'done');
+
+        // === المرحلة 2: إظهار الجلسة فوراً وإخفاء overlay الدخول ===
+        // فاصل بصري قصير فقط، لا ننتظر أي خدمة خلفية
+        await sleep(200);
+        if (myToken !== sessionToken) { isEnteringSession = false; return; } // race condition guard
+
+        hideEntryOverlay();
+        isEnteringSession = false;
+        showToast('تم الدخول لجلسة البث', 'success');
+        document.getElementById('status-text').textContent = 'متصل — جاري تحميل الخدمات...';
+
+        // === المرحلة 3: الخدمات الخلفية (غير حظرية) — فشل أي منها لا يغلق الجلسة ===
+
+        // 3أ: تحميل الأرشيف في الخلفية
+        setEntryStep(1, 'active');
+        loadExistingComments(effectiveVideoId)
+            .then(count => {
+                if (myToken !== sessionToken) return;
+                setEntryStep(1, 'done');
+                updateSessionStatus();
+            })
+            .catch(e => {
+                console.error('Archive load error:', e);
+                if (myToken === sessionToken) {
+                    setEntryStep(1, 'done');
+                    showStreamWarning('تعذّر تحميل الأرشيف من Supabase. تحقق من الاتصال وأعد المحاولة.');
+                }
+            });
+
+        // 3ب: إعداد قنوات Realtime في الخلفية
+        setEntryStep(2, 'active');
+        setupRealtimeChannels(effectiveVideoId, myToken)
+            .then(() => {
+                if (myToken !== sessionToken) return;
+                setEntryStep(2, 'done');
+            })
+            .catch(e => {
+                console.error('Realtime setup error:', e);
+                if (myToken === sessionToken) {
+                    setEntryStep(2, 'done');
+                    showStreamWarning('تعذّر الاتصال بـ Realtime — قد لا تصل التعليقات المباشرة فوراً.');
+                }
+            });
+
+        // 3ج: انتخاب القائد في الخلفية
+        try { startLeaderElection(); } catch(e) { console.error('Leader election start error:', e); }
+
+        // 3د: محاولة الاتصال بيوتيوب في الخلفية (مع إعادة المحاولة التلقائية)
+        setEntryStep(3, 'active');
+        attemptYouTubeConnect(effectiveVideoId)
+            .then(() => {
+                if (myToken !== sessionToken) return;
+                if (youTubeConnectionOk) {
+                    setEntryStep(3, 'done');
+                } else {
+                    const step = document.querySelectorAll('#entry-steps .entry-step')[3];
+                    if (step) { step.classList.remove('active'); step.classList.add('done'); step.style.opacity = '0.6'; }
+                }
+                updateSessionStatus();
+            })
+            .catch(e => {
+                console.error('YouTube connect error:', e);
+                if (myToken === sessionToken) {
+                    const step = document.querySelectorAll('#entry-steps .entry-step')[3];
+                    if (step) { step.classList.remove('active'); step.classList.add('done'); step.style.opacity = '0.6'; }
+                }
+            });
+    }
+
+    // تحديث نص الحالة بناءً على الحالة الفعلية للخدمات
+    function updateSessionStatus() {
+        if (!currentVideoId) return;
+        const statusEl = document.getElementById('status-text');
+        if (youTubeConnectionOk && isLeader) {
+            statusEl.textContent = 'أنت القائد - جلب مباشر من يوتيوب';
+        } else if (youTubeConnectionOk && !isLeader) {
+            statusEl.textContent = 'متصل (تابع) - استقبال مباشر';
+        } else if (commentsTotal > 0) {
+            statusEl.textContent = 'متصل عبر الأرشيف (يوتيوب يعيد المحاولة)';
+        } else {
+            statusEl.textContent = 'متصل — بانتظار التعليقات';
+            document.getElementById('comments-loading').style.display = 'none';
+            document.getElementById('comments-empty').style.display = 'flex';
+        }
+    }
+
+    // === تنظيف الجلسة السابقة — يجب استدعاؤها قبل فتح جلسة جديدة ===
+    function cleanupPreviousSession() {
+        // إيقاف polling يوتيوب
+        stopYouTubePolling();
+        // إيقاف انتخاب القائد
+        if (leaderCheckTimer) { clearInterval(leaderCheckTimer); leaderCheckTimer = null; }
+        // إيقاف مؤقت إعادة اتصال يوتيوب
+        if (youTubeReconnectTimer) { clearTimeout(youTubeReconnectTimer); youTubeReconnectTimer = null; }
+        // إزالة قنوات Supabase Realtime لمنع التكرار
+        if (realtimeChannel) { try { supabaseClient.removeChannel(realtimeChannel); } catch(e) {} realtimeChannel = null; }
+        if (chatChannel) { try { supabaseClient.removeChannel(chatChannel); } catch(e) {} chatChannel = null; }
+        if (notifChannel) { try { supabaseClient.removeChannel(notifChannel); } catch(e) {} notifChannel = null; }
+        // تصفير الحالة
+        currentVideoId = null;
+        liveChatId = null;
+        isLeader = false;
+        youTubeConnectionOk = false;
+        youTubeConnectAttempt = 0;
+        nextPageToken = '';
+        commentsTotal = 0;
+        renderedComments.clear();
+    }
+
+    // === إعداد قنوات Realtime كدالة مستقلة (للاستخدام غير الحظري) ===
+    async function setupRealtimeChannels(videoId, myToken) {
+        if (!supabaseClient || !videoId) return;
+        // إزالة القنوات القديمة أولاً لمنع التكرار
+        if (realtimeChannel) { try { supabaseClient.removeChannel(realtimeChannel); } catch(e) {} realtimeChannel = null; }
+        if (notifChannel) { try { supabaseClient.removeChannel(notifChannel); } catch(e) {} notifChannel = null; }
+
+        realtimeChannel = supabaseClient.channel('public:archived_comments')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'archived_comments', filter: `stream_id=eq.${videoId}` }, payload => {
+                if (myToken !== sessionToken) return; // تجاهل الرسائل من جلسة قديمة
+                addCommentToUI(payload.new, true);
+            }).subscribe();
+
+        notifChannel = supabaseClient.channel('public:monitor_notifications')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'monitor_notifications', filter: `stream_id=eq.${videoId}` }, payload => {
+                if (myToken !== sessionToken) return;
+                const notif = payload.new;
+                document.getElementById('notif-dot').classList.add('show');
+                showToast(`🔔 المراقب الذكي: تم استخدام "${notif.keyword}" بواسطة ${notif.author_name}`, 'info');
+                if (document.getElementById('notifications-modal').classList.contains('show')) renderNotifications();
+            }).subscribe();
+    }
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    // === تحميل التعليقات المحفوظة (السلوك الأصلي + يُرجع العدد) ===
+    // رفع الحد إلى 200 لضمان توافق أفضل مع الكود القديم وتجنّب فقدان التعليقات
+    async function loadExistingComments(videoId) {
+        if (!videoId) return 0;
+        try {
+            const { data, error } = await supabaseClient
+                .from('archived_comments')
+                .select('*')
+                .eq('stream_id', videoId)
+                .order('published_at', { ascending: true })
+                .limit(200);
+            if (error) throw error;
+            if (!data || data.length === 0) return 0;
+            document.getElementById('comments-loading').style.display = 'none';
+            document.getElementById('comments-empty').style.display = 'none';
+            data.forEach(item => addCommentToUI(item, true));
+            return data.length;
+        } catch(e) {
+            console.error('Load existing error:', e);
+            return 0;
+        }
+    }
+
+    // نقطة دخول موحّدة — لا مسارين متداخلين
+    // عند استدعائها بدون streamData (مثل handleNewRegister أو DOMContentLoaded)،
+    // نحاول جلب السجل من saved_streams باستخدام videoId.
     async function startLiveStream(videoId) {
-        currentVideoId = videoId; localStorage.setItem('vrtx_last_stream', videoId);
-        commentsTotal = 0; nextPageToken = ''; liveChatId = null; isLeader = false; renderedComments.clear();
-        document.getElementById('comments-list').innerHTML = ''; document.getElementById('comments-loading').style.display = 'flex'; document.getElementById('comments-empty').style.display = 'none'; document.getElementById('comments-error').style.display = 'none'; document.getElementById('comments-count').textContent = '0 تعليق'; document.getElementById('status-text').textContent = 'جاري الاتصال...';
-        showScreen('screen-comments'); await loadExistingComments(videoId);
-        
-        if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
-        realtimeChannel = supabaseClient.channel('public:archived_comments').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'archived_comments', filter: `stream_id=eq.${videoId}` }, payload => { addCommentToUI(payload.new, true); }).subscribe();
+        if (!videoId) { showToast('معرّف البث غير صالح', 'error'); return; }
+        if (isEnteringSession) { showToast('جاري الدخول إلى بث آخر، يرجى الانتظار...', 'info'); return; }
 
-        // الاستماع للإشعارات القادمة من الخلفية (الروبوت)
-        if (notifChannel) supabaseClient.removeChannel(notifChannel);
-        notifChannel = supabaseClient.channel('public:monitor_notifications').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'monitor_notifications', filter: `stream_id=eq.${videoId}` }, payload => {
-            const notif = payload.new;
-            document.getElementById('notif-dot').classList.add('show');
-            showToast(`🔔 المراقب الذكي: تم استخدام "${notif.keyword}" بواسطة ${notif.author_name}`, 'info');
-            if (document.getElementById('notifications-modal').classList.contains('show')) renderNotifications();
-        }).subscribe();
+        // محاولة جلب streamData من saved_streams (إن وُجد السجل)
+        let streamData = null;
+        try {
+            const { data } = await supabaseClient
+                .from('saved_streams')
+                .select('*')
+                .ilike('stream_url', `%${videoId}%`)
+                .limit(1)
+                .maybeSingle();
+            if (data) streamData = data;
+        } catch(e) { console.warn('Could not fetch streamData for videoId:', e); }
 
+        // fallback: بناء streamData أدنى إذا لم يوجد السجل
+        if (!streamData) streamData = { stream_url: videoId, live_chat_id: null, next_page_token: '' };
+        return startLiveStreamWithOverlay(videoId, streamData);
+    }
+
+    // محاولة اتصال YouTube مع إعادة المحاولة التلقائية بدون حظر الجلسة
+    async function attemptYouTubeConnect(videoId) {
+        if (!currentVideoId || currentVideoId !== videoId) return;
+        youTubeConnectAttempt++;
         try {
             let vidData = null;
-            for (let i = 0; i < YOUTUBE_API_KEYS.length; i++) { const keyIndex = (currentKeyIndex + i) % YOUTUBE_API_KEYS.length; const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${YOUTUBE_API_KEYS[keyIndex]}`); const data = await resp.json(); if (!data.error) { vidData = data; currentKeyIndex = keyIndex; break; } }
-            if (!vidData) throw new Error('فشل في جلب بيانات الفيديو'); if (!vidData.items || vidData.items.length === 0) throw new Error('الفيديو غير موجود');
-            const liveDetails = vidData.items[0].liveStreamingDetails; if (!liveDetails) throw new Error('هذا الفيديو ليس بثاً مباشراً');
-            liveChatId = liveDetails.activeLiveChatId || liveDetails.liveChatId; startLeaderElection();
-        } catch(e) { document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-error').style.display = 'flex'; document.getElementById('error-title').textContent = 'فشل الاتصال'; document.getElementById('error-message').textContent = e.message; }
+            for (let i = 0; i < YOUTUBE_API_KEYS.length; i++) {
+                const keyIndex = (currentKeyIndex + i) % YOUTUBE_API_KEYS.length;
+                const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${YOUTUBE_API_KEYS[keyIndex]}`);
+                const data = await resp.json();
+                if (!data.error) { vidData = data; currentKeyIndex = keyIndex; break; }
+            }
+            if (!vidData) throw new Error('فشل في جلب بيانات الفيديو');
+            if (!vidData.items || vidData.items.length === 0) throw new Error('الفيديو غير موجود');
+            const liveDetails = vidData.items[0].liveStreamingDetails;
+            if (!liveDetails) throw new Error('هذا الفيديو ليس بثاً مباشراً');
+            const newChatId = liveDetails.activeLiveChatId || liveDetails.liveChatId;
+            if (!newChatId) throw new Error('لا يوجد معرف دردشة مباشرة لهذا البث');
+            // نجاح — حدّث liveChatId وفعّل الجلب المباشر إذا كان قائداً
+            liveChatId = newChatId; youTubeConnectionOk = true; hideStreamWarning();
+            if (isLeader) { startYouTubePolling(); document.getElementById('status-text').textContent = 'أنت القائد - جلب مباشر من يوتيوب'; }
+            else { document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر'; }
+        } catch(e) {
+            youTubeConnectionOk = false;
+            // لا نُظهر شاشة خطأ — فقط لافتة تحذير ناعمة، والجلسة تظل نشطة عبر Realtime
+            showStreamWarning('تعذّر الاتصال المباشر بيوتيوب — التعليقات تصل عبر الأرشيف. إعادة المحاولة تلقائياً خلال 30 ثانية.');
+            document.getElementById('status-text').textContent = 'متصل عبر الأرشيف (يوتيوب غير متاح مؤقتاً)';
+            // إخفاء الـ loading إذا لم تكن هناك تعليقات بعد
+            if (commentsTotal === 0) {
+                document.getElementById('comments-loading').style.display = 'none';
+                document.getElementById('comments-empty').style.display = 'flex';
+            }
+            // إعادة المحاولة تلقائياً بعد 30 ثانية
+            if (youTubeReconnectTimer) clearTimeout(youTubeReconnectTimer);
+            youTubeReconnectTimer = setTimeout(() => { if (currentVideoId === videoId) attemptYouTubeConnect(videoId); }, 30000);
+        }
     }
 
-    async function loadExistingComments(videoId) {
-        try { const { data, error } = await supabaseClient.from('archived_comments').select('*').eq('stream_id', videoId).order('published_at', { ascending: true }).limit(50); if (error || !data || data.length === 0) return; document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-empty').style.display = 'none'; data.forEach(item => addCommentToUI(item, true)); } catch(e) { console.error('Load existing error:', e); }
+    function retryYouTubeConnection() {
+        if (!currentVideoId) return;
+        showStreamWarning('جاري إعادة الاتصال بيوتيوب...');
+        attemptYouTubeConnect(currentVideoId);
     }
 
-    function startLeaderElection() { checkLeadership(); leaderCheckTimer = setInterval(checkLeadership, 5000); }
+    // (تم توحيد loadExistingComments أعلاه — لا تكرار)
+
+    function startLeaderElection() { if (leaderCheckTimer) clearInterval(leaderCheckTimer); checkLeadership(); leaderCheckTimer = setInterval(checkLeadership, 5000); }
     async function checkLeadership() {
         if (!currentVideoId) return;
-        try { const { data, error } = await supabaseClient.rpc('try_acquire_lock', { p_stream_id: currentVideoId, p_client_id: clientId }); if (error) throw error; const gotLeadership = data === true; if (gotLeadership && !isLeader) { isLeader = true; document.getElementById('status-text').textContent = 'أنت القائد - جلب مباشر من يوتيوب'; startYouTubePolling(); } else if (!gotLeadership && isLeader) { isLeader = false; stopYouTubePolling(); document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر'; } else if (!gotLeadership && !isLeader) { document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر'; if (commentsTotal === 0) { document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-empty').style.display = 'flex'; } } } catch(e) { console.error('Lock error:', e); }
+        try {
+            const { data, error } = await supabaseClient.rpc('try_acquire_lock', { p_stream_id: currentVideoId, p_client_id: clientId });
+            if (error) throw error;
+            const gotLeadership = data === true;
+            if (gotLeadership && !isLeader) {
+                isLeader = true;
+                if (liveChatId && youTubeConnectionOk) {
+                    startYouTubePolling();
+                    document.getElementById('status-text').textContent = 'أنت القائد - جلب مباشر من يوتيوب';
+                } else {
+                    document.getElementById('status-text').textContent = 'أنت القائد - بانتظار اتصال يوتيوب...';
+                }
+            } else if (!gotLeadership && isLeader) {
+                isLeader = false; stopYouTubePolling();
+                document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر';
+            } else if (!gotLeadership && !isLeader) {
+                document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر';
+                if (commentsTotal === 0 && !youTubeConnectionOk) {
+                    document.getElementById('comments-loading').style.display = 'none';
+                    document.getElementById('comments-empty').style.display = 'flex';
+                }
+            }
+        } catch(e) {
+            console.error('Lock error:', e);
+            // إذا فشل القفل، نُبقي الجلسة نشطة ونعتمد على Realtime
+            document.getElementById('status-text').textContent = 'متصل عبر الأرشيف';
+            if (commentsTotal === 0) {
+                document.getElementById('comments-loading').style.display = 'none';
+                document.getElementById('comments-empty').style.display = 'flex';
+            }
+        }
     }
 
     function startYouTubePolling() { if (youtubePollTimer) clearInterval(youtubePollTimer); fetchComments(); youtubePollTimer = setInterval(fetchComments, 1000); }
@@ -669,18 +1424,44 @@
         const uniqueId = item.stream_id + item.author_name + item.published_at + item.comment_text; if (renderedComments.has(uniqueId)) return; renderedComments.add(uniqueId);
         const list = document.getElementById('comments-list'); const displayName = item.author_name || 'مجهول'; const message = item.comment_text || ''; const color = getAvatarColor(displayName);
         const card = document.createElement('div'); card.className = 'comment-card'; card.style.setProperty('--c-accent', color);
-        card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${displayName.charAt(0).toUpperCase()}</div><div style="flex:1; min-width:0;"><div class="flex items-center" style="margin-bottom:2px;"><span class="comment-username" style="color:${color};">${escapeHtml(displayName)}</span><span class="comment-time">${formatTime(item.published_at)}</span></div><div class="comment-text">${escapeHtml(message)}</div></div>`;
+        card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${escapeHtml(displayName.charAt(0).toUpperCase())}</div><div style="flex:1; min-width:0;"><div class="flex items-center" style="margin-bottom:2px;"><span class="comment-username" style="color:${color};">${escapeHtml(displayName)}</span><span class="comment-time">${formatTime(item.published_at)}</span></div><div class="comment-text">${escapeHtml(message)}</div></div>`;
         list.appendChild(card); if (countIncrement) { commentsTotal++; document.getElementById('comments-count').textContent = `${commentsTotal} تعليق`; }
-        document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-empty').style.display = 'none'; if (isAtBottom) list.parentElement.scrollTop = list.parentElement.scrollHeight;
+        // إخفاء حالات الـ loading/empty/error فور وصول أي تعليق
+        document.getElementById('comments-loading').style.display = 'none';
+        document.getElementById('comments-empty').style.display = 'none';
+        document.getElementById('comments-error').style.display = 'none';
+        if (isAtBottom) list.parentElement.scrollTop = list.parentElement.scrollHeight;
     }
 
     // === نظام المراقب الذكي (Synced with Supabase) ===
+    // مودال الإشعارات يعرض السجل فقط. إدارة الكلمات أصبحت داخل شاشة الأرشيف (تبويب المراقب الذكي).
     function openNotificationsModal() {
         document.getElementById('notif-dot').classList.remove('show');
         document.getElementById('notifications-modal').classList.add('show');
-        renderKeywords(); renderNotifications();
+        renderNotifications();
     }
     function closeNotificationsModal() { document.getElementById('notifications-modal').classList.remove('show'); }
+
+    // تبديل تبويبات شاشة الأرشيف: 'archive' (الأرشيف) أو 'monitor' (المراقب الذكي)
+    function switchArchiveTab(tabName) {
+        const tabBtns = document.querySelectorAll('.archive-tab');
+        const panes = document.querySelectorAll('.archive-pane');
+        tabBtns.forEach(b => b.classList.remove('active'));
+        panes.forEach(p => p.classList.remove('active'));
+        if (tabName === 'monitor') {
+            document.getElementById('monitor-tab-btn').classList.add('active');
+            document.getElementById('monitor-pane').classList.add('active');
+            renderKeywords();
+        } else {
+            // default: archive
+            document.getElementById('archive-tab-btn').classList.add('active');
+            document.getElementById('archive-pane').classList.add('active');
+            // إن لم يكن الأرشيف محمّلاً بعد، حمّله
+            if (!document.getElementById('archive-list').children.length) {
+                loadArchivedComments('', '');
+            }
+        }
+    }
 
     async function addKeyword() {
         const input = document.getElementById('keyword-input');
@@ -767,7 +1548,7 @@
     }
 
     // === الأرشيف والبحث ===
-    function openArchiveScreen() { showScreen('screen-archive'); loadArchivedComments('', ''); }
+    function openArchiveScreen() { showScreen('screen-archive'); switchArchiveTab('archive'); }
     async function loadArchivedComments(searchTerm = '', searchUser = '') {
         const list = document.getElementById('archive-list'); const status = document.getElementById('archive-status'); list.innerHTML = ''; status.textContent = 'جاري التحميل...';
         try {
@@ -782,13 +1563,26 @@
     function searchArchivedComments() { clearTimeout(searchDebounce); const term = document.getElementById('search-archive-input').value.trim(); const user = document.getElementById('search-archive-user').value.trim(); searchDebounce = setTimeout(() => loadArchivedComments(term, user), 300); }
 
     function handleExit() {
-        stopYouTubePolling(); if (leaderCheckTimer) clearInterval(leaderCheckTimer); if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel); if (chatChannel) supabaseClient.removeChannel(chatChannel); if (notifChannel) supabaseClient.removeChannel(notifChannel);
-        currentVideoId = null; liveChatId = null; isLeader = false; localStorage.removeItem('vrtx_last_stream'); document.getElementById('comments-list').innerHTML = ''; document.getElementById('archive-list').innerHTML = ''; document.getElementById('chat-list').innerHTML = ''; showScreen('screen-welcome');
+        // إبطال أي عملية خلفية معلّقة ومنع التداخل مع جلسة جديدة
+        sessionToken++;
+        isEnteringSession = false;
+        tempLoginData = null;
+        entryTargetStreamData = null;
+        // تنظيف كامل للموارد
+        cleanupPreviousSession();
+        if (youTubeReconnectTimer) { clearTimeout(youTubeReconnectTimer); youTubeReconnectTimer = null; }
+        localStorage.removeItem('vrtx_last_stream');
+        document.getElementById('comments-list').innerHTML = '';
+        document.getElementById('archive-list').innerHTML = '';
+        document.getElementById('chat-list').innerHTML = '';
+        hideStreamWarning();
+        hideEntryOverlay();
+        showScreen('screen-welcome');
     }
 
     function formatTime(iso) { if(!iso) return ''; const d = Math.floor((Date.now() - new Date(iso).getTime())/1000); if(d<10) return 'الآن'; if(d<60) return `منذ ${d} ث`; if(d<3600) return `منذ ${Math.floor(d/60)} د`; return `منذ ${Math.floor(d/3600)} س`; }
     function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
-    function retryFetchComments() { startLiveStream(currentVideoId); }
+    function retryFetchComments() { if (currentVideoId) startLiveStream(currentVideoId); }
 
     document.addEventListener('DOMContentLoaded', () => {
         updateUserCircle(); const lastStream = localStorage.getItem('vrtx_last_stream'); if (lastStream) { startLiveStream(lastStream); }
