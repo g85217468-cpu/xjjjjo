@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VRTX .YT Live - أرشيف ومحادثة البث</title>
+    <title>فورتيكلس — أرشيف بثوث يوتيوب المباشر</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -635,15 +635,15 @@
             <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6" style="background: var(--accent-glow); border: 1px solid rgba(232,168,56,0.15);">
                 <i class="fas fa-comments text-3xl" style="color: var(--accent);"></i>
             </div>
-            <h1 class="text-4xl font-black mb-3 text-gray-400">VRTX .YT Live</h1>
-            <p class="text-base mb-10" style="color: var(--text-muted);">تابع تعليقات البث واحفظها تلقائياً للبحث فيها لاحقاً</p>
+            <h1 class="text-4xl font-black mb-3 text-gray-400">فورتيكلس</h1>
+            <p class="text-base mb-10" style="color: var(--text-muted);">أرشيف مباشر لتعليقات يوتيوب — بحث سريع، حفظ دائم، ومزامنة لعدة بثوث في آنٍ واحد.</p>
 
             <div class="flex flex-col sm:flex-row gap-4">
                 <div class="flex-1 glass-card glass-card-hover p-6 text-center" onclick="showScreen('screen-new')">
                     <div class="inline-flex items-center justify-center w-14 h-14 rounded-xl mb-4" style="background: var(--accent-glow);">
                         <i class="fas fa-plus text-xl" style="color: var(--accent);"></i>
                     </div>
-                    <h3 class="font-bold text-lg mb-2">تسجيل بث جديد</h3>
+                    <h3 class="font-bold text-lg mb-2">بثٌ جديد</h3>
                 </div>
                 <div class="flex-1 glass-card glass-card-hover p-6 text-center" onclick="showStreamList()">
                     <div class="inline-flex items-center justify-center w-14 h-14 rounded-xl mb-4" style="background: rgba(52,211,153,0.1);">
@@ -660,20 +660,20 @@
         <div class="w-full max-w-md">
             <button class="back-btn mb-6" onclick="showScreen('screen-welcome')"><i class="fas fa-arrow-right"></i> رجوع</button>
             <div class="glass-card p-8">
-                <h2 class="text-2xl font-black mb-1">تسجيل بث جديد</h2>
-                <p class="text-sm mb-7" style="color: var(--text-muted);">أدخل بيانات البث لحفظها (الحد الأقصى 15 بث نشط)</p>
+                <h2 class="text-2xl font-black mb-1">إضافة بثٍ جديد</h2>
+                <p class="text-sm mb-7" style="color: var(--text-muted);">بيانات البث · حتى 15 بثاً نشطاً · أرشيف التعليقات بلا حدود.</p>
                 <div class="space-y-5">
                     <div>
                         <label class="block text-sm font-medium mb-2" style="color: var(--text-muted);"><i class="fas fa-link ml-1" style="color: var(--accent);"></i> رابط البث</label>
                         <input id="new-url" type="url" class="input-field" placeholder="https://youtube.com/watch?v=..." dir="ltr">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-2" style="color: var(--text-muted);"><i class="fas fa-user ml-1" style="color: var(--accent);"></i> اسم البث (اليوزر)</label>
-                        <input id="new-user" type="text" class="input-field" placeholder="أدخل اسم البث">
+                        <label class="block text-sm font-medium mb-2" style="color: var(--text-muted);"><i class="fas fa-user ml-1" style="color: var(--accent);"></i> اسم المستخدم للبث</label>
+                        <input id="new-user" type="text" class="input-field" placeholder="اكتب اسم المستخدم للبث">
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-2" style="color: var(--text-muted);"><i class="fas fa-lock ml-1" style="color: var(--accent);"></i> كلمة المرور</label>
-                        <input id="new-pass" type="password" class="input-field" placeholder="أدخل كلمة المرور">
+                        <input id="new-pass" type="password" class="input-field" placeholder="اكتب كلمة المرور">
                     </div>
                     <button id="btn-new-register" class="btn-primary" onclick="handleNewRegister()">حفظ ودخول</button>
                 </div>
@@ -691,7 +691,7 @@
         <div class="w-full max-w-2xl p-4 mx-auto" style="flex: 1; overflow-y: auto;">
             <div id="streams-list-container"></div>
             <div class="mt-6 text-center">
-                <button class="btn-admin" onclick="openAdminModal()"><i class="fas fa-shield-alt ml-1"></i> Admin Panel</button>
+                <button class="btn-admin" id="admin-panel-btn" onclick="openAdminModal()" style="display:none;"><i class="fas fa-shield-alt ml-1"></i> لوحة التحكم</button>
             </div>
         </div>
     </div>
@@ -702,7 +702,7 @@
             <button class="back-btn" onclick="handleExit()" title="خروج"><i class="fas fa-arrow-right"></i></button>
             <div class="flex items-center gap-2">
                 <span class="live-dot"></span>
-                <span class="text-xs font-bold" style="color: var(--hx-live); letter-spacing: 0.5px;">LIVE</span>
+                <span class="text-xs font-bold" style="color: var(--hx-live); letter-spacing: 0.5px;">مباشر</span>
             </div>
             <div class="flex items-center gap-1.5">
                 <button class="icon-btn notif-btn" onclick="openNotificationsModal()" title="الإشعارات">
@@ -712,7 +712,7 @@
                 <button class="icon-btn" onclick="openArchiveScreen()" title="الأرشيف">
                     <i class="fas fa-folder-open"></i>
                 </button>
-                <button class="icon-btn" onclick="openChatScreen()" title="الرسائل">
+                <button class="icon-btn" onclick="openChatScreen()" title="المحادثة">
                     <i class="fas fa-comment-dots"></i>
                 </button>
                 <button id="user-circle-btn" class="icon-btn user-icon-btn" onclick="handleUserCircleClick()" title="الحساب">
@@ -723,16 +723,16 @@
         <div id="comments-container" class="comments-container">
             <div id="stream-warning" style="display:none; margin-bottom:12px; padding:10px 14px; border-radius:2px; background:var(--hx-bg); border:1px solid var(--hx-warn); color:var(--hx-warn); font-size:12px; align-items:center; gap:10px; font-family: var(--hx-mono);">
                 <i class="fas fa-info-circle"></i>
-                <span id="stream-warning-text" style="flex:1;">جاري الاتصال بيوتيوب في الخلفية...</span>
-                <button class="btn-ghost" style="padding:4px 12px; font-size:12px;" onclick="retryYouTubeConnection()">إعادة</button>
+                <span id="stream-warning-text" style="flex:1;">جارٍ الاتصال بيوتيوب في الخلفية...</span>
+                <button class="btn-ghost" style="padding:4px 12px; font-size:12px;" onclick="retryYouTubeConnection()">إعادة المحاولة</button>
             </div>
-            <div id="comments-loading" class="empty-state"><span class="hacker-blink">loading...</span></div>
-            <div id="comments-empty" class="empty-state" style="display: none;"><i class="fas fa-inbox" style="font-size:28px; color: var(--hx-fg-mute);"></i><p class="font-bold mb-1" style="margin-top:8px; color: var(--hx-fg-dim);">لا توجد تعليقات بعد</p></div>
+            <div id="comments-loading" class="empty-state"><span class="hacker-blink">جارٍ التحميل...</span></div>
+            <div id="comments-empty" class="empty-state" style="display: none;"><i class="fas fa-inbox" style="font-size:28px; color: var(--hx-fg-mute);"></i><p class="font-bold mb-1" style="margin-top:8px; color: var(--hx-fg-dim);">لا تعليقات بعد</p></div>
             <div id="comments-error" class="empty-state" style="display: none;"><i class="fas fa-exclamation-triangle" style="font-size:28px; color: var(--hx-err);"></i><p class="font-bold mb-1" id="error-title" style="margin-top:8px; color: var(--hx-err);">خطأ</p><p class="text-sm mb-4" id="error-message"></p><button class="btn-ghost" onclick="retryFetchComments()">إعادة المحاولة</button></div>
             <div id="comments-list"></div>
         </div>
         <div class="status-bar w-full">
-            <span id="status-text">جاري الاتصال...</span>
+            <span id="status-text">جارٍ الاتصال...</span>
             <span style="margin-right: auto;" id="comments-count">0 تعليق</span>
         </div>
     </div>
@@ -740,7 +740,7 @@
     <!-- شاشة المحادثة (Chat) — نفس ثيم البث الرمادي -->
     <div id="screen-chat" class="screen screen-comments" style="z-index: 50;">
         <header class="w-full flex items-center justify-between px-4 py-3" style="background: var(--hx-bg); border-bottom: 1px solid var(--hx-border);">
-            <button class="icon-btn" onclick="showScreen('screen-comments')" title="رجوع للبث"><i class="fas fa-arrow-right"></i></button>
+            <button class="icon-btn" onclick="showScreen('screen-comments')" title="العودة للبث"><i class="fas fa-arrow-right"></i></button>
             <div class="flex items-center gap-2">
                 <i class="fas fa-comment-dots" style="color: var(--hx-fg-dim); font-size: 14px;"></i>
                 <span class="text-xs font-bold" style="color: var(--hx-fg); letter-spacing: 0.4px;">محادثة البث</span>
@@ -752,7 +752,7 @@
         </div>
         <div class="status-bar w-full" style="flex-direction: column; align-items: stretch; gap: 10px;">
             <div class="flex gap-2">
-                <input id="chat-input" type="text" class="input-field" placeholder="اكتب رسالتك هنا..." style="text-align: right;">
+                <input id="chat-input" type="text" class="input-field" placeholder="اكتب رسالة..." style="text-align: right;">
                 <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
@@ -761,10 +761,10 @@
     <!-- شاشة الأرشيف (الأرشيف فقط + تبويب المراقب الذكي كأحد الخيارات) -->
     <div id="screen-archive" class="screen screen-comments" style="z-index: 50;">
         <header class="w-full flex items-center justify-between px-4 py-3" style="background: var(--hx-bg); border-bottom: 1px solid var(--hx-border);">
-            <button class="icon-btn" onclick="showScreen('screen-comments')" title="رجوع للبث"><i class="fas fa-arrow-right"></i></button>
+            <button class="icon-btn" onclick="showScreen('screen-comments')" title="العودة للبث"><i class="fas fa-arrow-right"></i></button>
             <div class="flex items-center gap-2">
                 <i class="fas fa-folder-open" style="color: var(--hx-fg-dim); font-size: 14px;"></i>
-                <span class="text-xs font-bold" style="color: var(--hx-fg); letter-spacing: 0.4px;">الأرشيف والمراقب الذكي</span>
+                <span class="text-xs font-bold" style="color: var(--hx-fg); letter-spacing: 0.4px;">الأرشيف والمراقب</span>
             </div>
             <div style="width: 38px;"></div>
         </header>
@@ -783,10 +783,10 @@
         <div id="archive-pane" class="archive-pane active">
             <div class="w-full p-4 max-w-2xl mx-auto" style="flex-shrink: 0;">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <input id="search-archive-input" type="text" class="input-field" placeholder="ابحث في نص التعليقات..." oninput="searchArchivedComments()">
-                    <input id="search-archive-user" type="text" class="input-field" placeholder="ابحث باسم مستخدم معين..." oninput="searchArchivedComments()">
+                    <input id="search-archive-input" type="text" class="input-field" placeholder="ابحث في نص التعليق..." oninput="searchArchivedComments()">
+                    <input id="search-archive-user" type="text" class="input-field" placeholder="تصفية باسم المستخدم..." oninput="searchArchivedComments()">
                 </div>
-                <div id="archive-status" class="text-xs mt-2" style="color: var(--text-muted);">جاري تحميل الأرشيف...</div>
+                <div id="archive-status" class="text-xs mt-2" style="color: var(--text-muted);">جارٍ تحميل الأرشيف...</div>
             </div>
             <div id="archive-container" class="comments-container"><div id="archive-list"></div></div>
         </div>
@@ -795,13 +795,13 @@
         <div id="monitor-pane" class="archive-pane">
             <div class="w-full p-4 max-w-2xl mx-auto">
                 <div class="mb-4 p-4 rounded-xl" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border);">
-                    <h4 class="text-sm font-bold mb-3"><i class="fas fa-eye ml-1" style="color: var(--accent);"></i> إضافة كلمات مفتاحية للمراقبة (للبث الحالي)</h4>
+                    <h4 class="text-sm font-bold mb-3"><i class="fas fa-eye ml-1" style="color: var(--accent);"></i> كلمات المراقبة (للبث الحالي)</h4>
                     <div class="flex gap-2 mb-3">
-                        <input id="keyword-input" type="text" class="input-field" placeholder="مثال: تحدي، هدية، سؤال..." style="text-align: right;">
+                        <input id="keyword-input" type="text" class="input-field" placeholder="مثال: سؤال، هدية، تحدٍّ..." style="text-align: right;">
                         <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="addKeyword()"><i class="fas fa-plus"></i></button>
                     </div>
                     <div id="keywords-list" class="flex flex-wrap gap-2"></div>
-                    <p class="text-xs mt-3" style="color: var(--text-muted);">عند ذكر أي من هذه الكلمات في تعليقات البث، ستصل الإشعارات إلى زر الجرس <i class="fas fa-bell" style="color: var(--accent);"></i> في شريط البث.</p>
+                    <p class="text-xs mt-3" style="color: var(--text-muted);">عند تطابق أي كلمة مع تعليق في البث، ستظهر لك إشارة على أيقونة الجرس <i class="fas fa-bell" style="color: var(--accent);"></i> في الأعلى.</p>
                 </div>
             </div>
         </div>
@@ -811,9 +811,9 @@
     <div id="auth-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="flex gap-2 mb-5 p-1 rounded-xl" style="background: rgba(0,0,0,0.3);">
-                <div class="auth-tab active" onclick="switchAuthTab('signin', event)">تسجيل دخول</div>
+                <div class="auth-tab active" onclick="switchAuthTab('signin', event)">تسجيل الدخول</div>
                 <div class="auth-tab" onclick="switchAuthTab('signup', event)">حساب جديد</div>
-                <div class="auth-tab" onclick="switchAuthTab('quick', event)">تسجيل سريع</div>
+                <div class="auth-tab" onclick="switchAuthTab('quick', event)">دخول سريع</div>
             </div>
             <div id="auth-fields"></div>
             <button id="auth-submit-btn" class="btn-primary mt-4" onclick="handleAuthAction()">متابعة</button>
@@ -825,7 +825,7 @@
     <div id="profile-modal" class="modal-overlay">
         <div class="modal-content">
             <h3 class="text-lg font-bold mb-1">الملف الشخصي</h3>
-            <p class="text-sm mb-5" style="color: var(--text-muted);">إدارة معلومات حسابك.</p>
+            <p class="text-sm mb-5" style="color: var(--text-muted);">إدارة بيانات حسابك.</p>
             
             <div id="profile-view">
                 <div class="space-y-3 mb-6">
@@ -838,16 +838,16 @@
                 </div>
                 <div class="flex gap-3">
                     <button class="btn-ghost flex-1" onclick="closeProfileModal()">إغلاق</button>
-                    <button class="btn-primary flex-1" style="width: auto; background: transparent; border: 1px solid var(--accent); color: var(--accent);" onclick="toggleEditMode(true)">تعديل المعلومات</button>
-                    <button class="btn-danger flex-1" style="width: auto;" onclick="handleLogout()">خروج</button>
+                    <button class="btn-primary flex-1" style="width: auto; background: transparent; border: 1px solid var(--accent); color: var(--accent);" onclick="toggleEditMode(true)">تعديل</button>
+                    <button class="btn-danger flex-1" style="width: auto;" onclick="handleLogout()">تسجيل الخروج</button>
                 </div>
             </div>
 
             <div id="profile-edit" style="display: none;">
                 <div class="space-y-3 mb-6">
-                    <input type="text" id="edit-name" class="input-field" placeholder="الاسم الظاهر الجديد">
-                    <input type="text" id="edit-user" class="input-field" placeholder="اسم المستخدم (اليوزر) الجديد">
-                    <p class="text-xs" style="color: var(--text-muted);">* كلمة المرور لا يمكن تغييرها من هنا.</p>
+                    <input type="text" id="edit-name" class="input-field" placeholder="الاسم الجديد">
+                    <input type="text" id="edit-user" class="input-field" placeholder="اسم المستخدم الجديد">
+                    <p class="text-xs" style="color: var(--text-muted);">* لا يمكن تغيير كلمة المرور من هنا.</p>
                 </div>
                 <div class="flex gap-3">
                     <button class="btn-ghost flex-1" onclick="toggleEditMode(false)">إلغاء</button>
@@ -864,7 +864,7 @@
                 <h3 class="text-lg font-bold"><i class="fas fa-bell ml-1"></i> الإشعارات</h3>
                 <button onclick="closeNotificationsModal()" style="background:none;border:none;color:var(--text-muted);font-size:20px;"><i class="fas fa-times"></i></button>
             </div>
-            <p class="text-xs mb-4" style="color: var(--text-muted);">يتم عرض التعليقات التي تحتوي على الكلمات المفتاحية المُحدّدة في المراقب الذكي. لإدارة الكلمات، افتح <i class="fas fa-archive"></i> المؤرشف ثم تبويب <i class="fas fa-eye"></i> المراقب الذكي.</p>
+            <p class="text-xs mb-4" style="color: var(--text-muted);">تظهر هنا التعليقات التي تطابق كلمات مراقبتك. يمكنك إدارة الكلمات من شاشة <i class="fas fa-archive"></i> الأرشيف ← تبويب <i class="fas fa-eye"></i> المراقب الذكي.</p>
             <h4 class="text-sm font-bold mb-3">سجل الإشعارات</h4>
             <div id="notifications-list" style="max-height: 400px; overflow-y: auto;">
                 <div class="empty-state" style="padding: 20px;"><i class="fas fa-bell-slash"></i><p style="color: var(--text-muted);">لا توجد إشعارات بعد.</p></div>
@@ -875,12 +875,12 @@
     <!-- مودال كلمة المرور للبث المحفوظ -->
     <div id="password-modal" class="modal-overlay">
         <div class="modal-content">
-            <h3 class="text-lg font-bold mb-1">تسجيل الدخول للبث</h3>
+            <h3 class="text-lg font-bold mb-1">دخول البث</h3>
             <p class="text-sm mb-5" style="color: var(--text-muted);">أدخل كلمة المرور للمتابعة</p>
             <input id="modal-pass-input" type="password" class="input-field mb-4" placeholder="كلمة المرور">
             <div class="flex gap-3">
                 <button class="btn-ghost flex-1" onclick="closePasswordModal()">إلغاء</button>
-                <button id="confirm-login-btn" class="btn-primary flex-1" style="width: auto;" onclick="confirmLoginFromList()">تأكيد الدخول</button>
+                <button id="confirm-login-btn" class="btn-primary flex-1" style="width: auto;" onclick="confirmLoginFromList()">تأكيد</button>
             </div>
         </div>
     </div>
@@ -888,10 +888,10 @@
     <!-- مودال لوحة تحكم الأدمن -->
     <div id="admin-modal" class="modal-overlay">
         <div class="modal-content">
-            <h3 class="text-lg font-bold mb-1 text-red-400"><i class="fas fa-shield-alt ml-1"></i> لوحة تحكم الأدمن</h3>
-            <p class="text-sm mb-5" style="color: var(--text-muted);">أدخل اسم مستخدم البث وكلمة مرور الأدمن لحذف البث وكل تعليقاته.</p>
-            <input id="admin-user-input" type="text" class="input-field mb-3" placeholder="يوزر البث المراد حذفه">
-            <input id="admin-pass-input" type="password" class="input-field mb-4" placeholder="كلمة مرور الأدمن">
+            <h3 class="text-lg font-bold mb-1 text-red-400"><i class="fas fa-shield-alt ml-1"></i> لوحة التحكم</h3>
+            <p class="text-sm mb-5" style="color: var(--text-muted);">أدخل اسم مستخدم البث وكلمة مرور التحكم لحذف البث وكل البيانات المرتبطة به نهائياً.</p>
+            <input id="admin-user-input" type="text" class="input-field mb-3" placeholder="اسم المستخدم للبث المراد حذفه">
+            <input id="admin-pass-input" type="password" class="input-field mb-4" placeholder="كلمة مرور التحكم">
             <div class="flex gap-3">
                 <button class="btn-ghost flex-1" onclick="closeAdminModal()">إلغاء</button>
                 <button class="btn-danger flex-1" style="width: auto;" onclick="handleAdminDelete()"><i class="fas fa-trash ml-1"></i> حذف البث نهائياً</button>
@@ -907,7 +907,7 @@
             <div id="entry-icon" class="entry-icon-wrap">
                 <i class="fas fa-video"></i>
             </div>
-            <div id="entry-title" class="entry-title">جاري الدخول للبث</div>
+            <div id="entry-title" class="entry-title">جارٍ الدخول للبث</div>
             <div id="entry-subtitle" class="entry-subtitle">يرجى الانتظار...</div>
             <div id="entry-spinner" class="entry-spinner"></div>
             <div id="entry-steps" class="entry-steps"></div>
@@ -996,7 +996,7 @@
             btn.style.background = 'var(--hx-bg-soft)';
             btn.style.borderColor = 'var(--hx-accent)';
             btn.style.color = 'var(--hx-fg)';
-            btn.title = `مرحباً ${currentUser.display_name} — اضغط لإدارة الحساب`;
+            btn.title = `مرحباً ${currentUser.display_name} — اضغط لإدارة حسابك`;
         } else {
             // عرض أيقونة user فقط عند عدم تسجيل الدخول
             btn.innerHTML = '<i class="fas fa-user"></i>';
@@ -1037,7 +1037,7 @@
     async function saveProfileChanges() {
         const newName = document.getElementById('edit-name').value.trim();
         const newUser = document.getElementById('edit-user').value.trim();
-        if (!newName || !newUser) { showToast('يرجى ملء الحقول', 'error'); return; }
+        if (!newName || !newUser) { showToast('يرجى تعبئة جميع الحقول', 'error'); return; }
 
         try {
             const { data, error } = await supabaseClient.from('users').update({ display_name: newName, username: newUser }).eq('id', currentUser.id).select().single();
@@ -1047,8 +1047,8 @@
             localStorage.setItem('vrtx_user', JSON.stringify(data));
             updateUserCircle();
             handleUserCircleClick(); // Refresh modal
-            showToast('تم تحديث المعلومات بنجاح', 'success');
-        } catch(e) { showToast('خطأ في التحديث', 'error'); }
+            showToast('تم تحديث الملف الشخصي', 'success');
+        } catch(e) { showToast('فشل التحديث', 'error'); }
     }
 
     function handleLogout() {
@@ -1056,7 +1056,7 @@
         currentUser = null;
         updateUserCircle();
         closeProfileModal();
-        showToast('تم تسجيل الخروج بنجاح', 'info');
+        showToast('تم تسجيل الخروج', 'info');
     }
 
     function openAuthModal() { document.getElementById('auth-modal').classList.add('show'); switchAuthTab('signin'); }
@@ -1074,14 +1074,14 @@
         const fieldsDiv = document.getElementById('auth-fields');
         const submitBtn = document.getElementById('auth-submit-btn');
         if (mode === 'signin') {
-            fieldsDiv.innerHTML = `<input id="auth-username" type="text" class="input-field mb-3" placeholder="اسم المستخدم (اليوزر)"><input id="auth-password" type="password" class="input-field mb-3" placeholder="كلمة المرور">`;
-            submitBtn.innerText = 'تسجيل الدخول';
+            fieldsDiv.innerHTML = `<input id="auth-username" type="text" class="input-field mb-3" placeholder="اسم المستخدم"><input id="auth-password" type="password" class="input-field mb-3" placeholder="كلمة المرور">`;
+            submitBtn.innerText = 'دخول';
         } else if (mode === 'signup') {
-            fieldsDiv.innerHTML = `<input id="auth-display" type="text" class="input-field mb-3" placeholder="الاسم الظاهر (أي اسم تختاره)"><input id="auth-username" type="text" class="input-field mb-3" placeholder="اسم المستخدم (يوزر لا يمكن تكراره)"><input id="auth-password" type="password" class="input-field mb-3" placeholder="كلمة المرور">`;
-            submitBtn.innerText = 'إنشاء حساب';
+            fieldsDiv.innerHTML = `<input id="auth-display" type="text" class="input-field mb-3" placeholder="الاسم المعروض (أي اسم)"><input id="auth-username" type="text" class="input-field mb-3" placeholder="اسم المستخدم (فريد)"><input id="auth-password" type="password" class="input-field mb-3" placeholder="كلمة المرور">`;
+            submitBtn.innerText = 'إنشاء';
         } else if (mode === 'quick') {
-            fieldsDiv.innerHTML = `<input id="auth-display" type="text" class="input-field mb-3" placeholder="أدخل اسماً ظاهراً فقط"><p class="text-xs text-center" style="color: var(--text-muted);">سيتم توليد اليوزر والباسورد تلقائياً وحفظها.</p>`;
-            submitBtn.innerText = 'تسجيل سريع';
+            fieldsDiv.innerHTML = `<input id="auth-display" type="text" class="input-field mb-3" placeholder="الاسم المعروض فقط"><p class="text-xs text-center" style="color: var(--text-muted);">سيتم توليد اسم المستخدم وكلمة المرور تلقائياً وحفظهما.</p>`;
+            submitBtn.innerText = 'إنشاء سريع';
         }
     }
 
@@ -1089,23 +1089,23 @@
         if (currentAuthMode === 'signin') {
             const username = document.getElementById('auth-username').value.trim();
             const password = document.getElementById('auth-password').value.trim();
-            if (!username || !password) { showToast('يرجى ملء الحقول', 'error'); return; }
+            if (!username || !password) { showToast('يرجى تعبئة جميع الحقول', 'error'); return; }
             const { data, error } = await supabaseClient.from('users').select('*').eq('username', username).eq('password', password).single();
             if (error || !data) { showToast('بيانات الدخول غير صحيحة', 'error'); return; }
-            currentUser = data; localStorage.setItem('vrtx_user', JSON.stringify(data)); updateUserCircle(); closeAuthModal(); showToast('تم تسجيل الدخول بنجاح', 'success');
+            currentUser = data; localStorage.setItem('vrtx_user', JSON.stringify(data)); updateUserCircle(); closeAuthModal(); showToast('تم تسجيل الدخول', 'success');
         } else if (currentAuthMode === 'signup') {
             const display = document.getElementById('auth-display').value.trim(); const username = document.getElementById('auth-username').value.trim(); const password = document.getElementById('auth-password').value.trim();
-            if (!display || !username || !password) { showToast('يرجى ملء جميع الحقول', 'error'); return; }
+            if (!display || !username || !password) { showToast('يرجى تعبئة جميع الحقول', 'error'); return; }
             const { data, error } = await supabaseClient.from('users').insert([{ display_name: display, username: username, password: password }]).select().single();
             if (error) { showToast('اسم المستخدم مستخدم مسبقاً', 'error'); return; }
-            currentUser = data; localStorage.setItem('vrtx_user', JSON.stringify(data)); updateUserCircle(); closeAuthModal(); showToast('تم إنشاء الحساب وتسجيل الدخول', 'success');
+            currentUser = data; localStorage.setItem('vrtx_user', JSON.stringify(data)); updateUserCircle(); closeAuthModal(); showToast('تم إنشاء الحساب', 'success');
         } else if (currentAuthMode === 'quick') {
             const display = document.getElementById('auth-display').value.trim();
-            if (!display) { showToast('يرجى إدخال الاسم الظاهر', 'error'); return; }
+            if (!display) { showToast('الاسم المعروض مطلوب', 'error'); return; }
             const randomUser = 'user_' + Math.random().toString(36).substring(2, 8); const randomPass = Math.random().toString(36).substring(2, 10);
             const { data, error } = await supabaseClient.from('users').insert([{ display_name: display, username: randomUser, password: randomPass }]).select().single();
-            if (error) { showToast('خطأ في التسجيل السريع، حاول مرة أخرى', 'error'); return; }
-            currentUser = data; localStorage.setItem('vrtx_user', JSON.stringify(data)); updateUserCircle(); closeAuthModal(); showToast(`تم التسجيل السريع! يوزرك هو: ${randomUser}`, 'success');
+            if (error) { showToast('فشل الإنشاء السريع، حاول مرة أخرى', 'error'); return; }
+            currentUser = data; localStorage.setItem('vrtx_user', JSON.stringify(data)); updateUserCircle(); closeAuthModal(); showToast(`تم الإنشاء بنجاح · اسم المستخدم: ${randomUser}`, 'success');
         }
     }
 
@@ -1115,39 +1115,39 @@
 
     async function handleNewRegister() {
         const url = document.getElementById('new-url').value.trim(); const user = document.getElementById('new-user').value.trim(); const pass = document.getElementById('new-pass').value.trim();
-        if (!url || !user || !pass) { showToast('يرجى ملء جميع الحقول', 'error'); return; }
+        if (!url || !user || !pass) { showToast('يرجى تعبئة جميع الحقول', 'error'); return; }
         const videoId = getVideoId(url); if (!videoId) { showToast('رابط يوتيوب غير صالح', 'error'); return; }
         try {
-            // فحص العدد قبل الإضافة (طبقة أولى)
+            // Layer 1: pre-count check
             const { count, error: countError } = await supabaseClient.from('saved_streams').select('*', { count: 'exact', head: true }).eq('is_active', true);
             if (countError) throw countError;
             if (count >= MAX_ACTIVE_STREAMS) {
-                showToast(`🚫 تم الوصول للحد الأقصى (${MAX_ACTIVE_STREAMS} بث نشط). احذف بثاً قديماً لإضافة جديد.`, 'error');
+                showToast(`وصلت للحد الأقصى (${MAX_ACTIVE_STREAMS} بث نشط). احذف أحد البثوث القديمة لإضافة بث جديد.`, 'error');
                 return;
             }
             const { data: existingStreams } = await supabaseClient.from('saved_streams').select('stream_url').ilike('stream_url', `%${videoId}%`);
-            if (existingStreams && existingStreams.length > 0) { showToast('هذا البث مسجل مسبقاً!', 'error'); return; }
+            if (existingStreams && existingStreams.length > 0) { showToast('هذا البث مُسجّل مسبقاً', 'error'); return; }
             const { error } = await supabaseClient.from('saved_streams').insert([{ username: user, password: pass, stream_url: url, is_active: true }]);
             if (error) {
-                // طبقة ثانية: قاعدة البيانات ترفض لو الـ trigger ضبط محاولة تجاوز
+                // Layer 2: DB trigger rejects on overflow
                 if (error.message && error.message.includes('MAX_STREAMS_REACHED')) {
-                    showToast(`🚫 تم الوصول للحد الأقصى (${MAX_ACTIVE_STREAMS} بث نشط)`, 'error');
+                    showToast(`وصلت للحد الأقصى (${MAX_ACTIVE_STREAMS} بث نشط)`, 'error');
                 } else {
                     throw error;
                 }
                 return;
             }
-            showToast(`✅ تم الحفظ بنجاح (${count + 1}/${MAX_ACTIVE_STREAMS} بث نشط)`, 'success');
+            showToast(`تم الحفظ (${count + 1}/${MAX_ACTIVE_STREAMS} بث نشط)`, 'success');
             startLiveStream(videoId);
         } catch(e) { showToast('فشل الحفظ: ' + (e.message || ''), 'error'); }
     }
 
     async function showStreamList() {
         showScreen('screen-list'); const container = document.getElementById('streams-list-container');
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p style="color: var(--text-muted);">جاري التحميل...</p></div>';
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p style="color: var(--text-muted);">جارٍ التحميل...</p></div>';
         try {
             const { data, error } = await supabaseClient.from('saved_streams').select('username, stream_url').order('created_at', { ascending: false });
-            if (error) throw error; if (!data || data.length === 0) { container.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i><p class="font-bold mt-4">لا توجد بثوث محفوظة</p></div>'; return; }
+            if (error) throw error; if (!data || data.length === 0) { container.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i><p class="font-bold mt-4">لا توجد بثوث محفوظة بعد</p></div>'; return; }
             container.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>'; const grid = container.firstChild;
             data.forEach(stream => {
                 const videoId = getVideoId(stream.stream_url); const card = document.createElement('div');
@@ -1161,7 +1161,7 @@
                 btn.addEventListener('click', () => openPasswordModal(stream.username, stream.stream_url));
                 card.appendChild(left); card.appendChild(btn); grid.appendChild(card);
             });
-        } catch(e) { container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p class="mt-4">خطأ في التحميل</p></div>'; }
+        } catch(e) { container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p class="mt-4">فشل التحميل</p></div>'; }
     }
 
     function openAdminModal() { document.getElementById('admin-user-input').value = ''; document.getElementById('admin-pass-input').value = ''; document.getElementById('admin-modal').classList.add('show'); }
@@ -1169,19 +1169,19 @@
 
     async function handleAdminDelete() {
         const streamUser = document.getElementById('admin-user-input').value.trim(); const adminPass = document.getElementById('admin-pass-input').value.trim();
-        if (!streamUser || !adminPass) { showToast('يرجى إدخال البيانات', 'error'); return; }
+        if (!streamUser || !adminPass) { showToast('يرجى تعبئة جميع الحقول', 'error'); return; }
         
-        // تأكيد مزدوج قبل الحذف النهائي
-        if (!confirm(`⚠️ سيتم حذف البث "${streamUser}" وكل ما يتعلق به نهائياً:\n\n• التعليقات المؤرشفة\n• الرسائل (المحادثة)\n• كلمات المراقبة الذكية\n• الإشعارات\n• أقفال Leader Election\n\nهل أنت متأكد؟`)) return;
+        // Double-confirm before permanent delete
+        if (!confirm(`⚠️ سيتم حذف البث "${streamUser}" وكل البيانات المرتبطة به نهائياً:\n\n• التعليقات المؤرشفة\n• رسائل المحادثة\n• كلمات المراقبة\n• الإشعارات\n• أقفال الانتخاب\n\nهل أنت متأكد؟`)) return;
         
         try {
-            // 1) التحقق من كلمة مرور الأدمن
+            // 1) Verify admin password
             const { data: settings, error: settingsError } = await supabaseClient.from('app_settings').select('admin_password').eq('id', 1).single();
-            if (settingsError || !settings || settings.admin_password !== adminPass) { showToast('كلمة مرور الأدمن غير صحيحة', 'error'); return; }
+            if (settingsError || !settings || settings.admin_password !== adminPass) { showToast('كلمة مرور التحكم غير صحيحة', 'error'); return; }
             
-            // 2) جلب بيانات البث
+            // 2) Fetch stream record
             const { data: stream, error: streamError } = await supabaseClient.from('saved_streams').select('id, stream_url').eq('username', streamUser).single();
-            if (streamError || !stream) { showToast('اسم المستخدم غير موجود', 'error'); return; }
+            if (streamError || !stream) { showToast('اسم مستخدم البث غير موجود', 'error'); return; }
             
             const videoId = getVideoId(stream.stream_url);
             const streamId = stream.id;
@@ -1194,7 +1194,7 @@
             
             // 4) حذف كل البيانات المرتبطة بالـ videoId بالتوازي (أسرع 5 أضعاف)
             if (videoId) {
-                showToast('جاري حذف بيانات البث...', 'info');
+                showToast('جارٍ حذف بيانات البث...', 'info');
                 
                 const deleteResults = await Promise.allSettled([
                     supabaseClient.from('archived_comments').delete().eq('stream_id', videoId),
@@ -1204,29 +1204,29 @@
                     supabaseClient.from('stream_locks').delete().eq('stream_id', videoId),
                 ]);
                 
-                // تسجيل أي أخطاء (بدون ما يوقف العملية)
+                // Log failures (non-blocking)
                 const tables = ['archived_comments', 'stream_messages', 'monitor_keywords', 'monitor_notifications', 'stream_locks'];
                 const failedTables = deleteResults
                     .map((r, i) => r.status === 'rejected' ? tables[i] : null)
                     .filter(Boolean);
                 
                 if (failedTables.length > 0) {
-                    console.warn('فشل حذف بعض الجداول:', failedTables);
+                    console.warn('Failed to delete tables:', failedTables);
                 }
             }
             
-            // 5) أخيراً: حذف البث نفسه من saved_streams
+            // 5) Finally: delete the stream itself from saved_streams
             const { error: deleteError } = await supabaseClient.from('saved_streams').delete().eq('id', streamId);
             if (deleteError) throw deleteError;
             
-            showToast(`✅ تم حذف البث "${streamUser}" وجميع بياناته نهائياً`, 'success');
+            showToast(`تم حذف البث "${streamUser}" نهائياً`, 'success');
             closeAdminModal();
             showStreamList();
-        } catch(e) { showToast('خطأ في الحذف: ' + (e.message || ''), 'error'); }
+        } catch(e) { showToast('فشل الحذف: ' + (e.message || ''), 'error'); }
     }
 
     function openPasswordModal(username, streamUrl) {
-        if (isEnteringSession) { showToast('جاري الدخول إلى بث آخر، يرجى الانتظار...', 'info'); return; }
+        if (isEnteringSession) { showToast('جارٍ الدخول لبث آخر، يرجى الانتظار...', 'info'); return; }
         tempLoginData = { username, streamUrl };
         document.getElementById('modal-pass-input').value = '';
         document.getElementById('password-modal').classList.add('show');
@@ -1240,16 +1240,16 @@
     // === المرحلة 1: التحقق من كلمة المرور فقط ===
     // بعد نجاح التحقق، نعتمد على streamData كمصدر وحيد للحقيقة ولا نعود إلى tempLoginData.
     async function confirmLoginFromList() {
-        if (isEnteringSession) { showToast('جاري الدخول إلى بث آخر، يرجى الانتظار...', 'info'); return; }
+        if (isEnteringSession) { showToast('جارٍ الدخول لبث آخر، يرجى الانتظار...', 'info'); return; }
         if (!tempLoginData) return;
         const pass = document.getElementById('modal-pass-input').value.trim();
         if (!pass) { showToast('أدخل كلمة المرور', 'error'); return; }
 
         const btn = document.getElementById('confirm-login-btn');
         const originalText = btn ? btn.innerHTML : '';
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الدخول...'; }
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الدخول...'; }
 
-        // التقاط اسم المستخدم قبل تنظيف tempLoginData
+        // Capture username before clearing tempLoginData
         const targetUsername = tempLoginData.username;
 
         let streamData = null;
@@ -1267,12 +1267,12 @@
             }
             streamData = data;
         } catch(e) {
-            showToast('خطأ في التحقق: ' + (e.message || ''), 'error');
+            showToast('خطأ في المصادقة: ' + (e.message || ''), 'error');
             if (btn) { btn.disabled = false; btn.innerHTML = originalText; }
             return;
         }
 
-        // استخراج videoId من streamData.stream_url (وليس من tempLoginData)
+        // Extract videoId from streamData.stream_url (not from tempLoginData)
         const videoId = getVideoId(streamData.stream_url);
         if (!videoId) {
             showToast('رابط البث في السجل غير صالح', 'error');
@@ -1316,7 +1316,7 @@
         const iconWrap = document.getElementById('entry-icon');
         const spinner = document.getElementById('entry-spinner');
         const actions = document.getElementById('entry-actions');
-        if (titleEl) titleEl.textContent = title || 'جاري الدخول للبث';
+        if (titleEl) titleEl.textContent = title || 'جارٍ الدخول للبث';
         if (subEl) subEl.textContent = subtitle || 'يرجى الانتظار...';
         if (iconWrap) { iconWrap.className = 'entry-icon-wrap'; iconWrap.innerHTML = '<i class="fas fa-video"></i>'; }
         if (spinner) spinner.style.display = 'block';
@@ -1354,7 +1354,7 @@
         const spinner = document.getElementById('entry-spinner');
         const actions = document.getElementById('entry-actions');
         if (titleEl) titleEl.textContent = title || 'فشل الدخول';
-        if (subEl) subEl.textContent = subtitle || 'حدث خطأ غير متوقع';
+        if (subEl) subEl.textContent = subtitle || 'خطأ غير متوقع';
         if (iconWrap) { iconWrap.className = 'entry-icon-wrap error'; iconWrap.innerHTML = '<i class="fas fa-exclamation-triangle"></i>'; }
         if (spinner) spinner.style.display = 'none';
         if (actions) actions.style.display = 'flex';
@@ -1398,15 +1398,15 @@
     // فشل أي خدمة خلفية لا يمنع فتح الجلسة، فقط يُظهر تنبيه للخدمة الفاشلة.
     async function startLiveStreamWithOverlay(videoId, streamData) {
         if (isEnteringSession) {
-            showToast('جاري الدخول إلى بث آخر، يرجى الانتظار...', 'info');
+            showToast('جارٍ الدخول لبث آخر، يرجى الانتظار...', 'info');
             return;
         }
 
-        // === التحقق من streamData (المصدر الوحيد للحقيقة) ===
+        // === Verify streamData (single source of truth) ===
         if (!streamData || !streamData.stream_url) {
             renderEntrySteps(['إعداد الجلسة']);
-            showEntryOverlay('فشل الدخول', 'بيانات البث غير مكتملة في السجل.');
-            setEntryError('بيانات البث غير مكتملة', 'لم يتم العثور على رابط البث في سجل saved_streams. قد يكون البث قد حُذف أو لم يعد صالحاً.');
+            showEntryOverlay('فشل الدخول', 'بيانات البث غير مكتملة.');
+            setEntryError('بيانات البث غير مكتملة', 'لا يوجد رابط للبث في السجل. قد يكون البث قد حُذف أو أنه غير صالح.');
             return;
         }
 
@@ -1414,7 +1414,7 @@
         if (!verifiedVideoId) {
             renderEntrySteps(['إعداد الجلسة']);
             showEntryOverlay('فشل الدخول', 'رابط البث غير صالح.');
-            setEntryError('رابط البث غير صالح', 'تعذّر استخراج معرّف الفيديو من streamData.stream_url: ' + (streamData.stream_url || '(فارغ)'));
+            setEntryError('رابط البث غير صالح', 'تعذّر استخراج معرّف الفيديو من رابط البث: ' + (streamData.stream_url || '(فارغ)'));
             return;
         }
         // استخدام videoId المُتحقق منه من streamData (وليس من أي مصدر آخر)
@@ -1447,19 +1447,19 @@
         document.getElementById('comments-empty').style.display = 'none';
         document.getElementById('comments-error').style.display = 'none';
         document.getElementById('comments-count').textContent = '0 تعليق';
-        document.getElementById('status-text').textContent = 'جاري فتح الجلسة...';
+        document.getElementById('status-text').textContent = 'جارٍ فتح الجلسة...';
         hideStreamWarning();
 
-        // === إظهار شاشة البث فوراً + overlay الدخول ===
+        // === Show comments screen immediately + entry overlay ===
         showScreen('screen-comments');
         const steps = [
             'إعداد الجلسة',
-            'تحميل الأرشيف (خلفية)',
-            'الاتصال بـ Realtime (خلفية)',
-            'الاتصال بيوتيوب (خلفية)'
+            'تحميل الأرشيف (في الخلفية)',
+            'الاتصال اللحظي (في الخلفية)',
+            'الاتصال بيوتيوب (في الخلفية)'
         ];
         renderEntrySteps(steps);
-        showEntryOverlay('جاري الدخول للبث', 'معرف البث: ' + effectiveVideoId);
+        showEntryOverlay('جارٍ الدخول للبث', 'معرّف البث: ' + effectiveVideoId);
         setEntryStep(0, 'active');
 
         // === المرحلة 1: إعداد الجلسة (تم بالفعل أعلاه) ===
@@ -1472,8 +1472,8 @@
 
         hideEntryOverlay();
         isEnteringSession = false;
-        showToast('تم الدخول لجلسة البث', 'success');
-        document.getElementById('status-text').textContent = 'متصل — جاري تحميل الخدمات...';
+        showToast('جلسة البث مفعّلة', 'success');
+        document.getElementById('status-text').textContent = 'تم الاتصال — جارٍ تحميل الخدمات...';
 
         // === المرحلة 3: الخدمات الخلفية (غير حظرية) — فشل أي منها لا يغلق الجلسة ===
 
@@ -1504,7 +1504,7 @@
                 console.error('Realtime setup error:', e);
                 if (myToken === sessionToken) {
                     setEntryStep(2, 'done');
-                    showStreamWarning('تعذّر الاتصال بـ Realtime — قد لا تصل التعليقات المباشرة فوراً.');
+                    showStreamWarning('Realtime connect failed — live comments may be delayed.');
                 }
             });
 
@@ -1538,13 +1538,13 @@
         if (!currentVideoId) return;
         const statusEl = document.getElementById('status-text');
         if (youTubeConnectionOk && isLeader) {
-            statusEl.textContent = 'أنت القائد - جلب مباشر من يوتيوب';
+            statusEl.textContent = 'قائد — جلب مباشر من يوتيوب';
         } else if (youTubeConnectionOk && !isLeader) {
-            statusEl.textContent = 'متصل (تابع) - استقبال مباشر';
+            statusEl.textContent = 'متابع — بث مباشر';
         } else if (commentsTotal > 0) {
-            statusEl.textContent = 'متصل عبر الأرشيف (يوتيوب يعيد المحاولة)';
+            statusEl.textContent = 'وضع الأرشيف (يوتيوب يعاود المحاولة)';
         } else {
-            statusEl.textContent = 'متصل — بانتظار التعليقات';
+            statusEl.textContent = 'تم الاتصال — بانتظار التعليقات';
             document.getElementById('comments-loading').style.display = 'none';
             document.getElementById('comments-empty').style.display = 'flex';
         }
@@ -1591,7 +1591,7 @@
                 if (myToken !== sessionToken) return;
                 const notif = payload.new;
                 document.getElementById('notif-dot').classList.add('show');
-                showToast(`🔔 المراقب الذكي: تم استخدام "${notif.keyword}" بواسطة ${notif.author_name}`, 'info');
+                showToast(`مراقبة: الكلمة "${notif.keyword}" في تعليق من ${notif.author_name}`, 'info');
                 if (document.getElementById('notifications-modal').classList.contains('show')) renderNotifications();
             }).subscribe();
     }
@@ -1624,7 +1624,7 @@
     // نحاول جلب السجل من saved_streams باستخدام videoId.
     async function startLiveStream(videoId) {
         if (!videoId) { showToast('معرّف البث غير صالح', 'error'); return; }
-        if (isEnteringSession) { showToast('جاري الدخول إلى بث آخر، يرجى الانتظار...', 'info'); return; }
+        if (isEnteringSession) { showToast('جارٍ الدخول لبث آخر، يرجى الانتظار...', 'info'); return; }
 
         // محاولة جلب streamData من saved_streams (إن وُجد السجل)
         let streamData = null;
@@ -1660,16 +1660,16 @@
             const liveDetails = vidData.items[0].liveStreamingDetails;
             if (!liveDetails) throw new Error('هذا الفيديو ليس بثاً مباشراً');
             const newChatId = liveDetails.activeLiveChatId || liveDetails.liveChatId;
-            if (!newChatId) throw new Error('لا يوجد معرف دردشة مباشرة لهذا البث');
-            // نجاح — حدّث liveChatId وفعّل الجلب المباشر إذا كان قائداً
+            if (!newChatId) throw new Error('لا يوجد معرّف محادثة مباشرة لهذا البث');
+            // success — update liveChatId and start direct fetch if leader
             liveChatId = newChatId; youTubeConnectionOk = true; hideStreamWarning();
-            if (isLeader) { startYouTubePolling(); document.getElementById('status-text').textContent = 'أنت القائد - جلب مباشر من يوتيوب'; }
-            else { document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر'; }
+            if (isLeader) { startYouTubePolling(); document.getElementById('status-text').textContent = 'قائد — جلب مباشر من يوتيوب'; }
+            else { document.getElementById('status-text').textContent = 'متابع — بث مباشر'; }
         } catch(e) {
             youTubeConnectionOk = false;
-            // لا نُظهر شاشة خطأ — فقط لافتة تحذير ناعمة، والجلسة تظل نشطة عبر Realtime
-            showStreamWarning('تعذّر الاتصال المباشر بيوتيوب — التعليقات تصل عبر الأرشيف. إعادة المحاولة تلقائياً خلال 30 ثانية.');
-            document.getElementById('status-text').textContent = 'متصل عبر الأرشيف (يوتيوب غير متاح مؤقتاً)';
+            // No error screen — only a soft warning banner; session stays active via Realtime
+            showStreamWarning('تعذّر الاتصال المباشر بيوتيوب — ستصل التعليقات عبر الأرشيف. ستتم إعادة المحاولة تلقائياً خلال 30 ثانية.');
+            document.getElementById('status-text').textContent = 'وضع الأرشيف (يوتيوب غير متاح)';
             // إخفاء الـ loading إذا لم تكن هناك تعليقات بعد
             if (commentsTotal === 0) {
                 document.getElementById('comments-loading').style.display = 'none';
@@ -1683,7 +1683,7 @@
 
     function retryYouTubeConnection() {
         if (!currentVideoId) return;
-        showStreamWarning('جاري إعادة الاتصال بيوتيوب...');
+        showStreamWarning('جارٍ إعادة الاتصال بيوتيوب...');
         attemptYouTubeConnect(currentVideoId);
     }
 
@@ -1700,15 +1700,15 @@
                 isLeader = true;
                 if (liveChatId && youTubeConnectionOk) {
                     startYouTubePolling();
-                    document.getElementById('status-text').textContent = 'أنت القائد - جلب مباشر من يوتيوب';
+                    document.getElementById('status-text').textContent = 'قائد — جلب مباشر من يوتيوب';
                 } else {
-                    document.getElementById('status-text').textContent = 'أنت القائد - بانتظار اتصال يوتيوب...';
+                    document.getElementById('status-text').textContent = 'قائد — بانتظار يوتيوب...';
                 }
             } else if (!gotLeadership && isLeader) {
                 isLeader = false; stopYouTubePolling();
-                document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر';
+                document.getElementById('status-text').textContent = 'متابع — بث مباشر';
             } else if (!gotLeadership && !isLeader) {
-                document.getElementById('status-text').textContent = 'متصل (تابع) - استقبال مباشر';
+                document.getElementById('status-text').textContent = 'متابع — بث مباشر';
                 if (commentsTotal === 0 && !youTubeConnectionOk) {
                     document.getElementById('comments-loading').style.display = 'none';
                     document.getElementById('comments-empty').style.display = 'flex';
@@ -1716,8 +1716,8 @@
             }
         } catch(e) {
             console.error('Lock error:', e);
-            // إذا فشل القفل، نُبقي الجلسة نشطة ونعتمد على Realtime
-            document.getElementById('status-text').textContent = 'متصل عبر الأرشيف';
+            // If lock failed, keep session active and rely on Realtime
+            document.getElementById('status-text').textContent = 'وضع الأرشيف';
             if (commentsTotal === 0) {
                 document.getElementById('comments-loading').style.display = 'none';
                 document.getElementById('comments-empty').style.display = 'flex';
@@ -1800,7 +1800,7 @@
             await supabaseClient.from('monitor_keywords').insert([{ stream_id: currentVideoId, keyword: kw }]);
             input.value = '';
             renderKeywords();
-        } catch(e) { showToast('خطأ في إضافة الكلمة', 'error'); }
+        } catch(e) { showToast('فشل إضافة الكلمة', 'error'); }
     }
 
     async function removeKeyword(kw) {
@@ -1808,16 +1808,16 @@
         try {
             await supabaseClient.from('monitor_keywords').delete().eq('stream_id', currentVideoId).eq('keyword', kw);
             renderKeywords();
-        } catch(e) { showToast('خطأ في الحذف', 'error'); }
+        } catch(e) { showToast('فشل الحذف', 'error'); }
     }
 
     async function renderKeywords() {
         const container = document.getElementById('keywords-list');
-        container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">جاري التحميل...</p>';
+        container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">جارٍ التحميل...</p>';
         if (!currentVideoId) return;
         const { data } = await supabaseClient.from('monitor_keywords').select('keyword').eq('stream_id', currentVideoId);
         container.innerHTML = '';
-        if (!data || data.length === 0) { container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">لا توجد كلمات مراقبة حالياً.</p>'; return; }
+        if (!data || data.length === 0) { container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">لا توجد كلمات مراقبة بعد.</p>'; return; }
         data.forEach(k => {
             const tag = document.createElement('div');
             tag.className = 'flex items-center gap-2 px-3 py-1 rounded-full text-xs';
@@ -1850,7 +1850,7 @@
 
     // === نظام المحادثة (Chat) ===
     function openChatScreen() {
-        if (!currentUser) { showToast('يجب تسجيل الدخول أولاً للمشاركة في المحادثة', 'error'); openAuthModal(); return; }
+        if (!currentUser) { showToast('يجب تسجيل الدخول لاستخدام المحادثة', 'error'); openAuthModal(); return; }
         showScreen('screen-chat'); loadChatMessages();
         if (chatChannel) supabaseClient.removeChannel(chatChannel);
         chatChannel = supabaseClient.channel('public:stream_messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stream_messages', filter: `stream_id=eq.${currentVideoId}` }, payload => { addChatMessageToUI(payload.new); }).subscribe();
@@ -1858,7 +1858,7 @@
 
     async function loadChatMessages() {
         const list = document.getElementById('chat-list'); list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>'; renderedChats.clear();
-        try { const { data, error } = await supabaseClient.from('stream_messages').select('*').eq('stream_id', currentVideoId).order('created_at', { ascending: true }).limit(100); if (error) throw error; list.innerHTML = ''; if (data.length === 0) { list.innerHTML = '<div class="empty-state"><i class="fas fa-comment-slash"></i><p style="color: var(--text-muted);">لا توجد رسائل بعد. كن أول من يبدأ المحادثة!</p></div>'; return; } data.forEach(msg => addChatMessageToUI(msg)); } catch(e) { list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>خطأ في تحميل المحادثة</p></div>'; }
+        try { const { data, error } = await supabaseClient.from('stream_messages').select('*').eq('stream_id', currentVideoId).order('created_at', { ascending: true }).limit(100); if (error) throw error; list.innerHTML = ''; if (data.length === 0) { list.innerHTML = '<div class="empty-state"><i class="fas fa-comment-slash"></i><p style="color: var(--text-muted);">لا توجد رسائل بعد. كن أول من يبدأ الحديث!</p></div>'; return; } data.forEach(msg => addChatMessageToUI(msg)); } catch(e) { list.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>تعذّر تحميل المحادثة</p></div>'; }
     }
 
     function addChatMessageToUI(msg) {
@@ -1891,7 +1891,7 @@
     async function sendChatMessage() {
         const input = document.getElementById('chat-input'); const text = input.value.trim();
         if (!text) return;
-        if (!currentUser) { showToast('يجب تسجيل الدخول أولاً', 'error'); openAuthModal(); return; }
+        if (!currentUser) { showToast('يجب تسجيل الدخول', 'error'); openAuthModal(); return; }
         if (!currentVideoId) { showToast('لا يوجد بث نشط', 'error'); return; }
         input.value = '';
         try {
@@ -1909,7 +1909,7 @@
             }
         } catch(e) {
             console.error('Chat send exception:', e);
-            showToast('فشل إرسال الرسالة: ' + (e.message || ''), 'error');
+            showToast('فشل الإرسال: ' + (e.message || ''), 'error');
             input.value = text;
         }
     }
@@ -1924,7 +1924,7 @@
             query = query.order('published_at', { ascending: true }); const { data, error } = await query; if (error) throw error;
             if (data.length === 0) { 
                 status.innerHTML = '<i class="fas fa-inbox ml-1"></i> لا توجد نتائج مطابقة'; 
-                list.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open" style="font-size:32px; opacity:0.3;"></i><p class="mt-3" style="color: var(--text-muted);">لا توجد تعليقات مطابقة لبحثك</p></div>';
+                list.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open" style="font-size:32px; opacity:0.3;"></i><p class="mt-3" style="color: var(--text-muted);">لا توجد تعليقات مؤرشفة تطابق بحثك</p></div>';
                 return; 
             }
             status.innerHTML = `<i class="fas fa-list ml-1" style="color: var(--accent);"></i> ${data.length} تعليق مؤرشف`;
@@ -1945,7 +1945,7 @@
                 `; 
                 list.appendChild(card); 
             });
-        } catch(e) { status.innerHTML = '<i class="fas fa-exclamation-triangle ml-1" style="color:#f87171;"></i> خطأ في التحميل'; }
+        } catch(e) { status.innerHTML = '<i class="fas fa-exclamation-triangle ml-1" style="color:#f87171;"></i> فشل التحميل'; }
     }
     function searchArchivedComments() { clearTimeout(searchDebounce); const term = document.getElementById('search-archive-input').value.trim(); const user = document.getElementById('search-archive-user').value.trim(); searchDebounce = setTimeout(() => loadArchivedComments(term, user), 300); }
 
@@ -1971,8 +1971,26 @@
     function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
     function retryFetchComments() { if (currentVideoId) startLiveStream(currentVideoId); }
 
+    // Toggle Admin Panel visibility based on app_settings.admin_panel_visible (default: hidden)
+    async function syncAdminPanelVisibility() {
+        try {
+            const { data, error } = await supabaseClient
+                .from('app_settings')
+                .select('admin_panel_visible')
+                .eq('id', 1)
+                .maybeSingle();
+            const btn = document.getElementById('admin-panel-btn');
+            if (error || !data) { if (btn) btn.style.display = 'none'; return; }
+            if (btn) btn.style.display = data.admin_panel_visible === true ? 'inline-flex' : 'none';
+        } catch (e) {
+            const btn = document.getElementById('admin-panel-btn');
+            if (btn) btn.style.display = 'none';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         updateUserCircle(); const lastStream = localStorage.getItem('vrtx_last_stream'); if (lastStream) { startLiveStream(lastStream); }
+        syncAdminPanelVisibility();
         document.getElementById('new-pass').addEventListener('keydown', e => { if (e.key === 'Enter') handleNewRegister(); });
         document.getElementById('modal-pass-input').addEventListener('keydown', e => { if (e.key === 'Enter') confirmLoginFromList(); });
         document.getElementById('admin-pass-input').addEventListener('keydown', e => { if (e.key === 'Enter') handleAdminDelete(); });
