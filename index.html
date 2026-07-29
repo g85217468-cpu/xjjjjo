@@ -1900,17 +1900,29 @@
     async function loadExistingComments(videoId) {
         if (!videoId) return 0;
         try {
-            const { data, error } = await supabaseClient
-                .from('archived_comments')
-                .select('*')
-                .eq('stream_id', videoId)
-                .order('published_at', { ascending: true });
-            if (error) throw error;
-            if (!data || data.length === 0) return 0;
+            let allComments = [];
+            let page = 0;
+            let hasMore = true;
+            while (hasMore) {
+                const from = page * 1000;
+                const to = from + 999;
+                const { data, error } = await supabaseClient
+                    .from('archived_comments')
+                    .select('*')
+                    .eq('stream_id', videoId)
+                    .order('published_at', { ascending: true })
+                    .range(from, to);
+                if (error) throw error;
+                if (!data || data.length === 0) break;
+                allComments = allComments.concat(data);
+                if (data.length < 1000) hasMore = false;
+                page++;
+            }
+            if (allComments.length === 0) return 0;
             document.getElementById('comments-loading').style.display = 'none';
             document.getElementById('comments-empty').style.display = 'none';
-            data.forEach(item => addCommentToUI(item, true));
-            return data.length;
+            allComments.forEach(item => addCommentToUI(item, true));
+            return allComments.length;
         } catch(e) {
             console.error('Load existing error:', e);
             return 0;
@@ -1947,11 +1959,16 @@
         youTubeConnectAttempt++;
         try {
             let vidData = null;
-            for (let i = 0; i < YOUTUBE_API_KEYS.length; i++) {
+            // جرب حتى 5 مفاتيح مختلفة (ليس مفتاح واحد فقط)
+            const maxTries = Math.min(5, YOUTUBE_API_KEYS.length);
+            for (let i = 0; i < maxTries; i++) {
                 const keyIndex = (currentKeyIndex + i) % YOUTUBE_API_KEYS.length;
-                const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${YOUTUBE_API_KEYS[keyIndex]}`);
-                const data = await resp.json();
-                if (!data.error) { vidData = data; currentKeyIndex = keyIndex; break; }
+                try {
+                    const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${YOUTUBE_API_KEYS[keyIndex]}`);
+                    const data = await resp.json();
+                    if (!data.error) { vidData = data; currentKeyIndex = keyIndex; break; }
+                    if (data.error.code !== 403) break; // خطأ ليس حصة — لا فائدة من تجربة مفاتيح أخرى
+                } catch(e) { continue; }
             }
             if (!vidData) throw new Error('فشل في جلب بيانات الفيديو');
             if (!vidData.items || vidData.items.length === 0) throw new Error('الفيديو غير موجود');
@@ -2031,7 +2048,43 @@
         if (!liveChatId) return;
         if (fetchInProgress) return;
         fetchInProgress = true;
-        try { const currentApiKey = YOUTUBE_API_KEYS[currentKeyIndex]; let apiUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=200&key=${currentApiKey}`; if (nextPageToken) apiUrl += `&pageToken=${nextPageToken}`; const resp = await fetch(apiUrl); const data = await resp.json(); if (data.error && (data.error.code === 403 || data.error.errors?.[0]?.reason === 'quotaExceeded')) { currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length; return; } if (data.error) throw new Error(data.error.message); if (data.nextPageToken) nextPageToken = data.nextPageToken; if (data.items && data.items.length > 0) { document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-empty').style.display = 'none'; const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt)); await archiveCommentsToSupabase(sorted); sorted.forEach(item => { const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() }; addCommentToUI(newItem, true); }); } } catch(e) { console.error('Fetch error:', e); } finally { fetchInProgress = false; }
+        try {
+            let success = false;
+            for (let attempt = 0; attempt < YOUTUBE_API_KEYS.length && !success; attempt++) {
+                const keyIndex = (currentKeyIndex + attempt) % YOUTUBE_API_KEYS.length;
+                const currentApiKey = YOUTUBE_API_KEYS[keyIndex];
+                let apiUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=200&key=${currentApiKey}`;
+                if (nextPageToken) apiUrl += `&pageToken=${nextPageToken}`;
+                try {
+                    const resp = await fetch(apiUrl);
+                    const data = await resp.json();
+                    if (data.error) {
+                        if (data.error.code === 403 || (data.error.errors && data.error.errors[0] && data.error.errors[0].reason === 'quotaExceeded')) {
+                            currentKeyIndex = (keyIndex + 1) % YOUTUBE_API_KEYS.length;
+                            continue;
+                        }
+                        currentKeyIndex = (keyIndex + 1) % YOUTUBE_API_KEYS.length;
+                        continue;
+                    }
+                    currentKeyIndex = keyIndex;
+                    if (data.nextPageToken) nextPageToken = data.nextPageToken;
+                    if (data.items && data.items.length > 0) {
+                        document.getElementById('comments-loading').style.display = 'none';
+                        document.getElementById('comments-empty').style.display = 'none';
+                        const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt));
+                        await archiveCommentsToSupabase(sorted);
+                        sorted.forEach(item => {
+                            const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() };
+                            addCommentToUI(newItem, true);
+                        });
+                    }
+                    success = true;
+                } catch(fetchErr) {
+                    currentKeyIndex = (keyIndex + 1) % YOUTUBE_API_KEYS.length;
+                    continue;
+                }
+            }
+        } catch(e) { console.error('Fetch error:', e); } finally { fetchInProgress = false; }
     }
 
     async function archiveCommentsToSupabase(comments) {
