@@ -855,39 +855,74 @@
         <div id="monitor-pane" class="archive-pane">
             <div class="mod-section" style="overflow-y: auto; max-height: 100%;">
 
-                <!-- ═══════ قسم الأدمن (صاحب الموقع) — ربط حساب Google مرة واحدة ═══════ -->
+                <!-- ═══════ قسم الأدمن (صاحب الموقع) — محمي بكلمة سر ═══════ -->
                 <div class="mod-card" id="mod-admin-card">
                     <div class="mod-card-title"><i class="fas fa-crown" style="color: #fbbf24;"></i> إعداد حساب المشرف (للأدمن فقط)</div>
 
-                    <!-- الحالة: لم يتم الربط بعد -->
-                    <div id="mod-admin-offline">
+                    <!-- حالة: مقفل بكلمة سر -->
+                    <div id="mod-admin-locked">
                         <p class="text-xs mb-3" style="color: var(--text-muted);">
-                            يجب ربط حسابك في يوتيوب مرة واحدة فقط. بعد ذلك، أي مستخدم يستطيع طلب تعيين حسابك كمشرف لأي بث.
+                            هذا القسم محمي بكلمة سر. فقط صاحب الموقع يستطيع الوصول.
                         </p>
-                        <button class="mod-btn mod-btn-google" onclick="modAdminSignIn()">
-                            <i class="fab fa-google"></i> ربط حساب YouTube (أدمن)
-                        </button>
-                    </div>
-
-                    <!-- الحالة: تم الربط -->
-                    <div id="mod-admin-online" class="hidden">
-                        <div class="mod-status-row" style="margin-bottom: 0;">
-                            <div class="mod-status-icon active"><i class="fas fa-check-circle"></i></div>
-                            <div class="mod-status-text" style="flex:1;">
-                                <h4 id="mod-admin-name">حساب الأدمن متصل</h4>
-                                <p id="mod-admin-email">جاهز لإرسال الرسائل على كل البثوث</p>
-                            </div>
-                            <div class="mod-badge online"><div class="mod-dot"></div> متصل</div>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="password" class="mod-input" id="mod-admin-password-input" placeholder="كلمة سر الأدمن..." onkeydown="if(event.key==='Enter')modUnlockAdmin()" />
+                            <button class="mod-btn mod-btn-primary" onclick="modUnlockAdmin()" style="width: auto; padding: 10px 16px; flex-shrink: 0;">
+                                <i class="fas fa-lock-open"></i> فتح
+                            </button>
                         </div>
-                        <button class="mod-btn mod-btn-secondary hidden" id="mod-admin-disconnect-btn" onclick="modAdminDisconnect()" style="margin-top: 10px; font-size: 12px; padding: 8px;">
-                            <i class="fas fa-link-slash"></i> فصل الحساب
-                        </button>
+                        <p id="mod-admin-lock-error" class="text-xs mt-2" style="color: #f87171; display: none;">كلمة السر خاطئة</p>
                     </div>
 
-                    <!-- جاري التحميل -->
-                    <div id="mod-admin-loading" class="hidden" style="text-align: center; padding: 16px;">
-                        <i class="fas fa-spinner fa-spin" style="font-size: 20px; color: var(--accent);"></i>
-                        <p class="text-xs mt-2" style="color: var(--text-muted);">جارٍ التحقق من حالة الحساب...</p>
+                    <!-- حالة: مفتوح — إظهار أدوات الأدمن -->
+                    <div id="mod-admin-unlocked" class="hidden">
+                        <!-- لم يتم الربط بعد -->
+                        <div id="mod-admin-offline">
+                            <p class="text-xs mb-3" style="color: var(--text-muted);">
+                                يجب ربط حسابك في يوتيوب مرة واحدة فقط. بعد ذلك، أي مستخدم يستطيع طلب تعيين حسابك كمشرف لأي بث.
+                            </p>
+                            <button class="mod-btn mod-btn-google" onclick="modAdminSignIn()">
+                                <i class="fab fa-google"></i> ربط حساب YouTube (أدمن)
+                            </button>
+                            <!-- تعيين كلمة سر للمرة الأولى -->
+                            <div id="mod-set-password-section" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+                                <label class="text-xs font-bold" style="color: var(--text-muted); display: block; margin-bottom: 6px;">
+                                    <i class="fas fa-key" style="color: var(--accent);"></i> تعيين كلمة سر للأدمن (لا تُنسى!)
+                                </label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="password" class="mod-input" id="mod-admin-new-password" placeholder="كلمة سر جديدة..." />
+                                    <button class="mod-btn mod-btn-secondary" onclick="modSetPassword()" style="width: auto; padding: 10px 14px; flex-shrink: 0;">
+                                        <i class="fas fa-save"></i> حفظ
+                                    </button>
+                                </div>
+                                <p id="mod-set-password-msg" class="text-xs mt-2" style="display: none;"></p>
+                            </div>
+                        </div>
+
+                        <!-- تم الربط -->
+                        <div id="mod-admin-online" class="hidden">
+                            <div class="mod-status-row" style="margin-bottom: 0;">
+                                <div class="mod-status-icon active"><i class="fas fa-check-circle"></i></div>
+                                <div class="mod-status-text" style="flex:1;">
+                                    <h4 id="mod-admin-name">حساب الأدمن متصل</h4>
+                                    <p id="mod-admin-email">جاهز لإرسال الرسائل على كل البثوث</p>
+                                </div>
+                                <div class="mod-badge online"><div class="mod-dot"></div> متصل</div>
+                            </div>
+                            <button class="mod-btn mod-btn-secondary" id="mod-admin-disconnect-btn" onclick="modAdminDisconnect()" style="margin-top: 10px; font-size: 12px; padding: 8px;">
+                                <i class="fas fa-link-slash"></i> فصل الحساب
+                            </button>
+                        </div>
+
+                        <!-- جاري التحميل -->
+                        <div id="mod-admin-loading" class="hidden" style="text-align: center; padding: 16px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 20px; color: var(--accent);"></i>
+                            <p class="text-xs mt-2" style="color: var(--text-muted);">جارٍ التحقق من حالة الحساب...</p>
+                        </div>
+
+                        <!-- زر إغلاق القسم -->
+                        <button class="mod-btn mod-btn-secondary" onclick="modLockAdmin()" style="margin-top: 10px; font-size: 11px; padding: 6px 12px; width: auto;">
+                            <i class="fas fa-lock"></i> إقفال قسم الأدمن
+                        </button>
                     </div>
                 </div>
 
@@ -2006,11 +2041,182 @@
     }
 
     // ════════════════════════════════════════════
-    // 2) إعداد الأدمن — ربط Google → تخزين في Supabase
+    // 2) حماية قسم الأدمن بكلمة سر
+    // ════════════════════════════════════════════
+    let modIsUnlocked = false;
+
+    // تشفير بسيط لكلمة السر (ليست آمنة للإنتاج، لكن كافية لحماية بسيطة)
+    async function modHashPassword(password) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(password + 'vrtx_admin_salt_2024');
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // فتح قسم الأدمن بكلمة السر
+    async function modUnlockAdmin() {
+        const input = document.getElementById('mod-admin-password-input');
+        const errorEl = document.getElementById('mod-admin-lock-error');
+        const password = input.value.trim();
+        if (!password) { errorEl.style.display = 'block'; errorEl.textContent = 'أدخل كلمة السر'; return; }
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('app_settings')
+                .select('admin_password')
+                .eq('id', 1)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (!data || !data.admin_password) {
+                modIsUnlocked = true;
+                document.getElementById('mod-admin-locked').classList.add('hidden');
+                document.getElementById('mod-admin-unlocked').classList.remove('hidden');
+                modLoadAdminTokenState();
+                return;
+            }
+
+            const hash = await modHashPassword(password);
+            if (hash === data.admin_password) {
+                modIsUnlocked = true;
+                errorEl.style.display = 'none';
+                input.value = '';
+                document.getElementById('mod-admin-locked').classList.add('hidden');
+                document.getElementById('mod-admin-unlocked').classList.remove('hidden');
+                modLoadAdminTokenState();
+            } else {
+                errorEl.style.display = 'block';
+                errorEl.textContent = 'كلمة السر خاطئة';
+                input.value = '';
+            }
+        } catch(e) {
+            console.error('Unlock admin error:', e);
+            errorEl.style.display = 'block';
+            errorEl.textContent = 'خطأ في الاتصال — حاول مرة أخرى';
+        }
+    }
+
+    // إقفال قسم الأدمن
+    function modLockAdmin() {
+        modIsUnlocked = false;
+        document.getElementById('mod-admin-unlocked').classList.add('hidden');
+        document.getElementById('mod-admin-locked').classList.remove('hidden');
+        document.getElementById('mod-admin-offline').classList.add('hidden');
+        document.getElementById('mod-admin-online').classList.add('hidden');
+        document.getElementById('mod-admin-loading').classList.add('hidden');
+    }
+
+    // تعيين كلمة سر جديدة
+    async function modSetPassword() {
+        const input = document.getElementById('mod-admin-new-password');
+        const msgEl = document.getElementById('mod-set-password-msg');
+        const password = input.value.trim();
+        if (!password || password.length < 4) {
+            msgEl.style.display = 'block';
+            msgEl.style.color = '#f87171';
+            msgEl.textContent = 'كلمة السر قصيرة جداً (4 أحرف على الأقل)';
+            return;
+        }
+
+        try {
+            const hash = await modHashPassword(password);
+            const { error } = await supabaseClient
+                .from('app_settings')
+                .update({ admin_password: hash, updated_at: new Date().toISOString() })
+                .eq('id', 1);
+
+            if (error) throw error;
+
+            input.value = '';
+            msgEl.style.display = 'block';
+            msgEl.style.color = '#34d399';
+            msgEl.textContent = 'تم حفظ كلمة السر بنجاح! تذكرها جيداً.';
+            showToast('تم تعيين كلمة سر الأدمن بنجاح', 'success');
+
+            setTimeout(function() {
+                document.getElementById('mod-set-password-section').style.display = 'none';
+            }, 3000);
+        } catch(e) {
+            msgEl.style.display = 'block';
+            msgEl.style.color = '#f87171';
+            msgEl.textContent = 'فشل حفظ كلمة السر: ' + e.message;
+        }
+    }
+
+    // فحص خفيف: هل الأدمن متصل؟ (بدون فتح واجهة الأدمن — للمستخدمين العاديين)
+    async function modCheckAdminReady() {
+        try {
+            const { data, error } = await supabaseClient
+                .from('app_settings')
+                .select('mod_token, mod_name')
+                .eq('id', 1)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (data && data.mod_token && data.mod_token.length > 10) {
+                modAdminToken = data.mod_token;
+                modAdminName = data.mod_name || 'الأدمن';
+                modAdminReady = true;
+
+                // تحقق سريع من صلاحية التوكن
+                try {
+                    const r = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                        headers: { Authorization: 'Bearer ' + modAdminToken }
+                    });
+                    if (!r.ok) {
+                        modAdminReady = false;
+                        modAdminToken = null;
+                    }
+                } catch(e) {}
+            } else {
+                modAdminReady = false;
+            }
+        } catch(e) {
+            modAdminReady = false;
+        }
+    }
+
+    // ════════════════════════════════════════════
+    // 3) إعداد الأدمن — ربط Google → تخزين في Supabase
     // ════════════════════════════════════════════
 
     // عند فتح تبويب المراقب الذكي: تحميل حالة الأدمن من Supabase
     async function modLoadAdminState() {
+        try {
+            // فحص هل يوجد كلمة سر — لتحديد ما إذا نعرض القفل أم لا
+            const { data: settings, error: sError } = await supabaseClient
+                .from('app_settings')
+                .select('admin_password')
+                .eq('id', 1)
+                .maybeSingle();
+
+            if (sError) throw sError;
+
+            // إذا لا توجد كلمة سر، نعرض القسم بدون قفل (للمرة الأولى)
+            if (!settings || !settings.admin_password) {
+                modIsUnlocked = true;
+                document.getElementById('mod-admin-locked').classList.add('hidden');
+                document.getElementById('mod-admin-unlocked').classList.remove('hidden');
+                modLoadAdminTokenState();
+            } else {
+                // توجد كلمة سر — اعرض القفل
+                modIsUnlocked = false;
+                document.getElementById('mod-admin-locked').classList.remove('hidden');
+                document.getElementById('mod-admin-unlocked').classList.add('hidden');
+            }
+        } catch(e) {
+            console.error('Load admin state error:', e);
+            modIsUnlocked = false;
+            document.getElementById('mod-admin-locked').classList.remove('hidden');
+            document.getElementById('mod-admin-unlocked').classList.add('hidden');
+        }
+    }
+
+    // تحميل حالة التوكن فقط (بعد فتح القفل)
+    async function modLoadAdminTokenState() {
         const offline = document.getElementById('mod-admin-offline');
         const online = document.getElementById('mod-admin-online');
         const loading = document.getElementById('mod-admin-loading');
@@ -2030,13 +2236,11 @@
             if (error) throw error;
 
             if (data && data.mod_token && data.mod_token.length > 10) {
-                // الأدمن متصل — جرب التوكن
                 modAdminToken = data.mod_token;
                 modAdminName = data.mod_name || 'الأدمن';
                 modAdminEmail = data.mod_email || '';
                 modAdminReady = true;
 
-                // التحقق من صلاحية التوكن
                 try {
                     const r = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
                         headers: { Authorization: 'Bearer ' + modAdminToken }
@@ -2044,18 +2248,17 @@
                     if (r.ok) {
                         modShowAdminOnline();
                     } else {
-                        // التوكن منتهي الصلاحية
                         await modClearAdminToken();
                         modShowAdminOffline();
                     }
                 } catch(e) {
-                    modShowAdminOnline(); // نفترض صالح حتى يثبت العكس
+                    modShowAdminOnline();
                 }
             } else {
                 modShowAdminOffline();
             }
         } catch(e) {
-            console.error('Load admin state error:', e);
+            console.error('Load admin token error:', e);
             modShowAdminOffline();
         }
     }
@@ -2068,6 +2271,9 @@
         if (offline) offline.classList.remove('hidden');
         if (online) online.classList.add('hidden');
         if (loading) loading.classList.add('hidden');
+        // إظهار قسم كلمة السر إذا لم تُعيَّن بعد
+        const pwSection = document.getElementById('mod-set-password-section');
+        if (pwSection) pwSection.style.display = 'block';
     }
 
     function modShowAdminOnline() {
@@ -2511,6 +2717,8 @@
             renderKeywords();
             // تحميل حالة الأدمن من Supabase عند فتح المراقب
             modLoadAdminState();
+            // فحص خفيف لتوكن الأدمن حتى زر "جعله مشرف" يعمل للمستخدمين العاديين
+            modCheckAdminReady();
         } else {
             // default: archive
             document.getElementById('archive-tab-btn').classList.add('active');
