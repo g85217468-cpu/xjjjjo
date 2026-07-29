@@ -1595,6 +1595,7 @@
     let isEnteringSession = false;
     let sessionToken = 0;                // يُزاد عند كل جلسة جديدة لإبطال العمليات القديمة
     let entryTargetStreamData = null;    // يحفظ streamData الكامل لإعادة المحاولة
+    let streamData_cache = null;         // نسخة من streamData للوصول من attemptYouTubeConnect
 
     function showStreamWarning(msg) {
         const w = document.getElementById('stream-warning'); const t = document.getElementById('stream-warning-text');
@@ -1723,6 +1724,7 @@
         const myToken = ++sessionToken;
         entryTargetVideoId = effectiveVideoId;
         entryTargetStreamData = streamData;
+        streamData_cache = streamData;
 
         // === تنظيف أي جلسة سابقة (منع تكرار القنوات والمؤقتات) ===
         cleanupPreviousSession();
@@ -1850,19 +1852,15 @@
 
     // === تنظيف الجلسة السابقة — يجب استدعاؤها قبل فتح جلسة جديدة ===
     function cleanupPreviousSession() {
-        // إيقاف polling يوتيوب
         stopYouTubePolling();
-        // إيقاف انتخاب القائد
         if (leaderCheckTimer) { clearInterval(leaderCheckTimer); leaderCheckTimer = null; }
-        // إيقاف مؤقت إعادة اتصال يوتيوب
         if (youTubeReconnectTimer) { clearTimeout(youTubeReconnectTimer); youTubeReconnectTimer = null; }
-        // إزالة قنوات Supabase Realtime لمنع التكرار
         if (realtimeChannel) { try { supabaseClient.removeChannel(realtimeChannel); } catch(e) {} realtimeChannel = null; }
         if (chatChannel) { try { supabaseClient.removeChannel(chatChannel); } catch(e) {} chatChannel = null; }
         if (notifChannel) { try { supabaseClient.removeChannel(notifChannel); } catch(e) {} notifChannel = null; }
-        // تصفير الحالة
         currentVideoId = null;
         liveChatId = null;
+        streamData_cache = null;
         isLeader = false;
         youTubeConnectionOk = false;
         youTubeConnectAttempt = 0;
@@ -1953,44 +1951,116 @@
         return startLiveStreamWithOverlay(videoId, streamData);
     }
 
-    // محاولة اتصال YouTube مع إعادة المحاولة التلقائية بدون حظر الجلسة
+    // محاولة اتصال YouTube — يجرب حتى 20 مفتاح + يستخدم liveChatId المخزّن كاحتياطي
     async function attemptYouTubeConnect(videoId) {
         if (!currentVideoId || currentVideoId !== videoId) return;
         youTubeConnectAttempt++;
+        let fallbackChatId = null;
         try {
             let vidData = null;
-            // جرب حتى 5 مفاتيح مختلفة (ليس مفتاح واحد فقط)
-            const maxTries = Math.min(5, YOUTUBE_API_KEYS.length);
+            // جرب حتى 20 مفتاح مختلفًا — يكفي لأن 157 مشروع منفصل
+            const maxTries = Math.min(20, YOUTUBE_API_KEYS.length);
+            let lastError = '';
+            let lastErrorCode = 0;
             for (let i = 0; i < maxTries; i++) {
                 const keyIndex = (currentKeyIndex + i) % YOUTUBE_API_KEYS.length;
                 try {
                     const resp = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${YOUTUBE_API_KEYS[keyIndex]}`);
                     const data = await resp.json();
-                    if (!data.error) { vidData = data; currentKeyIndex = keyIndex; break; }
-                    if (data.error.code !== 403) break; // خطأ ليس حصة — لا فائدة من تجربة مفاتيح أخرى
-                } catch(e) { continue; }
+                    if (!data.error) {
+                        vidData = data;
+                        currentKeyIndex = keyIndex;
+                        break;
+                    }
+                    lastError = data.error.message || '';
+                    lastErrorCode = data.error.code || 0;
+                    // الأخطاء القابلة للإصلاح بمفتاح آخر: 403 (حصة/صلاحيات) أو 400 (مفتاح غير صالح)
+                    // الأخطاء غير القابلة للإصلاح: 404 (فيديو غير موجود) → توقف فوراً
+                    if (data.error.code === 404) break;
+                    // لجميع الأخطاء الأخرى (403, 400, 500...) → جرب المفتاح التالي
+                    currentKeyIndex = (keyIndex + 1) % YOUTUBE_API_KEYS.length;
+                } catch(e) { currentKeyIndex = (keyIndex + 1) % YOUTUBE_API_KEYS.length; continue; }
             }
-            if (!vidData) throw new Error('فشل في جلب بيانات الفيديو');
+            if (!vidData) {
+                console.warn('YT Connect: جميع المفاتيح فشلت', lastError);
+                // إذا كان الخطأ 404 → الفيديو غير موجود، لا تُعد المحاولة
+                if (lastErrorCode === 404) {
+                    youTubeConnectionOk = false;
+                    showStreamWarning('الفيديو غير موجود أو تم حذفه.');
+                    document.getElementById('status-text').textContent = 'الفيديو غير موجود';
+                    document.getElementById('comments-loading').style.display = 'none';
+                    document.getElementById('comments-empty').style.display = 'flex';
+                    return;
+                }
+                // احتياطي: جرب استخدام liveChatId المخزّن في Supabase
+                fallbackChatId = streamData_cache ? (streamData_cache.live_chat_id || null) : null;
+                if (fallbackChatId) {
+                    console.log('YT Connect: استخدام liveChatId المخزّن كاحتياطي:', fallbackChatId);
+                    liveChatId = fallbackChatId;
+                    youTubeConnectionOk = true;
+                    hideStreamWarning();
+                    if (isLeader) { startYouTubePolling(); document.getElementById('status-text').textContent = 'قائد — جلب بحسب بيانات محفوظة'; }
+                    else { document.getElementById('status-text').textContent = 'متابع — بث مباشر'; }
+                    return;
+                }
+                throw new Error('فشل في جلب بيانات الفيديو: ' + lastError);
+            }
             if (!vidData.items || vidData.items.length === 0) throw new Error('الفيديو غير موجود');
             const liveDetails = vidData.items[0].liveStreamingDetails;
-            if (!liveDetails) throw new Error('هذا الفيديو ليس بثاً مباشراً');
-            const newChatId = liveDetails.activeLiveChatId || liveDetails.liveChatId;
-            if (!newChatId) throw new Error('لا يوجد معرّف محادثة مباشرة لهذا البث');
-            // success — update liveChatId and start direct fetch if leader
-            liveChatId = newChatId; youTubeConnectionOk = true; hideStreamWarning();
+            if (!liveDetails) {
+                // البث انتهى أو لم يكن مباشرًا — جرب liveChatId المخزّن كاحتياطي
+                fallbackChatId = streamData_cache ? (streamData_cache.live_chat_id || null) : null;
+                if (fallbackChatId) {
+                    console.log('YT Connect: البث انتهى، استخدام liveChatId المخزّن');
+                    liveChatId = fallbackChatId;
+                    youTubeConnectionOk = true;
+                    hideStreamWarning();
+                    if (isLeader) { startYouTubePolling(); document.getElementById('status-text').textContent = 'قائد — بث منتهي (بيانات محفوظة)'; }
+                    else { document.getElementById('status-text').textContent = 'متابع — بث منتهي'; }
+                    return;
+                }
+                throw new Error('هذا الفيديو ليس بثًا مباشرًا ولا توجد بيانات محفوظة');
+            }
+            // البث نشط أو منتهي لكن liveStreamingDetails موجودة
+            // ملاحظة: YouTube API يُرجع activeLiveChatId فقط للبث المباشر النشط
+            // للبث المنتهي: activeLiveChatId يظل متاحاً لفترة بعد الانتهاء
+            const newChatId = liveDetails.activeLiveChatId || null;
+            if (!newChatId) {
+                // لا يوجد activeLiveChatId (البث انتهى منذ فترة طويلة) لكن liveChatId قد يكون مخزّنًا
+                fallbackChatId = streamData_cache ? (streamData_cache.live_chat_id || null) : null;
+                if (fallbackChatId) {
+                    console.log('YT Connect: activeLiveChatId فارغ، استخدام liveChatId المخزّن');
+                    liveChatId = fallbackChatId;
+                    youTubeConnectionOk = true;
+                    hideStreamWarning();
+                    if (isLeader) { startYouTubePolling(); document.getElementById('status-text').textContent = 'قائد — بث منتهي (بيانات محفوظة)'; }
+                    else { document.getElementById('status-text').textContent = 'متابع — بث منتهي'; }
+                    return;
+                }
+                // البث منتهي ولا يوجد liveChatId مخزّن — لا يمكن الاتصال
+                throw new Error('لا يوجد معرّف محادثة مباشرة لهذا البث');
+            }
+            // success — update liveChatId and save to Supabase
+            liveChatId = newChatId;
+            youTubeConnectionOk = true;
+            hideStreamWarning();
+            // حفظ liveChatId في Supabase لاستخدامه لاحقًا كاحتياطي
+            if (streamData_cache) {
+                try {
+                    await supabaseClient.from('saved_streams').update({ live_chat_id: newChatId }).eq('id', streamData_cache.id);
+                } catch(e) {}
+            }
             if (isLeader) { startYouTubePolling(); document.getElementById('status-text').textContent = 'قائد — جلب مباشر من يوتيوب'; }
             else { document.getElementById('status-text').textContent = 'متابع — بث مباشر'; }
         } catch(e) {
+            console.error('YT Connect failed:', e.message);
             youTubeConnectionOk = false;
-            // No error screen — only a soft warning banner; session stays active via Realtime
             showStreamWarning('تعذّر الاتصال المباشر بيوتيوب — ستصل التعليقات عبر الأرشيف. ستتم إعادة المحاولة تلقائياً خلال 30 ثانية.');
             document.getElementById('status-text').textContent = 'وضع الأرشيف (يوتيوب غير متاح)';
-            // إخفاء الـ loading إذا لم تكن هناك تعليقات بعد
             if (commentsTotal === 0) {
                 document.getElementById('comments-loading').style.display = 'none';
                 document.getElementById('comments-empty').style.display = 'flex';
             }
-            // إعادة المحاولة تلقائياً بعد 30 ثانية
             if (youTubeReconnectTimer) clearTimeout(youTubeReconnectTimer);
             youTubeReconnectTimer = setTimeout(() => { if (currentVideoId === videoId) attemptYouTubeConnect(videoId); }, 30000);
         }
@@ -2050,7 +2120,9 @@
         fetchInProgress = true;
         try {
             let success = false;
-            for (let attempt = 0; attempt < YOUTUBE_API_KEYS.length && !success; attempt++) {
+            // جرب حتى 10 مفاتيح فقط (ليس 157!) لتجنب التأخير
+            const maxKeyTries = Math.min(10, YOUTUBE_API_KEYS.length);
+            for (let attempt = 0; attempt < maxKeyTries && !success; attempt++) {
                 const keyIndex = (currentKeyIndex + attempt) % YOUTUBE_API_KEYS.length;
                 const currentApiKey = YOUTUBE_API_KEYS[keyIndex];
                 let apiUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=200&key=${currentApiKey}`;
@@ -2059,10 +2131,7 @@
                     const resp = await fetch(apiUrl);
                     const data = await resp.json();
                     if (data.error) {
-                        if (data.error.code === 403 || (data.error.errors && data.error.errors[0] && data.error.errors[0].reason === 'quotaExceeded')) {
-                            currentKeyIndex = (keyIndex + 1) % YOUTUBE_API_KEYS.length;
-                            continue;
-                        }
+                        // أي خطأ → جرب المفتاح التالي
                         currentKeyIndex = (keyIndex + 1) % YOUTUBE_API_KEYS.length;
                         continue;
                     }
@@ -3027,7 +3096,7 @@
 
     // متغير لمنع التكرار أثناء الجلب
     let modPollInProgress = false;
-    // جلب الرسائل وفحص الكلمات المحظورة (مع نظام الجلب الذكي)
+    // جلب الرسائل وفحص الكلمات المحظورة (مع نظام الجلب الذكي + دوران المفاتيح)
     async function modPollMessages() {
         if (!liveChatId || !modIsMonitoring) return;
         if (modPollInProgress) return;
@@ -3035,80 +3104,85 @@
 
         // تحقق من الحصة قبل كل طلب
         if (modGetQuotaRemaining() <= 0) {
-            modAddLog('warn', '⚠️ نفدت الحصة اليومية! المراقبة متوقفة حتى الغد.');
+            modAddLog('warn', 'نفدت الحصة اليومية! المراقبة متوقفة حتى الغد.');
             modStopAutoModeration();
             return;
         }
 
         try {
-            var currentApiKey = YOUTUBE_API_KEYS[currentKeyIndex];
-            var url = 'https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=' + liveChatId + '&part=snippet,authorDetails&maxResults=200&key=' + currentApiKey;
-            if (modNextPageToken) url += '&pageToken=' + modNextPageToken;
-            var r = await fetch(url);
-            var d = await r.json();
+            // جرب حتى 10 مفاتيح عند الفشل
+            let pollSuccess = false;
+            const maxModKeyTries = Math.min(10, YOUTUBE_API_KEYS.length);
+            for (let keyAttempt = 0; keyAttempt < maxModKeyTries && !pollSuccess; keyAttempt++) {
+                const modKeyIndex = (currentKeyIndex + keyAttempt) % YOUTUBE_API_KEYS.length;
+                var url = 'https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=' + liveChatId + '&part=snippet,authorDetails&maxResults=200&key=' + YOUTUBE_API_KEYS[modKeyIndex];
+                if (modNextPageToken) url += '&pageToken=' + modNextPageToken;
+                var r = await fetch(url);
+                var d = await r.json();
 
-            if (d.error) {
-                // إذا خطأ API key — جرب المفتاح التالي
-                if (d.error.code === 403 && (d.error.errors?.[0]?.reason === 'quotaExceeded' || d.error.errors?.[0]?.reason === 'forbidden')) {
-                    currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length;
-                    return;
+                if (d.error) {
+                    // أي خطأ من API → جرب المفتاح التالي
+                    currentKeyIndex = (modKeyIndex + 1) % YOUTUBE_API_KEYS.length;
+                    continue;
                 }
-                return;
-            }
 
-            // تتبع الحصة — فقط عند النجاح
-            modTrackQuota(MOD_QUOTA_COST_LIST);
+                // نجاح → ثبت المفتاح الحالي
+                currentKeyIndex = modKeyIndex;
+                pollSuccess = true;
 
-            // احترم pollingIntervalMs من YouTube
-            if (d.pollingIntervalMs && d.pollingIntervalMs > 0) {
-                modYouTubePollInterval = Math.max(MOD_MIN_INTERVAL, d.pollingIntervalMs);
-            }
+                // تتبع الحصة — فقط عند النجاح
+                modTrackQuota(MOD_QUOTA_COST_LIST);
 
-            modNextPageToken = d.nextPageToken || null;
-            var hasNewMessages = false;
+                // احترم pollingIntervalMs من YouTube
+                if (d.pollingIntervalMs && d.pollingIntervalMs > 0) {
+                    modYouTubePollInterval = Math.max(MOD_MIN_INTERVAL, d.pollingIntervalMs);
+                }
 
-            if (d.items && d.items.length > 0) {
-                hasNewMessages = true;
-                for (var itemIdx = 0; itemIdx < d.items.length; itemIdx++) {
-                    var item = d.items[itemIdx];
-                    var msg = {
-                        id: item.id,
-                        author: item.authorDetails?.displayName || 'مجهول',
-                        text: item.snippet?.displayMessage || '',
-                        time: new Date(item.snippet?.publishedAt || Date.now()),
-                        isOwner: item.authorDetails?.isChatOwner || false,
-                        isMod: item.authorDetails?.isChatModerator || false
-                    };
-                    modStats.total++;
-                    modAddMsgToMonitor(msg);
+                modNextPageToken = d.nextPageToken || null;
+                var hasNewMessages = false;
 
-                    // حذف الكلمات المحظورة (فقط إذا الأدمن مشرف)
-                    if (modIsModerator && modAdminToken && !msg.isOwner && !msg.isMod) {
-                        var lower = msg.text.toLowerCase();
-                        for (var wi = 0; wi < modForbiddenWords.length; wi++) {
-                            if (lower.includes(modForbiddenWords[wi])) {
-                                // تسجيل المخالفة وحساب الخطورة
-                                var newScore = modRecordViolation(msg.author, modForbiddenWords[wi]);
-                                var severity = modCalculateSeverity(msg.author);
-                                // محاولة الحذف
-                                var deleted = await modDeleteMsgAndTrack(msg.id, msg.author, modForbiddenWords[wi]);
-                                // إظهار مؤشر الخطورة على الرسالة
-                                modMarkSeverity(msg.id, msg.author, newScore, severity);
-                                modAddLog('warn', 'مخالفة "' + msg.author + '" — كلمة: "' + modForbiddenWords[wi] + '" — نقاط: ' + newScore + ' — مستوى: ' + severity.label);
-                                break;
+                if (d.items && d.items.length > 0) {
+                    hasNewMessages = true;
+                    for (var itemIdx = 0; itemIdx < d.items.length; itemIdx++) {
+                        var item = d.items[itemIdx];
+                        var msg = {
+                            id: item.id,
+                            author: item.authorDetails?.displayName || 'مجهول',
+                            text: item.snippet?.displayMessage || '',
+                            time: new Date(item.snippet?.publishedAt || Date.now()),
+                            isOwner: item.authorDetails?.isChatOwner || false,
+                            isMod: item.authorDetails?.isChatModerator || false
+                        };
+                        modStats.total++;
+                        modAddMsgToMonitor(msg);
+
+                        // حذف الكلمات المحظورة (فقط إذا الأدمن مشرف)
+                        if (modIsModerator && modAdminToken && !msg.isOwner && !msg.isMod) {
+                            var lower = msg.text.toLowerCase();
+                            for (var wi = 0; wi < modForbiddenWords.length; wi++) {
+                                if (lower.includes(modForbiddenWords[wi])) {
+                                    // تسجيل المخالفة وحساب الخطورة
+                                    var newScore = modRecordViolation(msg.author, modForbiddenWords[wi]);
+                                    var severity = modCalculateSeverity(msg.author);
+                                    // محاولة الحذف
+                                    var deleted = await modDeleteMsgAndTrack(msg.id, msg.author, modForbiddenWords[wi]);
+                                    // إظهار مؤشر الخطورة على الرسالة
+                                    modMarkSeverity(msg.id, msg.author, newScore, severity);
+                                    modAddLog('warn', 'مخالفة "' + msg.author + '" — كلمة: "' + modForbiddenWords[wi] + '" — نقاط: ' + newScore + ' — مستوى: ' + severity.label);
+                                    break;
+                                }
                             }
                         }
                     }
+                    modUpdateStats();
                 }
-                modUpdateStats();
+
+                // ضبط الفاصل الذكي بناءً على النشاط
+                var newInterval = modAdjustPollInterval(hasNewMessages);
+                // تحديث عرض الفاصل
+                var intervalEl = document.getElementById('mod-poll-interval');
+                if (intervalEl) intervalEl.textContent = (newInterval / 1000).toFixed(1);
             }
-
-            // ضبط الفاصل الذكي بناءً على النشاط
-            var newInterval = modAdjustPollInterval(hasNewMessages);
-            // تحديث عرض الفاصل
-            var intervalEl = document.getElementById('mod-poll-interval');
-            if (intervalEl) intervalEl.textContent = (newInterval / 1000).toFixed(1);
-
         } catch(e) { console.error('Mod poll error:', e); }
         modPollInProgress = false;
     }
@@ -3460,16 +3534,29 @@
     async function loadArchivedComments(searchTerm = '', searchUser = '') {
         const list = document.getElementById('archive-list'); const status = document.getElementById('archive-status'); list.innerHTML = ''; status.textContent = 'جاري التحميل...';
         try {
-            let query = supabaseClient.from('archived_comments').select('*').eq('stream_id', currentVideoId);
-            if (searchTerm) query = query.ilike('comment_text', `%${searchTerm}%`); if (searchUser) query = query.ilike('author_name', `%${searchUser}%`);
-            query = query.order('published_at', { ascending: true }); const { data, error } = await query; if (error) throw error;
-            if (data.length === 0) { 
+            // ترقيم كامل — يجلب كل التعليقات بدون حد 1000
+            let allData = [];
+            let page = 0;
+            let hasMore = true;
+            while (hasMore) {
+                const from = page * 1000;
+                const to = from + 999;
+                let query = supabaseClient.from('archived_comments').select('*').eq('stream_id', currentVideoId);
+                if (searchTerm) query = query.ilike('comment_text', `%${searchTerm}%`); if (searchUser) query = query.ilike('author_name', `%${searchUser}%`);
+                query = query.order('published_at', { ascending: true }).range(from, to);
+                const { data, error } = await query; if (error) throw error;
+                if (!data || data.length === 0) break;
+                allData = allData.concat(data);
+                if (data.length < 1000) hasMore = false;
+                page++;
+            }
+            if (allData.length === 0) { 
                 status.innerHTML = '<i class="fas fa-inbox ml-1"></i> لا توجد نتائج مطابقة'; 
                 list.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open" style="font-size:32px; opacity:0.3;"></i><p class="mt-3" style="color: var(--text-muted);">لا توجد تعليقات مؤرشفة تطابق بحثك</p></div>';
                 return; 
             }
-            status.innerHTML = `<i class="fas fa-list ml-1" style="color: var(--accent);"></i> ${data.length} تعليق مؤرشف`;
-            data.forEach(item => { 
+            status.innerHTML = `<i class="fas fa-list ml-1" style="color: var(--accent);"></i> ${allData.length} تعليق مؤرشف`;
+            allData.forEach(item => { 
                 const color = getAvatarColor(item.author_name); 
                 const card = document.createElement('div'); 
                 card.className = 'comment-card archived'; 
