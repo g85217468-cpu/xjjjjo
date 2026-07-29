@@ -2153,15 +2153,12 @@
                 .select('mod_token, mod_name')
                 .eq('id', 1)
                 .maybeSingle();
-
             if (error) throw error;
-
             if (data && data.mod_token && data.mod_token.length > 10) {
                 modAdminToken = data.mod_token;
                 modAdminName = data.mod_name || 'الأدمن';
                 modAdminReady = true;
 
-                // تحقق سريع من صلاحية التوكن
                 try {
                     const r = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
                         headers: { Authorization: 'Bearer ' + modAdminToken }
@@ -2221,7 +2218,6 @@
         const online = document.getElementById('mod-admin-online');
         const loading = document.getElementById('mod-admin-loading');
 
-        // إظهار حالة التحميل
         if (offline) offline.classList.add('hidden');
         if (online) online.classList.add('hidden');
         if (loading) loading.classList.remove('hidden');
@@ -2232,9 +2228,7 @@
                 .select('mod_token, mod_name, mod_email, mod_channel_id')
                 .eq('id', 1)
                 .maybeSingle();
-
             if (error) throw error;
-
             if (data && data.mod_token && data.mod_token.length > 10) {
                 modAdminToken = data.mod_token;
                 modAdminName = data.mod_name || 'الأدمن';
@@ -2343,19 +2337,17 @@
                 channelId = cd.items?.[0]?.id || '';
             } catch(e) {}
 
-            // حفظ في Supabase
-            const { error } = await supabaseClient
+            // حفظ في Supabase (app_settings)
+            const { error: saveErr } = await supabaseClient
                 .from('app_settings')
                 .update({
                     mod_token: token,
                     mod_name: modAdminName,
                     mod_email: modAdminEmail,
-                    mod_channel_id: channelId,
-                    updated_at: new Date().toISOString()
+                    mod_channel_id: channelId
                 })
                 .eq('id', 1);
-
-            if (error) throw error;
+            if (saveErr) throw saveErr;
 
             modAdminReady = true;
             modShowAdminOnline();
@@ -2371,13 +2363,7 @@
         try {
             await supabaseClient
                 .from('app_settings')
-                .update({
-                    mod_token: null,
-                    mod_name: null,
-                    mod_email: null,
-                    mod_channel_id: null,
-                    updated_at: new Date().toISOString()
-                })
+                .update({ mod_token: null, mod_name: null, mod_email: null, mod_channel_id: null })
                 .eq('id', 1);
         } catch(e) {}
 
@@ -2486,7 +2472,6 @@
             });
             if (r.ok) {
                 const d = await r.json();
-                // جلب channel_id للأدمن من Supabase أو API
                 const { data: settings } = await supabaseClient.from('app_settings').select('mod_channel_id').eq('id', 1).maybeSingle();
                 const myId = settings?.mod_channel_id || '';
                 if (myId) {
