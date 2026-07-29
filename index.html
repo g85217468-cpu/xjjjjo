@@ -8,6 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <!-- Google Identity Services لـ OAuth -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
         tailwind.config = {
             theme: {
@@ -278,6 +280,32 @@
         .archive-tab i { font-size: 14px; }
         .archive-pane { display: none; }
         .archive-pane.active { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; overflow: hidden; }
+
+        /* === أنماط المراقب الذكي: تعيين مشرف + حذف تلقائي === */
+        .mod-box { background: rgba(0,0,0,0.25); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 14px; }
+        .mod-box h4 { font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .mod-box h4 i { color: var(--accent); }
+        .mod-status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .mod-status-pill.waiting { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+        .mod-status-pill.active { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+        .mod-status-pill.off { background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.2); }
+        .mod-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        .mod-status-pill.active .mod-dot { animation: livePulse 1.5s ease-in-out infinite; }
+        .mod-toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .mod-toggle-row:last-child { border-bottom: none; }
+        .mod-toggle-label { font-size: 12px; font-weight: 600; }
+        .mod-toggle-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+        .mod-toggle { width: 40px; height: 22px; border-radius: 11px; cursor: pointer; background: rgba(255,255,255,0.08); border: none; outline: none; position: relative; transition: background 0.3s; flex-shrink: 0; }
+        .mod-toggle.on { background: var(--accent); }
+        .mod-toggle::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform 0.3s; }
+        .mod-toggle.on::after { transform: translateX(18px); }
+        .mod-log-area { max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; margin-top: 10px; }
+        .mod-log-entry { padding: 5px 8px; border-radius: 6px; font-size: 11px; display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); }
+        .mod-log-entry i { width: 16px; text-align: center; flex-shrink: 0; }
+        .mod-log-entry.del-log i { color: #f87171; }
+        .mod-log-entry.join-log i { color: #34d399; }
+        .mod-log-entry.warn-log i { color: #fbbf24; }
+        .mod-log-entry .log-ts { color: var(--text-muted); font-size: 10px; margin-right: auto; flex-shrink: 0; }
 
         /* === واجهة داكنة دافئة مريحة للعين — تُطبّق على البث والمحادثة والأرشيف === */
         .screen-comments {
@@ -783,11 +811,70 @@
             <div id="archive-container" class="comments-container"><div id="archive-list"></div></div>
         </div>
 
-        <!-- لوح المراقب الذكي: إدارة الكلمات المفتاحية -->
+        <!-- لوح المراقب الذكي: تعيين مشرف + كلمات محظورة + حذف تلقائي -->
         <div id="monitor-pane" class="archive-pane">
-            <div class="w-full p-4 max-w-2xl mx-auto">
-                <div class="mb-4 p-4 rounded-xl" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border);">
-                    <h4 class="text-sm font-bold mb-3"><i class="fas fa-eye ml-1" style="color: var(--accent);"></i> كلمات المراقبة (للبث الحالي)</h4>
+            <div class="w-full p-4 max-w-2xl mx-auto" style="overflow-y:auto; flex:1;">
+
+                <!-- حالة المشرف -->
+                <div class="mod-box">
+                    <h4><i class="fas fa-user-shield"></i> حالة المشرف</h4>
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <div id="mod-status-text" style="font-size:13px; font-weight:700;">غير متصل بحساب يوتيوب</div>
+                            <div id="mod-status-desc" style="font-size:10px; color:var(--text-muted); margin-top:2px;">قم بربط حسابك لتعيين نفسك مشرفاً في البث</div>
+                        </div>
+                        <div id="mod-status-pill" class="mod-status-pill off"><div class="mod-dot"></div> غير متصل</div>
+                    </div>
+                    <!-- Client ID -->
+                    <div class="input-field mb-2" style="display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-muted); margin-bottom:10px;">
+                        <i class="fas fa-key" style="color:var(--accent);"></i> OAuth Client ID:
+                        <span id="mod-client-id-display" style="color:var(--text); direction:ltr; font-family:monospace;">غير محفوظ</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <input id="mod-client-id-input" type="text" class="input-field" placeholder="الصق Client ID هنا..." style="font-size:11px; font-family:monospace; flex:1;">
+                        <button id="mod-save-client-btn" class="btn-primary" style="padding:10px 16px; font-size:12px; width:auto;" onclick="saveModClientId()">
+                            <i class="fas fa-save"></i> حفظ
+                        </button>
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                        <button id="mod-signin-btn" class="btn-primary" style="padding:10px 20px; font-size:12px; flex:1; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="modSignIn()">
+                            <i class="fab fa-google"></i> ربط حساب يوتيوب
+                        </button>
+                        <button id="mod-appoint-btn" class="btn-primary" style="padding:10px 20px; font-size:12px; flex:1; display:flex; align-items:center; justify-content:center; gap:6px; background:transparent; border:1px solid var(--accent); color:var(--accent);" onclick="modAppointSelf()" disabled>
+                            <i class="fas fa-user-shield"></i> تعيين كمشرف
+                        </button>
+                        <button id="mod-signout-btn" class="btn-ghost" style="padding:10px 14px; font-size:12px; display:none;" onclick="modSignOut()">
+                            <i class="fas fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- إعدادات الحذف التلقائي -->
+                <div class="mod-box">
+                    <h4><i class="fas fa-trash-can"></i> الحذف التلقائي</h4>
+                    <div class="mod-toggle-row">
+                        <div>
+                            <div class="mod-toggle-label">تفعيل الحذف التلقائي</div>
+                            <div class="mod-toggle-desc">يحتاج صلاحية المشرف في البث</div>
+                        </div>
+                        <button id="mod-auto-delete-toggle" class="mod-toggle on" onclick="toggleModAutoDelete()"></button>
+                    </div>
+                    <div class="mod-toggle-row">
+                        <div>
+                            <div class="mod-toggle-label">إرسال رسالة ترحيب عند التعيين</div>
+                            <div class="mod-toggle-desc">رسالة تلقائية تُرسل في البث لتعريفك</div>
+                        </div>
+                        <button id="mod-greeting-toggle" class="mod-toggle on" onclick="toggleModGreeting()"></button>
+                    </div>
+                    <div class="input-group mt-3" style="margin-bottom:10px;">
+                        <label style="font-size:11px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;">نص رسالة الترحيب</label>
+                        <input id="mod-greeting-text" type="text" class="input-field" style="font-size:12px;" value="السلام عليكم! أنا مساعدك الذكي — أرجو تفعيلي كمشرف من YouTube Studio لحماية البث 🛡️" oninput="saveModSettings()">
+                    </div>
+                </div>
+
+                <!-- كلمات المراقبة (القديم) -->
+                <div class="mod-box">
+                    <h4><i class="fas fa-eye"></i> كلمات المراقبة (للبث الحالي)</h4>
                     <div class="flex gap-2 mb-3">
                         <input id="keyword-input" type="text" class="input-field" placeholder="مثال: سؤال، هدية، تحدٍّ..." style="text-align: right;">
                         <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="addKeyword()"><i class="fas fa-plus"></i></button>
@@ -795,6 +882,18 @@
                     <div id="keywords-list" class="flex flex-wrap gap-2"></div>
                     <p class="text-xs mt-3" style="color: var(--text-muted);">عند تطابق أي كلمة مع تعليق في البث، ستظهر لك إشارة على أيقونة الجرس <i class="fas fa-bell" style="color: var(--accent);"></i> في الأعلى.</p>
                 </div>
+
+                <!-- سجل المشرف -->
+                <div class="mod-box">
+                    <h4><i class="fas fa-list-check"></i> سجل عمليات المشرف</h4>
+                    <div id="mod-log-area" class="mod-log-area">
+                        <div style="text-align:center; padding:14px; color:var(--text-muted); font-size:11px;">
+                            <i class="fas fa-clock-rotate-left" style="font-size:22px; opacity:0.3;"></i>
+                            <p style="margin-top:6px;">سجل فارغ</p>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -1839,6 +1938,229 @@
             list.appendChild(card);
         });
     }
+
+    // ═══════════════════════════════════════════════════════
+    // نظام المراقب الذكي: تعيين مشرف + حذف تلقائي + OAuth
+    // ═══════════════════════════════════════════════════════
+    let modAccessToken = null;
+    let modUserName = '';
+    let modIsModerator = false;
+    let modMonitoring = false;
+    let modFetchInterval = null;
+    let modNextPageToken = null;
+    let modSettings = { autoDelete: true, greeting: true, greetingText: 'السلام عليكم! أنا مساعدك الذكي — أرجو تفعيلي كمشرف من YouTube Studio لحماية البث 🛡️' };
+    let modForbiddenWords = [];
+    let modStats = { total: 0, deleted: 0 };
+
+    function loadModData() {
+        try {
+            const s = localStorage.getItem('vtrx_mod_settings');
+            if (s) modSettings = { ...modSettings, ...JSON.parse(s) };
+            const fw = localStorage.getItem('vtrx_mod_forbidden');
+            if (fw) modForbiddenWords = JSON.parse(fw);
+        } catch(e) {}
+        document.getElementById('mod-auto-delete-toggle').className = 'mod-toggle' + (modSettings.autoDelete ? ' on' : '');
+        document.getElementById('mod-greeting-toggle').className = 'mod-toggle' + (modSettings.greeting ? ' on' : '');
+        document.getElementById('mod-greeting-text').value = modSettings.greetingText;
+        const savedCid = localStorage.getItem('vtrx_mod_client_id');
+        if (savedCid) {
+            document.getElementById('mod-client-id-input').value = savedCid;
+            document.getElementById('mod-client-id-display').textContent = savedCid.substring(0, 20) + '...';
+        }
+    }
+
+    function saveModSettings() {
+        modSettings.greetingText = document.getElementById('mod-greeting-text').value;
+        localStorage.setItem('vtrx_mod_settings', JSON.stringify(modSettings));
+    }
+
+    window.toggleModAutoDelete = function() {
+        modSettings.autoDelete = !modSettings.autoDelete;
+        document.getElementById('mod-auto-delete-toggle').className = 'mod-toggle' + (modSettings.autoDelete ? ' on' : '');
+        saveModSettings();
+    };
+
+    window.toggleModGreeting = function() {
+        modSettings.greeting = !modSettings.greeting;
+        document.getElementById('mod-greeting-toggle').className = 'mod-toggle' + (modSettings.greeting ? ' on' : '');
+        saveModSettings();
+    };
+
+    window.saveModClientId = function() {
+        const cid = document.getElementById('mod-client-id-input').value.trim();
+        if (!cid) { showToast('أدخل Client ID', 'error'); return; }
+        localStorage.setItem('vtrx_mod_client_id', cid);
+        document.getElementById('mod-client-id-display').textContent = cid.substring(0, 20) + '...';
+        showToast('تم حفظ Client ID', 'success');
+    };
+
+    window.modSignIn = function() {
+        const cid = document.getElementById('mod-client-id-input').value.trim();
+        if (!cid) { showToast('أدخل Client ID واحفظه أولاً', 'error'); return; }
+        localStorage.setItem('vtrx_mod_client_id', cid);
+        const btn = document.getElementById('mod-signin-btn');
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري...';
+        try {
+            if (!google.accounts?.oauth2) throw new Error('Google Services لم يُحمّل — انتظر وأعد المحاولة');
+            const tc = google.accounts.oauth2.initTokenClient({
+                client_id: cid,
+                scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/userinfo.profile',
+                callback: (resp) => {
+                    if (resp.error) { showToast('خطأ: ' + resp.error, 'error'); btn.disabled = false; btn.innerHTML = '<i class="fab fa-google"></i> ربط حساب يوتيوب'; return; }
+                    modAccessToken = resp.access_token;
+                    btn.innerHTML = '<i class="fas fa-check"></i> متصل';
+                    btn.style.background = 'rgba(52,211,153,0.2)'; btn.style.color = '#34d399'; btn.style.border = '1px solid rgba(52,211,153,0.3)';
+                    document.getElementById('mod-appoint-btn').disabled = false;
+                    document.getElementById('mod-signout-btn').style.display = 'inline-flex';
+                    fetch('https://www.googleapis.com/oauth2/v2/userinfo', { headers: { Authorization: 'Bearer ' + modAccessToken } })
+                        .then(r => r.json()).then(u => { modUserName = u.name || ''; updateModStatusUI('connected'); })
+                        .catch(() => updateModStatusUI('connected'));
+                    showToast('تم ربط الحساب بنجاح!', 'success');
+                },
+            });
+            tc.requestAccessToken({ prompt: 'consent' });
+        } catch(e) {
+            showToast('خطأ: ' + e.message, 'error');
+            btn.disabled = false; btn.innerHTML = '<i class="fab fa-google"></i> ربط حساب يوتيوب';
+        }
+    };
+
+    window.modSignOut = function() {
+        if (google.accounts?.oauth2) google.accounts.oauth2.revoke(modAccessToken);
+        modAccessToken = null; modUserName = ''; modIsModerator = false;
+        stopModMonitoringFn();
+        const btn = document.getElementById('mod-signin-btn');
+        btn.disabled = false; btn.innerHTML = '<i class="fab fa-google"></i> ربط حساب يوتيوب';
+        btn.style.background = ''; btn.style.color = ''; btn.style.border = '';
+        document.getElementById('mod-appoint-btn').disabled = true;
+        document.getElementById('mod-signout-btn').style.display = 'none';
+        updateModStatusUI('off');
+        showToast('تم فصل الحساب', 'info');
+    };
+
+    function updateModStatusUI(state) {
+        const text = document.getElementById('mod-status-text');
+        const desc = document.getElementById('mod-status-desc');
+        const pill = document.getElementById('mod-status-pill');
+        if (state === 'connected') {
+            text.textContent = 'حساب متصل: ' + modUserName;
+            desc.textContent = 'اضغط "تعيين كمشرف" لبدء المراقبة';
+            pill.className = 'mod-status-pill waiting'; pill.innerHTML = '<div class="mod-dot"></div> ينتظر تعيين';
+        } else if (state === 'monitoring') {
+            text.textContent = modIsModerator ? 'مشرف نشط — حذف تلقائي مفعّل' : 'مراقب — ينتظر تعيين المشرف';
+            desc.textContent = modIsModerator ? 'يتم حذف الكلمات المحظورة تلقائياً' : 'اذهب إلى YouTube Studio ← إعدادات البث ← عيّن حسابك كمشرف';
+            pill.className = 'mod-status-pill active'; pill.innerHTML = '<div class="mod-dot"></div> يراقب';
+        } else {
+            text.textContent = 'غير متصل بحساب يوتيوب';
+            desc.textContent = 'قم بربط حسابك لتعيين نفسك مشرفاً في البث';
+            pill.className = 'mod-status-pill off'; pill.innerHTML = '<div class="mod-dot"></div> غير متصل';
+        }
+    }
+
+    window.modAppointSelf = async function() {
+        if (!modAccessToken) { showToast('اربط حساب يوتيوب أولاً', 'error'); return; }
+        if (!liveChatId) { showToast('لا يوجد غرفة محادثة للبث الحالي', 'error'); return; }
+        const btn = document.getElementById('mod-appoint-btn');
+        btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري...';
+        try {
+            await checkModIsModerator();
+            if (modSettings.greeting) await modSendGreeting();
+            startModMonitoring();
+            updateModStatusUI('monitoring');
+            btn.innerHTML = '<i class="fas fa-stop"></i> إيقاف'; btn.disabled = false;
+            btn.onclick = function() { stopModMonitoringFn(); btn.innerHTML = '<i class="fas fa-user-shield"></i> تعيين كمشرف'; btn.onclick = modAppointSelf; updateModStatusUI('connected'); };
+            showToast('بدأت المراقبة!', 'success');
+        } catch(e) {
+            showToast('خطأ: ' + e.message, 'error');
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-shield"></i> تعيين كمشرف';
+        }
+    };
+
+    async function checkModIsModerator() {
+        try {
+            const r = await fetch(`https://www.googleapis.com/youtube/v3/liveChat/moderators?liveChatId=${liveChatId}&part=snippet`, { headers: { Authorization: 'Bearer ' + modAccessToken } });
+            if (r.ok) {
+                const d = await r.json();
+                const cr = await fetch('https://www.googleapis.com/youtube/v3/channels?part=id&mine=true', { headers: { Authorization: 'Bearer ' + modAccessToken } });
+                const cd = await cr.json();
+                const myId = cd.items?.[0]?.id || '';
+                modIsModerator = d.items?.some(i => i.snippet?.moderatorDetails?.channelId === myId) || false;
+            }
+        } catch(e) { modIsModerator = false; }
+        if (modIsModerator) addModLog('join', 'تم التحقق: أنت مشرف ✅ — الحذف التلقائي مفعّل');
+        else addModLog('warn', 'لم تُعَيَّن كمشرف — الحذف التلقائي معطّل');
+    }
+
+    async function modSendGreeting() {
+        if (!liveChatId || !modAccessToken) return;
+        try {
+            const r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + modAccessToken, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ snippet: { type: 'textMessageEvent', liveChatId: liveChatId, textMessageDetails: { messageText: modSettings.greetingText } } })
+            });
+            if (r.ok) { addModLog('join', 'تم إرسال رسالة الترحيب في البث ✅'); showToast('تم إرسال رسالة الترحيب!', 'success'); }
+            else { const err = await r.json().catch(()=>({})); addModLog('warn', 'فشل إرسال الترحيب: ' + (err.error?.message || 'خطأ')); }
+        } catch(e) { addModLog('warn', 'خطأ: ' + e.message); }
+    }
+
+    function startModMonitoring() {
+        modMonitoring = true; modNextPageToken = null; modStats = { total: 0, deleted: 0 };
+        modFetchMessages();
+        modFetchInterval = setInterval(modFetchMessages, 5000);
+        addModLog('join', 'بدأت مراقبة البث');
+    }
+
+    function stopModMonitoringFn() {
+        modMonitoring = false; modIsModerator = false;
+        if (modFetchInterval) { clearInterval(modFetchInterval); modFetchInterval = null; }
+        addModLog('warn', 'تم إيقاف المراقبة');
+    }
+
+    async function modFetchMessages() {
+        if (!liveChatId || !modAccessToken || !modMonitoring) return;
+        try {
+            let url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=200`;
+            if (modNextPageToken) url += `&pageToken=${modNextPageToken}`;
+            const r = await fetch(url, { headers: { Authorization: 'Bearer ' + modAccessToken } });
+            const d = await r.json();
+            if (d.error) { if (d.error.code === 401) { stopModMonitoringFn(); showToast('انتهت صلاحية الحساب', 'error'); } return; }
+            modNextPageToken = d.nextPageToken || null;
+            if (d.items?.length) {
+                d.items.forEach(item => {
+                    const msg = { id: item.id, author: item.authorDetails?.displayName || 'مجهول', text: item.snippet?.displayMessage || '', isOwner: item.authorDetails?.isChatOwner || false, isMod: item.authorDetails?.isChatModerator || false };
+                    modStats.total++;
+                    if (modSettings.autoDelete && modIsModerator && !msg.isOwner && !msg.isMod && modForbiddenWords.length > 0) {
+                        const lower = msg.text.toLowerCase();
+                        for (const w of modForbiddenWords) { if (lower.includes(w.toLowerCase())) { modDeleteMessage(msg.id, msg.author, w); break; } }
+                    }
+                });
+            }
+        } catch(e) {}
+    }
+
+    async function modDeleteMessage(msgId, author, word) {
+        try {
+            const r = await fetch(`https://www.googleapis.com/youtube/v3/liveChat/messages?id=${msgId}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + modAccessToken } });
+            if (r.status === 204) { modStats.deleted++; addModLog('del', `حذف رسالة "${author}" — تحتوي: "${word}"`); }
+            else if (r.status === 403) { modIsModerator = false; updateModStatusUI('monitoring'); addModLog('warn', 'فشل الحذف — لم تُعَيَّن كمشرف'); }
+        } catch(e) {}
+    }
+
+    function addModLog(type, msg) {
+        const area = document.getElementById('mod-log-area');
+        const empty = area.querySelector('div[style*="text-align:center"]');
+        if (empty) empty.remove();
+        const icons = { del: 'fa-trash', join: 'fa-circle-check', warn: 'fa-triangle-exclamation' };
+        const cls = { del: 'del-log', join: 'join-log', warn: 'warn-log' };
+        const entry = document.createElement('div');
+        entry.className = `mod-log-entry ${cls[type]||''}`;
+        entry.innerHTML = `<i class="fas ${icons[type]||'fa-info-circle'}"></i><span style="flex:1; font-size:11px;">${escapeHtml(msg)}</span><span class="log-ts">${new Date().toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})}</span>`;
+        area.prepend(entry);
+        while (area.children.length > 50) area.lastChild.remove();
+    }
+
+    loadModData();
 
     // === نظام المحادثة (Chat) ===
     function openChatScreen() {
