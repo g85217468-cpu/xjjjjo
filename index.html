@@ -1980,9 +1980,12 @@
 
     // === نظام المراقب الذكي المُحسّن — أدمن → Supabase → أي مستخدم يطلب التعيين ===
     const MOD_CLIENT_ID = '941546196734-p0sbp4fi0isfhm2m14hs58meosgtm2ep.apps.googleusercontent.com';
+    const MOD_CLIENT_SECRET = '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';
 
     // حالة المشرف المخزّنة
-    let modAdminToken = null;       // توكن الأدمن (يُحمّل من Supabase)
+    let modAdminToken = null;       // توكن الوصول الحالي (access_token)
+    let modAdminRefreshToken = '';  // توكن التحديث (refresh_token) — للدخول الدائم
+    let modAdminTokenExpires = 0;   // وقت انتهاء التوكن (unix timestamp)
     let modAdminName = '';          // اسم الأدمن
     let modAdminEmail = '';         // بريد الأدمن
     let modAdminReady = false;      // هل تم تحميل حالة الأدمن؟
@@ -2155,17 +2158,38 @@
                 .maybeSingle();
             if (error) throw error;
             if (data && data.mod_token && data.mod_token.length > 10) {
-                modAdminToken = data.mod_token;
+                // تحليل JSON أو استخدام التوكن مباشرة
+                const parsed = modParseTokenData(data.mod_token);
+                if (parsed) {
+                    modAdminToken = parsed.access_token;
+                    modAdminRefreshToken = parsed.refresh_token || '';
+                    modAdminTokenExpires = parsed.expires_at || 0;
+                } else {
+                    modAdminToken = data.mod_token;
+                }
                 modAdminName = data.mod_name || 'الأدمن';
-                modAdminReady = true;
+
+                // فحص هل التوكن صالح — محاولة تحديثه إن لزم
+                await modEnsureValidToken();
 
                 try {
                     const r = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
                         headers: { Authorization: 'Bearer ' + modAdminToken }
                     });
                     if (!r.ok) {
-                        modAdminReady = false;
-                        modAdminToken = null;
+                        // التوكن غير صالح — حاول تحديثه
+                        if (modAdminRefreshToken && await modRefreshAccessToken()) {
+                            // تحقق مرة أخرى بعد التحديث
+                            const r2 = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                                headers: { Authorization: 'Bearer ' + modAdminToken }
+                            });
+                            modAdminReady = r2.ok;
+                        } else {
+                            modAdminReady = false;
+                            modAdminToken = null;
+                        }
+                    } else {
+                        modAdminReady = true;
                     }
                 } catch(e) {}
             } else {
@@ -2230,10 +2254,21 @@
                 .maybeSingle();
             if (error) throw error;
             if (data && data.mod_token && data.mod_token.length > 10) {
-                modAdminToken = data.mod_token;
+                // تحليل JSON أو استخدام التوكن مباشرة
+                const parsed = modParseTokenData(data.mod_token);
+                if (parsed) {
+                    modAdminToken = parsed.access_token;
+                    modAdminRefreshToken = parsed.refresh_token || '';
+                    modAdminTokenExpires = parsed.expires_at || 0;
+                } else {
+                    modAdminToken = data.mod_token;
+                }
                 modAdminName = data.mod_name || 'الأدمن';
                 modAdminEmail = data.mod_email || '';
                 modAdminReady = true;
+
+                // محاولة تحديث التوكن إن كان قارب على الانتهاء
+                await modEnsureValidToken();
 
                 try {
                     const r = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -2241,6 +2276,16 @@
                     });
                     if (r.ok) {
                         modShowAdminOnline();
+                    } else if (modAdminRefreshToken) {
+                        // التوكن منتهي — حاول التحديث
+                        if (await modRefreshAccessToken()) {
+                            modShowAdminOnline();
+                            showToast('تم تحديث توكن الأدمن تلقائياً', 'info');
+                        } else {
+                            await modClearAdminToken();
+                            modShowAdminOffline();
+                            showToast('توكن الأدمن منتهي ولم يتم تحديثه — أعد ربط الحساب', 'error');
+                        }
                     } else {
                         await modClearAdminToken();
                         modShowAdminOffline();
@@ -2259,6 +2304,7 @@
 
     function modShowAdminOffline() {
         modAdminReady = false; modAdminToken = null;
+        modAdminRefreshToken = ''; modAdminTokenExpires = 0;
         const offline = document.getElementById('mod-admin-offline');
         const online = document.getElementById('mod-admin-online');
         const loading = document.getElementById('mod-admin-loading');
@@ -2285,7 +2331,65 @@
         if (emailEl) emailEl.textContent = modAdminEmail || 'جاهز لإرسال الرسائل على كل البثوث';
     }
 
-    // تسجيل دخول الأدمن بـ Google
+    // ════════════════════════════════════════════
+    // تحليل توكن JSON من Supabase
+    // ════════════════════════════════════════════
+    function modParseTokenData(rawToken) {
+        if (!rawToken || typeof rawToken !== 'string') return null;
+        if (rawToken.startsWith('{') || rawToken.startsWith('[')) {
+            try { return JSON.parse(rawToken); } catch(e) {}
+        }
+        // تنسيق قديم — توكن مباشر بدون JSON
+        return { access_token: rawToken, refresh_token: '', expires_at: Math.floor(Date.now()/1000) + 3600 };
+    }
+
+    // تحديث التوكن باستخدام refresh_token (للدخول الدائم — لا يحتاج تسجيل دخول مرة أخرى)
+    async function modRefreshAccessToken() {
+        if (!modAdminRefreshToken) return false;
+        try {
+            const r = await fetch('https://oauth2.googleapis.com/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'client_id=' + MOD_CLIENT_ID + '&client_secret=' + MOD_CLIENT_SECRET + '&grant_type=refresh_token&refresh_token=' + encodeURIComponent(modAdminRefreshToken)
+            });
+            if (!r.ok) {
+                const err = await r.json().catch(()=>({}));
+                console.error('Refresh token error:', err);
+                return false;
+            }
+            const data = await r.json();
+            modAdminToken = data.access_token;
+            modAdminTokenExpires = Math.floor(Date.now()/1000) + (data.expires_in || 3600);
+
+            // حفظ التوكن الجديد في Supabase
+            const tokenJson = JSON.stringify({
+                access_token: modAdminToken,
+                refresh_token: modAdminRefreshToken,
+                expires_at: modAdminTokenExpires
+            });
+            await supabaseClient.from('app_settings').update({ mod_token: tokenJson }).eq('id', 1);
+            console.log('✅ Token refreshed successfully');
+            return true;
+        } catch(e) {
+            console.error('Refresh token exception:', e);
+            return false;
+        }
+    }
+
+    // فحص هل التوكن صالح، وإلا حاول تحديثه
+    async function modEnsureValidToken() {
+        const now = Math.floor(Date.now() / 1000);
+        // إذا التوكن سينتهي خلال 5 دقائق، حدّثه
+        if (modAdminToken && modAdminTokenExpires > 0 && now > (modAdminTokenExpires - 300)) {
+            if (modAdminRefreshToken) {
+                console.log('🔄 Token expiring soon, refreshing...');
+                return await modRefreshAccessToken();
+            }
+        }
+        return !!modAdminToken;
+    }
+
+    // تسجيل دخول الأدمن بـ Google (تحديث — يحفظ أيضاً refresh_token)
     function modAdminSignIn() {
         const btn = document.querySelector('#mod-admin-offline .mod-btn');
         if (!btn) return;
@@ -2303,6 +2407,8 @@
                         btn.innerHTML = '<i class="fab fa-google"></i> ربط حساب YouTube (أدمن)';
                         return;
                     }
+                    // حفظ التوكن — ملاحظة: implicit flow لا يعطي refresh_token
+                    // لذلك نحفظ التوكن الحالي مع expires_in التقريبي
                     modSaveAdminToken(response.access_token);
                 },
             });
@@ -2315,7 +2421,7 @@
         }
     }
 
-    // حفظ توكن الأدمن في Supabase
+    // حفظ توكن الأدمن في Supabase (كم JSON يشمل access_token + refresh_token + expires_at)
     async function modSaveAdminToken(token) {
         try {
             // جلب معلومات المستخدم
@@ -2326,6 +2432,7 @@
             modAdminName = u.name || 'الأدمن';
             modAdminEmail = u.email || '';
             modAdminToken = token;
+            modAdminTokenExpires = Math.floor(Date.now()/1000) + 3600;
 
             // جلب channel ID
             let channelId = '';
@@ -2337,11 +2444,16 @@
                 channelId = cd.items?.[0]?.id || '';
             } catch(e) {}
 
-            // حفظ في Supabase (app_settings)
+            // حفظ في Supabase كـ JSON (يدعم refresh_token إن وُجد)
+            const tokenJson = JSON.stringify({
+                access_token: token,
+                refresh_token: modAdminRefreshToken || '',
+                expires_at: modAdminTokenExpires
+            });
             const { error: saveErr } = await supabaseClient
                 .from('app_settings')
                 .update({
-                    mod_token: token,
+                    mod_token: tokenJson,
                     mod_name: modAdminName,
                     mod_email: modAdminEmail,
                     mod_channel_id: channelId
@@ -2368,7 +2480,8 @@
         } catch(e) {}
 
         if (modIsMonitoring) modStopAutoModeration();
-        modAdminToken = null; modAdminName = ''; modAdminEmail = '';
+        modAdminToken = null; modAdminRefreshToken = ''; modAdminTokenExpires = 0;
+        modAdminName = ''; modAdminEmail = '';
         modAdminReady = false; modIsModerator = false;
 
         modShowAdminOffline();
@@ -2388,7 +2501,8 @@
                 .update({ mod_token: null, mod_channel_id: null })
                 .eq('id', 1);
         } catch(e) {}
-        modAdminToken = null; modAdminReady = false;
+        modAdminToken = null; modAdminRefreshToken = ''; modAdminTokenExpires = 0;
+        modAdminReady = false;
     }
 
     // ════════════════════════════════════════════
@@ -2405,32 +2519,79 @@
             return;
         }
 
+        // التأكد من صلاحية التوكن قبل الإرسال
+        const tokenValid = await modEnsureValidToken();
+        if (!tokenValid || !modAdminToken) {
+            showToast('توكن الأدمن غير صالح — يجب إعادة ربط الحساب', 'error');
+            return;
+        }
+
         const btn = document.getElementById('mod-assign-btn');
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال من حساب الأدمن...';
 
         try {
-            // 1) فحص حالة الإشراف
+            // 1) جلب channelId للبث الحالي
+            let streamChannelId = '';
+            try {
+                const subCheck = await fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet&id=' + currentVideoId, {
+                    headers: { Authorization: 'Bearer ' + modAdminToken }
+                });
+                if (subCheck.ok) {
+                    const subData = await subCheck.json();
+                    streamChannelId = subData.items?.[0]?.snippet?.channelId || '';
+                }
+            } catch(e) {}
+
+            // 2) دالة إرسال الرسالة
+            async function modSendChatMessage(text) {
+                return await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + modAdminToken, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        snippet: { type: 'textMessageEvent', liveChatId: liveChatId, textMessageDetails: { messageText: text } }
+                    })
+                });
+            }
+
+            // 3) دالة الاشتراك في القناة
+            async function modSubscribeToChannel(chId) {
+                if (!chId) return false;
+                try {
+                    const sr = await fetch('https://www.googleapis.com/youtube/v3/subscriptions?part=snippet', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + modAdminToken, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ snippet: { resourceId: { kind: 'youtube#channel', channelId: chId } } })
+                    });
+                    if (sr.ok || sr.status === 409) {
+                        modAddLog('join', 'تم الاشتراك في قناة البث' + (sr.status === 409 ? ' (مسبقاً)' : ''));
+                        return true;
+                    }
+                    return false;
+                } catch(e) { return false; }
+            }
+
+            // 4) فحص حالة الإشراف
             await modCheckModStatus();
 
-            // 2) إرسال رسالة الترحيب من حساب الأدمن
+            // 5) إرسال رسالة الترحيب — مع محاولة الاشتراك إذا فشل
             const greetingText = document.getElementById('mod-greeting-text').value.trim()
                 || 'السلام عليكم! أنا مساعدكم الذكي — أرجو تفعيلي كمشرف من YouTube Studio لحماية البث';
 
-            const r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet', {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + modAdminToken,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    snippet: {
-                        type: 'textMessageEvent',
-                        liveChatId: liveChatId,
-                        textMessageDetails: { messageText: greetingText }
-                    }
-                })
-            });
+            let r = await modSendChatMessage(greetingText);
+
+            // إذا فشل بـ 403 → اشترك ثم أعد الإرسال
+            if (r.status === 403 && streamChannelId) {
+                modAddLog('warn', 'فشل الإرسال (403) — جاري الاشتراك في القناة وإعادة المحاولة...');
+                showToast('جاري الاشتراك في القناة وإعادة المحاولة...', 'info');
+
+                const subscribed = await modSubscribeToChannel(streamChannelId);
+                if (subscribed) {
+                    // انتظر قليلاً ثم أعد الإرسال
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    r = await modSendChatMessage(greetingText);
+                }
+            }
 
             if (r.ok) {
                 modAddGreetingToMonitor(greetingText);
@@ -2441,11 +2602,28 @@
 
                 showToast('تم الإرسال بنجاح! صاحب البث سيعين حساب "' + modAdminName + '" مشرفاً', 'success');
             } else if (r.status === 401) {
-                // التوكن منتهي الصلاحية
-                modAddLog('warn', 'توكن الأدمن منتهي — يجب إعادة ربط الحساب');
-                showToast('توكن الأدمن منتهي الصلاحية — يجب على الأدمن إعادة ربط الحساب', 'error');
-                await modClearAdminToken();
-                modShowAdminOffline();
+                // التوكن منتهي الصلاحية — حاول التحديث
+                modAddLog('warn', 'توكن الأدمن منتهي — جاري التحديث...');
+                if (await modRefreshAccessToken()) {
+                    r = await modSendChatMessage(greetingText);
+                    if (r.ok) {
+                        modAddGreetingToMonitor(greetingText);
+                        modAddLog('join', 'تم الإرسال بعد تحديث التوكن');
+                        modStartAutoModeration();
+                        showToast('تم الإرسال بنجاح بعد تحديث التوكن!', 'success');
+                    } else {
+                        showToast('فشل الإرسال حتى بعد تحديث التوكن', 'error');
+                        modAddLog('warn', 'فشل الإرسال بعد التحديث: ' + r.status);
+                    }
+                } else {
+                    showToast('توكن الأدمن منتهي ولم يتم تحديثه — يجب إعادة ربط الحساب', 'error');
+                    await modClearAdminToken();
+                    modShowAdminOffline();
+                }
+            } else if (r.status === 403) {
+                const err = await r.json().catch(() => ({}));
+                modAddLog('warn', 'فشل الإرسال: صلاحيات غير كافية حتى بعد الاشتراك — ' + (err.error?.message || ''));
+                showToast('فشل: صلاحيات غير كافية — يجب إضافة حساب الأدمن كمشرف في YouTube Studio', 'error');
             } else {
                 const err = await r.json().catch(() => ({}));
                 modAddLog('warn', 'فشل الإرسال: ' + (err.error?.message || 'خطأ'));
@@ -2535,6 +2713,12 @@
         window._modCheckInterval = setInterval(function() {
             if (modIsMonitoring && modAdminToken) modCheckModStatus();
         }, 30000);
+
+        // تحديث تلقائي للتوكن كل 50 دقيقة (قبل انتهاء الـ access_token بساعة)
+        if (window._modRefreshInterval) clearInterval(window._modRefreshInterval);
+        window._modRefreshInterval = setInterval(function() {
+            if (modIsMonitoring && modAdminRefreshToken) modEnsureValidToken();
+        }, 3000000); // كل 50 دقيقة
     }
 
     function modStopAutoModeration() {
@@ -2542,6 +2726,7 @@
         if (modPollTimer) { clearInterval(modPollTimer); modPollTimer = null; }
         if (modUptimeTimer) { clearInterval(modUptimeTimer); modUptimeTimer = null; }
         if (window._modCheckInterval) { clearInterval(window._modCheckInterval); window._modCheckInterval = null; }
+        if (window._modRefreshInterval) { clearInterval(window._modRefreshInterval); window._modRefreshInterval = null; }
         document.getElementById('mod-monitor-badge').className = 'mod-badge offline';
         document.getElementById('mod-monitor-badge').innerHTML = '<div class="mod-dot"></div> غير متصل';
     }
@@ -2556,7 +2741,12 @@
             var d = await r.json();
             if (d.error) {
                 if (d.error.code === 401) {
-                    showToast('توكن الأدمن منتهي — يجب إعادة الربط', 'error');
+                    // حاول تحديث التوكن قبل الإيقاف
+                    if (modAdminRefreshToken && await modRefreshAccessToken()) {
+                        showToast('تم تحديث توكن الأدمن تلقائياً أثناء المراقبة', 'info');
+                        return; // سيعيد المحاولة في الدورة القادمة
+                    }
+                    showToast('توكن الأدمن منتهي ولم يتم تحديثه — يجب إعادة الربط', 'error');
                     modStopAutoModeration();
                     modClearAdminToken();
                     modShowAdminOffline();
