@@ -1703,6 +1703,7 @@
             renderEntrySteps(['إعداد الجلسة']);
             showEntryOverlay('فشل الدخول', 'بيانات البث غير مكتملة.');
             setEntryError('بيانات البث غير مكتملة', 'لا يوجد رابط للبث في السجل. قد يكون البث قد حُذف أو أنه غير صالح.');
+            isEnteringSession = false;
             return;
         }
 
@@ -1711,6 +1712,7 @@
             renderEntrySteps(['إعداد الجلسة']);
             showEntryOverlay('فشل الدخول', 'رابط البث غير صالح.');
             setEntryError('رابط البث غير صالح', 'تعذّر استخراج معرّف الفيديو من رابط البث: ' + (streamData.stream_url || '(فارغ)'));
+            isEnteringSession = false;
             return;
         }
         // استخدام videoId المُتحقق منه من streamData (وليس من أي مصدر آخر)
@@ -2021,12 +2023,15 @@
         }
     }
 
-    function startYouTubePolling() { if (youtubePollTimer) clearInterval(youtubePollTimer); fetchComments(); youtubePollTimer = setInterval(fetchComments, 5000); }
+    function startYouTubePolling() { if (youtubePollTimer) clearInterval(youtubePollTimer); fetchComments(); youtubePollTimer = setInterval(fetchComments, 2000); }
     function stopYouTubePolling() { if (youtubePollTimer) { clearInterval(youtubePollTimer); youtubePollTimer = null; } }
 
+    let fetchInProgress = false;
     async function fetchComments() {
         if (!liveChatId) return;
-        try { const currentApiKey = YOUTUBE_API_KEYS[currentKeyIndex]; let apiUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=200&key=${currentApiKey}`; if (nextPageToken) apiUrl += `&pageToken=${nextPageToken}`; const resp = await fetch(apiUrl); const data = await resp.json(); if (data.error && (data.error.code === 403 || data.error.errors?.[0]?.reason === 'quotaExceeded')) { currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length; return fetchComments(); } if (data.error) throw new Error(data.error.message); if (data.nextPageToken) nextPageToken = data.nextPageToken; if (data.items && data.items.length > 0) { document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-empty').style.display = 'none'; const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt)); await archiveCommentsToSupabase(sorted); sorted.forEach(item => { const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() }; addCommentToUI(newItem, true); }); } } catch(e) { console.error('Fetch error:', e); }
+        if (fetchInProgress) return;
+        fetchInProgress = true;
+        try { const currentApiKey = YOUTUBE_API_KEYS[currentKeyIndex]; let apiUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=200&key=${currentApiKey}`; if (nextPageToken) apiUrl += `&pageToken=${nextPageToken}`; const resp = await fetch(apiUrl); const data = await resp.json(); if (data.error && (data.error.code === 403 || data.error.errors?.[0]?.reason === 'quotaExceeded')) { currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length; return; } if (data.error) throw new Error(data.error.message); if (data.nextPageToken) nextPageToken = data.nextPageToken; if (data.items && data.items.length > 0) { document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-empty').style.display = 'none'; const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt)); await archiveCommentsToSupabase(sorted); sorted.forEach(item => { const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() }; addCommentToUI(newItem, true); }); } } catch(e) { console.error('Fetch error:', e); } finally { fetchInProgress = false; }
     }
 
     async function archiveCommentsToSupabase(comments) {
@@ -2955,6 +2960,7 @@
 
     function modStopAutoModeration() {
         modIsMonitoring = false; modNextPageToken = null;
+        modPollInProgress = false;
         modUserViolations = {};
         modEmptyPolls = 0;
         modUpdateSeverityPanel();
@@ -2966,9 +2972,13 @@
         document.getElementById('mod-monitor-badge').innerHTML = '<div class="mod-dot"></div> غير متصل';
     }
 
+    // متغير لمنع التكرار أثناء الجلب
+    let modPollInProgress = false;
     // جلب الرسائل وفحص الكلمات المحظورة (مع نظام الجلب الذكي)
     async function modPollMessages() {
         if (!liveChatId || !modIsMonitoring) return;
+        if (modPollInProgress) return;
+        modPollInProgress = true;
 
         // تحقق من الحصة قبل كل طلب
         if (modGetQuotaRemaining() <= 0) {
@@ -3006,7 +3016,8 @@
 
             if (d.items && d.items.length > 0) {
                 hasNewMessages = true;
-                d.items.forEach(function(item) {
+                for (var itemIdx = 0; itemIdx < d.items.length; itemIdx++) {
+                    var item = d.items[itemIdx];
                     var msg = {
                         id: item.id,
                         author: item.authorDetails?.displayName || 'مجهول',
@@ -3035,7 +3046,7 @@
                             }
                         }
                     }
-                });
+                }
                 modUpdateStats();
             }
 
@@ -3046,6 +3057,7 @@
             if (intervalEl) intervalEl.textContent = (newInterval / 1000).toFixed(1);
 
         } catch(e) { console.error('Mod poll error:', e); }
+        modPollInProgress = false;
     }
 
     async function modDeleteMsg(id, author, word) {
@@ -3244,7 +3256,7 @@
             document.getElementById('archive-tab-btn').classList.add('active');
             document.getElementById('archive-pane').classList.add('active');
             // إن لم يكن الأرشيف محمّلاً بعد، حمّله
-            if (!document.getElementById('archive-list').children.length) {
+            if (currentVideoId && !document.getElementById('archive-list').children.length) {
                 loadArchivedComments('', '');
             }
         }
