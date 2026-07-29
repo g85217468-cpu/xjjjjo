@@ -986,14 +986,14 @@
                     <p class="text-xs mt-2" style="color: var(--text-muted);">تطابق → إشارة على أيقونة الجرس <i class="fas fa-bell" style="color: var(--accent);"></i></p>
                 </div>
 
-                <!-- الشاشة المباشرة -->
+                <!-- مراقبة البث المباشر -->
                 <div class="mod-card hidden" id="mod-monitor-card">
                     <div class="mod-card-title">
-                        <i class="fas fa-desktop"></i> الشاشة المباشرة
+                        <i class="fas fa-desktop"></i> مراقبة البث المباشر
                         <span class="mod-badge offline" id="mod-monitor-badge" style="margin-right: auto; font-size: 10px;"><div class="mod-dot"></div> غير متصل</span>
                     </div>
                     <div class="mod-monitor-area" id="mod-monitor-area">
-                        <div class="empty-state" style="padding: 20px;"><i class="fas fa-satellite-dish"></i><p style="color: var(--text-muted); margin-top: 6px;">في انتظار البث...</p></div>
+                        <div class="empty-state" style="padding: 20px;"><i class="fas fa-satellite-dish"></i><p style="color: var(--text-muted); margin-top: 6px;">جارٍ مراقبة الرسائل...</p></div>
                     </div>
                     <div class="mod-stats-row">
                         <div class="mod-stat-box">
@@ -1007,6 +1007,33 @@
                         <div class="mod-stat-box">
                             <div class="mod-stat-val" id="mod-stat-uptime" style="color: #34d399;">0:00</div>
                             <div class="mod-stat-label">وقت المراقبة</div>
+                        </div>
+                    </div>
+                    <!-- شريط الحصة اليومية + فاصل الجلب -->
+                    <div style="margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                            <span id="mod-quota-text" style="font-size: 10px; color: #34d399;">
+                                <i class="fas fa-gauge"></i> الحصة: 0/1,570,000 (0%) — متبقي: 1,570,000
+                            </span>
+                            <span style="font-size: 10px; color: var(--text-muted);">
+                                فاصل الجلب: <span id="mod-poll-interval" style="color: #e8a838; font-weight: 700;">5.0</span> ثانية
+                            </span>
+                        </div>
+                        <div style="height: 4px; border-radius: 2px; background: rgba(255,255,255,0.05);">
+                            <div id="mod-quota-bar" style="height:4px;border-radius:2px;background:#34d399;width:0%;transition:width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                    <!-- لوحة تقييم خطورة الحظر -->
+                    <div style="margin-top: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <i class="fas fa-gauge-high" style="color: #e8a838; font-size: 13px;"></i>
+                            <span style="font-size: 13px; font-weight: 700;">تقييم خطورة الحظر</span>
+                            <span style="font-size: 10px; color: var(--text-muted); margin-right: auto;">تراكمي لكل مستخدم</span>
+                        </div>
+                        <div id="severity-panel" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
+                            <div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 11px;">
+                                <i class="fas fa-shield-halved"></i> لا توجد مخالفات مسجلة بعد
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1139,6 +1166,7 @@
     const SUPABASE_KEY = 'sb_publishable_9FjA5hRl_83m6zh5nbnZNQ_Ndu2ZX5k';
     
     const YOUTUBE_API_KEYS = [
+      // === المفاتيح الأصلية (55) ===
       'AIzaSyCzX3_-OPo7oiDpBNmUS5mLBdzBBSFDsfc', 'AIzaSyCGI4VMJvCnoHBNafvcV7F78_Q89zKp-sU',
       'AIzaSyAGlgZQYCqH1G444RIGukYkAMAJ1v0q3_w', 'AIzaSyAxwIl9DH1QddmcUMHTZyhECw2uax5si-k',
       'AIzaSyCUJ6GTpUWolRui1lLI5k3SjK_VU5A-2D8', 'AIzaSyBsw1AoUisoR4lZBtGOXToR_pZCZYXqeDs',
@@ -1166,7 +1194,59 @@
       'AIzaSyCj5eaRy4_IBj7UyhzWZ915cc_IJq0qdyo', 'AIzaSyB8X5oaEKzkN7452-4oRMLsFHWjKuZWXx8',
       'AIzaSyBDd-Q9_jxKrvaBua1PnlJXdGB7e4ljGpI', 'AIzaSyAWhzU8PnQSctAoprp_h385kxaNoslx6Ek',
       'AIzaSyBPpZ8OHnQ4co8-pZUyAdBGflYClrJSHJ0', 'AIzaSyDMjufpiZLlf_DAXKfo3So_6JciaSeUAc8',
-      'AIzaSyBLV8gPAwtYMU88Mm_qzvN19bkq4mrTgOk'
+      'AIzaSyBLV8gPAwtYMU88Mm_qzvN19bkq4mrTgOk',
+      // === المفاتيح الجديدة (102) ===
+      'AIzaSyB9P3-3fCwNF-3ggGRxLVw1He1DekcYVk0', 'AIzaSyBhE-diJ84NoKyTdC2_o1nqSDBEl4YtnAM',
+      'AIzaSyBysAagECO2K-EXMPEcFKhQlOPBlaEu0dM', 'AIzaSyCxFkiQZxTWZ-jD_Q3W_dm1EtAR7xlTCrE',
+      'AIzaSyDfMwr_-zSXVZ9DXB68BfaZC5IDFnt-H3U', 'AIzaSyCdi3AN6sZKf5Q2xdlHAf9vIW9YfqyGRbg',
+      'AIzaSyBkoIKZnZZw4AFc6mEPjQJtir3yV1pPWes', 'AIzaSyBGiaEzqQfJdQSJFx1oMpveGjGz-3LX5Yo',
+      'AIzaSyBLvXiR3Ql327dlrUtLMsL-O1lAbPF4tHA', 'AIzaSyDIArpZVjYkUZGa9nomntGQ2gL353cVil8',
+      'AIzaSyAj4uOP0nw908soxurzmNTSN5lnJb1rRXE', 'AIzaSyDDUR7kUkSM7zGpkEBN1b1et3nqiKncZzM',
+      'AIzaSyCvwzmPUF_zrRhN4Iv8823slIJkxLNscbc', 'AIzaSyBfqrd-64JM_Y0GyZXApkYr_C46kZHQ3oQ',
+      'AIzaSyD4Bzow6c2ppB4Dc39aYItz3_Vzk9uBc7A', 'AIzaSyDZguIJ05Ldyxh5VHEAv09y4sj5GZ8ua5c',
+      'AIzaSyBYisyKCMh7GDAllya6j5T0_7kl8M5ttwo', 'AIzaSyCGD0gVOkvvm7qG72sR_pr-8cD_QDAssHk',
+      'AIzaSyCB6h_6QLH3JkBmciTbfWnFrxkH2xHwg0E', 'AIzaSyBUKJMkOt4xjDulSqkXDzN0PBPIyqIMZDc',
+      'AIzaSyCmjyg8RzHp8oW89BkDqcY-zmu4Jxolqrk', 'AIzaSyDJ0BZJcgNOI9_d1SiXQnj6KmAdzK-FfBw',
+      'AIzaSyCK7KfLmTtpGY43xf31QXlNTpPWpuOtRuw', 'AIzaSyCpf2ZfS0ZgG3O9pEOhTvxKa4pResRrOUw',
+      'AIzaSyDEoYKmawouLpngTYCzQ5MUICO9zPjXrXA', 'AIzaSyAKZZrAZMsmeybb0IxcRei9yJcCWs3uYFU',
+      'AIzaSyBYzktJRBTu3d6uDJfl-hY-a43UVRhLS9Q', 'AIzaSyCsFgwgpEC3UvjI4KpKK5Rmg6Y9xenQSzU',
+      'AIzaSyCN0ukK7jOfd1SWE497Cd-Ywaoa2Vf87s0', 'AIzaSyDVeMJNZBSJjswrD8hpiWvZKOdDXfRU9yk',
+      'AIzaSyD4jIe8ewkff9JQojH-_ccLIQBjWNF2bIU', 'AIzaSyCHRtX-axPpQhQ9axprstM4QAzGraL4U7g',
+      'AIzaSyC-pOtGR2tX-6HCfVWvh1kj_Qi5wUWFzvM', 'AIzaSyA1DKMQC5zN8e09V72SOaMIjq4P6n9RDko',
+      'AIzaSyA6GOeltEMKpwW5ktCbU_AhwrIg-dAYvSU', 'AIzaSyB57PXoErpx3n6S-iJZM219s_MRqC1RvGE',
+      'AIzaSyD0H-Jjpw8oAQBbPjoIZ7fusP-dvnQJDKo', 'AIzaSyDL3r-zSEy0ggg4ZydtpEliIIXMTSMmPxw',
+      'AIzaSyBybxlaIwe_UHK6zawj947CgiCJrvr74EA', 'AIzaSyCPRYJW_C9gT78dOMSlNHsvOsgrPlciQIY',
+      'AIzaSyCfA4kazMVRRMq-f2Foojeony-0JsnRdXE', 'AIzaSyCvBQbIipKAilx6s1tcM3kFaMWlhD6-g5o',
+      'AIzaSyA9IQVA7zjieBH7_hywnCBja1PaS32tdLY', 'AIzaSyBMNkYdqOvqnFehKz5S-1yvCb0a-v3xbnI',
+      'AIzaSyDux05kgQCTGi51-1V4z8w8-FERVj0v_GE', 'AIzaSyAAKbWOaFtb5gABTGBmmBV5TeDSKWi05Po',
+      'AIzaSyCpCKAH4hkEIXkCgaLODQUlCdskBSECr38', 'AIzaSyDc2iaxAN5qlohnR7b9bojtgrS5cm-pfgw',
+      'AIzaSyDK7-9nZotyFceW8Wq1OMPYGtJrMYlH504', 'AIzaSyCZxr0-rq_j_5GLdLe3UqA8wxZU7SchyA8',
+      'AIzaSyCABynq_z95ZTKrTHSwtxluULCIkUCNQF0', 'AIzaSyBWmIX0LpxqpVj-rh6QgTeeaIteCFIBvu8',
+      'AIzaSyDN8tpiLCnIhJ8KsGX_p2kI8lOyo2X0q2I', 'AIzaSyByUxF09_6D759V-pVRt_NpYJCwQG4LmCE',
+      'AIzaSyDIuWz3VezxOIvFfdalO-3uwHEzFEoKFzs', 'AIzaSyDhI6hsG0l_kLAfGHsZq3kRDdLix1FJx18',
+      'AIzaSyCQWAUX7-ATSZPY6jxyHligGCGqqqgebXM', 'AIzaSyCW5mu3TkEjFuSlAo9akc_BbM3b5xCRASg',
+      'AIzaSyCLRC1YEN3lvd1YJWyHWsPOr2EWG76sCW8', 'AIzaSyBR_JoNis5QOzhutGKmEkgHVQWAuE4HD4k',
+      'AIzaSyAVNx1WUCnclzqOqpIM5VYA96H6qp2j5bY', 'AIzaSyDdtHvWxuscU2miukF4KlMxn0W__2VUZI4',
+      'AIzaSyB4_z6CdYM0KVhx7ATbPJH1DXwNhc1YpEg', 'AIzaSyDcXdCnP8FNl2ESLM1E7IoLP5VlvjxLHz4',
+      'AIzaSyDqzt5Rt6syKg1tWu8me-Jq1HD6dX27_UE', 'AIzaSyApBINm-_grcHuCvzh6wGB-aMYSWWK0ORc',
+      'AIzaSyCWp3DmBRJ4EwDGvjRf-mcS87fS8fZiLd4', 'AIzaSyCTjNPp4c8JPrT7tElu7_muPGUYKWQzUdc',
+      'AIzaSyCbY0donzc3VD8D4WYHMNwifiKEdhumHwk', 'AIzaSyDm5jqtcnsihaQPjRdYqI3lekGmSl0gks4',
+      'AIzaSyA7sihOm52Yn2EBJCjUVSs-BOgUGNnc478', 'AIzaSyAo_rtJl_SqbH9isP2x8pqOCKf1Jx70P90',
+      'AIzaSyBZPJs4Gir5emKJQTGOTajW2M2Gehcb7iA', 'AIzaSyA4ILLM_Hljta7X8iYvg9sX-nHjDmYV-V8',
+      'AIzaSyAXngXiliXhPbjKMgjKOxMAYNFSHXllm38', 'AIzaSyDxF3J7QHRmVja7c701SJEezysbDUP30g8',
+      'AIzaSyBiNsOzBRNE0_nHeLWNDSqKDznHMSlEi-s', 'AIzaSyDixPHIQmvO746hkaWjl2bSxZqriafAn74',
+      'AIzaSyDLd8O4zDhEuCbh4FFqmv98vJ2gnuK5wh8', 'AIzaSyAGUlCTVEgzQgJzzi_CQ_iMBABEnY61K1c',
+      'AIzaSyBZwpGIVa-T0FoFaIBNIgftvloZMurAHRs', 'AIzaSyBGr7hpch8eeoa5AhRko_cyoWnO-hPh5Lo',
+      'AIzaSyBF6jXbsOdGKHAQIxEh8wPi5JzsceK6EEM', 'AIzaSyAUZomrWTB7tLMkwTQB2Onm64QZYJS5JCI',
+      'AIzaSyA5likqWJ4ZVjP2-KV8IcOjnUBhQSECwgk', 'AIzaSyBX3RrCcgGk0_rocyoQpBusmls4wGwrt8s',
+      'AIzaSyAZ5T8TZk3sz7waE6rVmG9uX9_ojc9h-Ho', 'AIzaSyBH8jxicvK8kmdC3x9CMyKghcHs7Y0gFmo',
+      'AIzaSyDAiQ6cRCrFnsPCwhFtO9GU3r5ydGWcALM', 'AIzaSyCWwX3xYFLei8dzCPod93cMwwYVEx0m7RQ',
+      'AIzaSyDw07QnJK-yUfHXaHI4nMDhcVhuEqyrmWI', 'AIzaSyCyJ7n8aGsLmWJ-lDCIjfD9UESLYpstNU0',
+      'AIzaSyCWoS-oZoM-xhkvrKA-GPwKnq01jnTM0Xs', 'AIzaSyC9FkWeAXLmStd9sqF-2IHIGawe41lEAJc',
+      'AIzaSyAJDP2SyKYF97SGRfIXyTzrH9ReY-2Pj9E', 'AIzaSyCPCQMSlgzd0RWQ0dxEoYSLC-YUAE9j9oE',
+      'AIzaSyCLFqCRy7efVwhoGHBeEZ_7zWjYwoipf6g', 'AIzaSyCexsWBL-CVEQLhf4lfk0gV_uU5s-vU0z8',
+      'AIzaSyALvYACPGwULe3qXOPZymGaU2jlnfg0e0s', 'AIzaSyA3yiEIxKWaYBH9airJ5nUKEXS0jIhOuz0',
+      'AIzaSyAC3Zf_rf8QjnKYquYRlleV-WYGW8olBOg', 'AIzaSyBqvlZ1PiS6lxkWZiRAseTAUPaCkoD3GVg'
     ];
     let currentKeyIndex = 0;
 
@@ -1941,11 +2021,11 @@
         }
     }
 
-    function startYouTubePolling() { if (youtubePollTimer) clearInterval(youtubePollTimer); fetchComments(); youtubePollTimer = setInterval(fetchComments, 2000); }
+    function startYouTubePolling() { if (youtubePollTimer) clearInterval(youtubePollTimer); fetchComments(); youtubePollTimer = setInterval(fetchComments, 5000); }
     function stopYouTubePolling() { if (youtubePollTimer) { clearInterval(youtubePollTimer); youtubePollTimer = null; } }
 
     async function fetchComments() {
-        if (!liveChatId || !isLeader) return;
+        if (!liveChatId) return;
         try { const currentApiKey = YOUTUBE_API_KEYS[currentKeyIndex]; let apiUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=200&key=${currentApiKey}`; if (nextPageToken) apiUrl += `&pageToken=${nextPageToken}`; const resp = await fetch(apiUrl); const data = await resp.json(); if (data.error && (data.error.code === 403 || data.error.errors?.[0]?.reason === 'quotaExceeded')) { currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length; return fetchComments(); } if (data.error) throw new Error(data.error.message); if (data.nextPageToken) nextPageToken = data.nextPageToken; if (data.items && data.items.length > 0) { document.getElementById('comments-loading').style.display = 'none'; document.getElementById('comments-empty').style.display = 'none'; const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt)); await archiveCommentsToSupabase(sorted); sorted.forEach(item => { const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() }; addCommentToUI(newItem, true); }); } } catch(e) { console.error('Fetch error:', e); }
     }
 
@@ -1997,6 +2077,152 @@
     let modUptimeSec = 0;
     let modNextPageToken = null;
     let modStats = { total: 0, deleted: 0 };
+
+    // ════════════════════════════════════════════
+    // نظام الجلب الذكي المتكيف (Smart Adaptive Polling)
+    // ════════════════════════════════════════════
+    // يحترم pollingIntervalMs من YouTube + يكيّف الفاصل حسب نشاط الشات
+    let modYouTubePollInterval = 5000;  // القيمة من YouTube API (افتراضي 5 ثوان)
+    let modAdaptiveInterval = 5000;      // الفاصل الحالي المستخدم (يتغير تلقائياً)
+    let modEmptyPolls = 0;              // عدد مرات الجلب بدون رسائل جديدة
+    let modQuotaUsed = 0;               // وحدات الحصة المستهلكة اليوم
+    let modQuotaDate = new Date().toDateString(); // تاريخ الحصة
+    const MOD_DAILY_QUOTA = 1570000;     // الحصة اليومية: 157 مشروع × 10,000 = 1,570,000 وحدة
+    const MOD_QUOTA_COST_LIST = 1;      // تكلفة جلب الرسائل
+    const MOD_QUOTA_COST_DELETE = 50;   // تكلفة حذف رسالة
+    const MOD_QUOTA_COST_INSERT = 50;   // تكلفة إرسال رسالة
+    // حدود الجلب المتكيف
+    const MOD_MIN_INTERVAL = 2000;      // أقل فاصل: 2 ثانية (سريع عند النشاط — آمن مع 157 مفتاح)
+    const MOD_MAX_INTERVAL = 30000;     // أقصى فاصل: 30 ثانية (عند السكون)
+    const MOD_STEP_UP = 1000;           // زيادة الفاصل عند السكون: +1 ثانية
+    const MOD_STEP_DOWN = 0;            // عند وجود رسائل: ارجع للفاصل الأساسي
+    // ════════════════════════════════════════════
+    // نظام تقييم خطورة الحظر (Ban Severity System)
+    // ════════════════════════════════════════════
+    // كل مستخدم يملك سجل مخالفات: نقاط تتراكم حسب شدة الكلمة
+    // الأوزان: كل كلمة محظورة تساوي نقطة خطورة محددة
+    let modUserViolations = {};  // { authorName: { score: number, words: [], lastTime: date, count: number } }
+    // أوزان الخطورة الافتراضية لكل كلمة (يمكن تخصيصها)
+    let modSeverityWeights = { 'سب': 5, 'غبي': 3, 'حمار': 4, 'كلب': 4 };
+    // مستويات الخطورة
+    const SEVERITY_LEVELS = [
+        { max: 3, label: 'منخفض', color: '#34d399', icon: 'fa-circle-check', bg: 'rgba(52,211,153,0.08)', border: 'rgba(52,211,153,0.15)' },
+        { max: 7, label: 'متوسط', color: '#fbbf24', icon: 'fa-triangle-exclamation', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.15)' },
+        { max: 12, label: 'مرتفع', color: '#f97316', icon: 'fa-circle-exclamation', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.15)' },
+        { max: Infinity, label: 'خطر — يُنصح بالحظر', color: '#ef4444', icon: 'fa-skull-crossbones', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.15)' }
+    ];
+
+    function modGetWordWeight(word) {
+        // لو الكلمة لها وزن محدد، استخدمه. وإلا وزن افتراضي = 3
+        return modSeverityWeights[word] || 3;
+    }
+
+    function modCalculateSeverity(author) {
+        var v = modUserViolations[author];
+        if (!v) return SEVERITY_LEVELS[0];
+        for (var i = 0; i < SEVERITY_LEVELS.length; i++) {
+            if (v.score <= SEVERITY_LEVELS[i].max) return SEVERITY_LEVELS[i];
+        }
+        return SEVERITY_LEVELS[SEVERITY_LEVELS.length - 1];
+    }
+
+    function modRecordViolation(author, word) {
+        if (!modUserViolations[author]) {
+            modUserViolations[author] = { score: 0, words: [], lastTime: null, count: 0 };
+        }
+        var v = modUserViolations[author];
+        var weight = modGetWordWeight(word);
+        v.score += weight;
+        v.words.push({ word: word, time: new Date(), weight: weight });
+        v.lastTime = new Date();
+        v.count++;
+        // إعادة النقاط بعد 10 دقائق من آخر مخالفة (تلاشي تدريجي)
+        modDecayViolations(author);
+        modUpdateSeverityPanel();
+        return v.score;
+    }
+
+    function modDecayViolations(author) {
+        // تقليل النقاط بنسبة 20% كل 10 دقائق (تلاشي)
+        var v = modUserViolations[author];
+        if (!v) return;
+        var now = Date.now();
+        if (v.lastTime) {
+            var diffMin = (now - new Date(v.lastTime).getTime()) / 60000;
+            if (diffMin > 10) {
+                var decayFactor = Math.pow(0.8, Math.floor(diffMin / 10));
+                v.score = Math.round(v.score * decayFactor);
+            }
+        }
+    }
+
+    function modResetUserViolations(author) {
+        delete modUserViolations[author];
+        modUpdateSeverityPanel();
+    }
+
+    // ════════════════════════════════════════════
+    // تتبع الحصة اليومية (Quota Tracker)
+    // ════════════════════════════════════════════
+    function modTrackQuota(cost) {
+        // إعادة تعيين الحصة يومياً
+        var today = new Date().toDateString();
+        if (modQuotaDate !== today) {
+            modQuotaUsed = 0;
+            modQuotaDate = today;
+        }
+        modQuotaUsed += cost;
+        modUpdateQuotaUI();
+    }
+
+    function modGetQuotaRemaining() {
+        var today = new Date().toDateString();
+        if (modQuotaDate !== today) return MOD_DAILY_QUOTA;
+        return Math.max(0, MOD_DAILY_QUOTA - modQuotaUsed);
+    }
+
+    function modGetQuotaPercent() {
+        return Math.round((modQuotaUsed / MOD_DAILY_QUOTA) * 100);
+    }
+
+    function modUpdateQuotaUI() {
+        var el = document.getElementById('mod-quota-bar');
+        if (!el) return;
+        var pct = modGetQuotaPercent();
+        var remain = modGetQuotaRemaining();
+        var color = pct < 60 ? '#34d399' : (pct < 85 ? '#fbbf24' : '#ef4444');
+        el.style.cssText = 'height:4px;border-radius:2px;background:' + color + ';width:' + Math.min(100, pct) + '%;transition:width 0.5s ease;';
+        var textEl = document.getElementById('mod-quota-text');
+        if (textEl) {
+            textEl.innerHTML = '<i class="fas fa-gauge"></i> الحصة: ' + modQuotaUsed.toLocaleString() + '/' + MOD_DAILY_QUOTA.toLocaleString() + ' (' + pct + '%) — متبقي: ' + remain.toLocaleString();
+            textEl.style.color = color;
+        }
+    }
+
+    // حساب الفاصل الذكي بناءً على نشاط الشات
+    function modAdjustPollInterval(hasNewMessages) {
+        if (hasNewMessages) {
+            // نشاط! → استخدم أقل فاصل ممكن (مع احترام YouTube)
+            modAdaptiveInterval = Math.max(MOD_MIN_INTERVAL, modYouTubePollInterval);
+            modEmptyPolls = 0;
+        } else {
+            // سكون → زد الفاصل تدريجياً
+            modEmptyPolls++;
+            if (modEmptyPolls > 2) {  // بعد مرتين بدون رسائل
+                modAdaptiveInterval = Math.min(MOD_MAX_INTERVAL, modAdaptiveInterval + MOD_STEP_UP);
+            }
+        }
+        // تحقق من الحصة — لو قاربت على النفاد، زد الفاصل
+        if (modGetQuotaPercent() > 85) {
+            modAdaptiveInterval = Math.max(modAdaptiveInterval, 15000); // 15 ثانية على الأقل
+            modAddLog('warn', '⚠️ الحصة اليومية قاربت على النفاد (' + modGetQuotaPercent() + '%) — تم تقليل سرعة الجلب');
+        }
+        // إعادة ضبط المؤقت بالفاصل الجديد
+        if (modPollTimer) clearInterval(modPollTimer);
+        modPollTimer = setInterval(modPollMessages, modAdaptiveInterval);
+        return modAdaptiveInterval;
+    }
+
     const MOD_DEFAULT_WORDS = ['سب', 'غبي', 'حمار', 'كلب'];
     let modForbiddenWords = [];
 
@@ -2688,6 +2914,11 @@
         modIsMonitoring = true;
         modNextPageToken = null;
         modStats = { total: 0, deleted: 0 };
+        modEmptyPolls = 0;
+        modAdaptiveInterval = modYouTubePollInterval || 5000;
+        // إعادة تعيين الحصة لو يوم جديد
+        var today = new Date().toDateString();
+        if (modQuotaDate !== today) { modQuotaUsed = 0; modQuotaDate = today; }
 
         document.getElementById('mod-monitor-card').classList.remove('hidden');
         document.getElementById('mod-log-card').classList.remove('hidden');
@@ -2696,7 +2927,8 @@
         document.getElementById('mod-monitor-area').innerHTML = '';
 
         modPollMessages();
-        modPollTimer = setInterval(modPollMessages, 5000);
+        modPollTimer = setInterval(modPollMessages, modAdaptiveInterval);
+        modUpdateQuotaUI();
 
         modUptimeSec = 0;
         modUptimeTimer = setInterval(function() {
@@ -2706,7 +2938,7 @@
         }, 1000);
 
         modUpdateStatusUI();
-        modAddLog('join', 'بدأت المراقبة التلقائية — حساب: ' + modAdminName);
+        modAddLog('join', 'بدأت المراقبة الذكية — فاصل الجلب: ' + (modAdaptiveInterval/1000).toFixed(1) + ' ثانية — الحصة: ' + modGetQuotaRemaining().toLocaleString() + ' متبقي');
 
         // فحص دوري لحالة الإشراف كل 30 ثانية
         if (window._modCheckInterval) clearInterval(window._modCheckInterval);
@@ -2723,6 +2955,9 @@
 
     function modStopAutoModeration() {
         modIsMonitoring = false; modNextPageToken = null;
+        modUserViolations = {};
+        modEmptyPolls = 0;
+        modUpdateSeverityPanel();
         if (modPollTimer) { clearInterval(modPollTimer); modPollTimer = null; }
         if (modUptimeTimer) { clearInterval(modUptimeTimer); modUptimeTimer = null; }
         if (window._modCheckInterval) { clearInterval(window._modCheckInterval); window._modCheckInterval = null; }
@@ -2731,30 +2966,46 @@
         document.getElementById('mod-monitor-badge').innerHTML = '<div class="mod-dot"></div> غير متصل';
     }
 
-    // جلب الرسائل وفحص الكلمات المحظورة
+    // جلب الرسائل وفحص الكلمات المحظورة (مع نظام الجلب الذكي)
     async function modPollMessages() {
-        if (!liveChatId || !modAdminToken || !modIsMonitoring) return;
+        if (!liveChatId || !modIsMonitoring) return;
+
+        // تحقق من الحصة قبل كل طلب
+        if (modGetQuotaRemaining() <= 0) {
+            modAddLog('warn', '⚠️ نفدت الحصة اليومية! المراقبة متوقفة حتى الغد.');
+            modStopAutoModeration();
+            return;
+        }
+
         try {
-            var url = 'https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=' + liveChatId + '&part=snippet,authorDetails&maxResults=200';
+            var currentApiKey = YOUTUBE_API_KEYS[currentKeyIndex];
+            var url = 'https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=' + liveChatId + '&part=snippet,authorDetails&maxResults=200&key=' + currentApiKey;
             if (modNextPageToken) url += '&pageToken=' + modNextPageToken;
-            var r = await fetch(url, { headers: { Authorization: 'Bearer ' + modAdminToken } });
+            var r = await fetch(url);
             var d = await r.json();
+
             if (d.error) {
-                if (d.error.code === 401) {
-                    // حاول تحديث التوكن قبل الإيقاف
-                    if (modAdminRefreshToken && await modRefreshAccessToken()) {
-                        showToast('تم تحديث توكن الأدمن تلقائياً أثناء المراقبة', 'info');
-                        return; // سيعيد المحاولة في الدورة القادمة
-                    }
-                    showToast('توكن الأدمن منتهي ولم يتم تحديثه — يجب إعادة الربط', 'error');
-                    modStopAutoModeration();
-                    modClearAdminToken();
-                    modShowAdminOffline();
+                // إذا خطأ API key — جرب المفتاح التالي
+                if (d.error.code === 403 && (d.error.errors?.[0]?.reason === 'quotaExceeded' || d.error.errors?.[0]?.reason === 'forbidden')) {
+                    currentKeyIndex = (currentKeyIndex + 1) % YOUTUBE_API_KEYS.length;
+                    return;
                 }
                 return;
             }
+
+            // تتبع الحصة — فقط عند النجاح
+            modTrackQuota(MOD_QUOTA_COST_LIST);
+
+            // احترم pollingIntervalMs من YouTube
+            if (d.pollingIntervalMs && d.pollingIntervalMs > 0) {
+                modYouTubePollInterval = Math.max(MOD_MIN_INTERVAL, d.pollingIntervalMs);
+            }
+
             modNextPageToken = d.nextPageToken || null;
+            var hasNewMessages = false;
+
             if (d.items && d.items.length > 0) {
+                hasNewMessages = true;
                 d.items.forEach(function(item) {
                     var msg = {
                         id: item.id,
@@ -2768,11 +3019,18 @@
                     modAddMsgToMonitor(msg);
 
                     // حذف الكلمات المحظورة (فقط إذا الأدمن مشرف)
-                    if (modIsModerator && !msg.isOwner && !msg.isMod) {
+                    if (modIsModerator && modAdminToken && !msg.isOwner && !msg.isMod) {
                         var lower = msg.text.toLowerCase();
                         for (var wi = 0; wi < modForbiddenWords.length; wi++) {
                             if (lower.includes(modForbiddenWords[wi])) {
-                                modDeleteMsg(msg.id, msg.author, modForbiddenWords[wi]);
+                                // تسجيل المخالفة وحساب الخطورة
+                                var newScore = modRecordViolation(msg.author, modForbiddenWords[wi]);
+                                var severity = modCalculateSeverity(msg.author);
+                                // محاولة الحذف
+                                var deleted = await modDeleteMsgAndTrack(msg.id, msg.author, modForbiddenWords[wi]);
+                                // إظهار مؤشر الخطورة على الرسالة
+                                modMarkSeverity(msg.id, msg.author, newScore, severity);
+                                modAddLog('warn', 'مخالفة "' + msg.author + '" — كلمة: "' + modForbiddenWords[wi] + '" — نقاط: ' + newScore + ' — مستوى: ' + severity.label);
                                 break;
                             }
                         }
@@ -2780,6 +3038,13 @@
                 });
                 modUpdateStats();
             }
+
+            // ضبط الفاصل الذكي بناءً على النشاط
+            var newInterval = modAdjustPollInterval(hasNewMessages);
+            // تحديث عرض الفاصل
+            var intervalEl = document.getElementById('mod-poll-interval');
+            if (intervalEl) intervalEl.textContent = (newInterval / 1000).toFixed(1);
+
         } catch(e) { console.error('Mod poll error:', e); }
     }
 
@@ -2794,12 +3059,41 @@
                 modUpdateStats();
                 modMarkDeleted(id);
                 modAddLog('delete', 'حذف رسالة "' + author + '" — تحتوي: "' + word + '"');
+                return true;
             } else if (r.status === 403) {
                 modIsModerator = false;
                 modUpdateStatusUI();
                 modAddLog('warn', 'فشل الحذف — الأدمن لم يُعَيَّن كمشرف بعد');
+            } else if (r.status === 401) {
+                // التوكن منتهي — حاول التحديث
+                if (await modRefreshAccessToken()) {
+                    var r2 = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?id=' + id, {
+                        method: 'DELETE',
+                        headers: { Authorization: 'Bearer ' + modAdminToken }
+                    });
+                    if (r2.status === 204) {
+                        modStats.deleted++;
+                        modUpdateStats();
+                        modMarkDeleted(id);
+                        modAddLog('delete', 'حذف رسالة "' + author + '" — تحتوي: "' + word + '" (بعد تحديث التوكن)');
+                        return true;
+                    }
+                }
+                modAddLog('warn', 'فشل الحذف — توكن منتهي (401)');
             }
         } catch(e) { console.error('Mod delete error:', e); }
+        return false;
+    }
+
+    // حذف مع تتبع الحصة — يُستدعى من modPollMessages
+    async function modDeleteMsgAndTrack(id, author, word) {
+        var success = await modDeleteMsg(id, author, word);
+        if (success) {
+            modTrackQuota(MOD_QUOTA_COST_DELETE);
+            // تحقق من صلاحية التوكن قبل الحذف التالي
+            await modEnsureValidToken();
+        }
+        return success;
     }
 
     // ════════════════════════════════════════════
@@ -2828,6 +3122,16 @@
             el.className = 'mod-monitor-msg deleted';
             el.querySelector('.msg-body').innerHTML += '<span class="del-badge"><i class="fas fa-trash"></i> حُذفت</span>';
         }
+    }
+
+    function modMarkSeverity(id, author, score, severity) {
+        var el = document.getElementById('mod-msg-' + id);
+        if (!el) return;
+        var badge = document.createElement('span');
+        badge.className = 'severity-badge';
+        badge.style.cssText = 'font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:4px;background:' + severity.bg + ';color:' + severity.color + ';border:1px solid ' + severity.border + ';';
+        badge.innerHTML = '<i class="fas ' + severity.icon + '"></i> ' + score + 'pt';
+        el.querySelector('.msg-body').appendChild(badge);
     }
 
     function modAddGreetingToMonitor(text) {
@@ -2863,6 +3167,47 @@
         var d = document.getElementById('mod-stat-deleted');
         if (t) t.textContent = modStats.total;
         if (d) d.textContent = modStats.deleted;
+    }
+
+    function modUpdateSeverityPanel() {
+        var panel = document.getElementById('severity-panel');
+        if (!panel) return;
+        var users = Object.keys(modUserViolations).filter(function(name) {
+            return modUserViolations[name].score > 0;
+        });
+        // ترتيب حسب النقاط (الأعلى أولاً)
+        users.sort(function(a, b) { return modUserViolations[b].score - modUserViolations[a].score; });
+        if (users.length === 0) {
+            panel.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 11px;"><i class="fas fa-shield-halved"></i> لا توجد مخالفات مسجلة بعد</div>';
+            return;
+        }
+        var html = '';
+        users.forEach(function(name) {
+            var v = modUserViolations[name];
+            var severity = modCalculateSeverity(name);
+            // حساب نسبة التقدم (الحد الأقصى 20 نقطة)
+            var pct = Math.min(100, Math.round((v.score / 20) * 100));
+            // آخر 3 كلمات مسيئة
+            var recentWords = v.words.slice(-3).map(function(w) { return w.word; }).join('، ');
+            html += '<div style="padding: 8px 10px; border-radius: 8px; background: ' + severity.bg + '; border: 1px solid ' + severity.border + '; display: flex; align-items: center; gap: 8px;">' +
+                '<div style="width: 30px; height: 30px; border-radius: 6px; background: ' + severity.color + '; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">' +
+                '<i class="fas ' + severity.icon + '" style="font-size: 12px; color: #08080e;"></i></div>' +
+                '<div style="flex: 1; min-width: 0;">' +
+                '<div style="display: flex; align-items: center; gap: 6px;">' +
+                '<span style="font-size: 12px; font-weight: 700; color: ' + severity.color + ';">' + modEsc(name) + '</span>' +
+                '<span style="font-size: 10px; color: ' + severity.color + '; background: rgba(0,0,0,0.2); padding: 1px 5px; border-radius: 3px;">' + severity.label + '</span>' +
+                '</div>' +
+                '<div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">' + v.count + ' مخالفات — آخر: ' + modEsc(recentWords) + '</div>' +
+                '<div style="margin-top: 4px; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.05);">' +
+                '<div style="height: 100%; border-radius: 2px; background: ' + severity.color + '; width: ' + pct + '%; transition: width 0.5s ease;"></div></div>' +
+                '</div>' +
+                '<div style="text-align: center; flex-shrink: 0;">' +
+                '<div style="font-size: 16px; font-weight: 900; color: ' + severity.color + ';">' + v.score + '</div>' +
+                '<div style="font-size: 8px; color: var(--text-muted);">نقطة</div></div>' +
+                '<button onclick="modResetUserViolations(\'' + modEsc(name).replace(/'/g, "\\'") + '\')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 10px;" title="إعادة تعيين"><i class="fas fa-rotate-left"></i></button>' +
+                '</div>';
+        });
+        panel.innerHTML = html;
     }
 
     // تحميل الكلمات + حالة الأدمن عند فتح التبويب
