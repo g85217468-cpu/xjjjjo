@@ -1657,9 +1657,8 @@
     let renderedComments = new Set();
     let renderedChats = new Set();
 
-    // لوحة ألوان رمادية مُهدّئة (للتوافق مع الثيم الرمادي للبث والمحادثة والأرشيف)
-    // كل الألوان في نفس العائلة الرمادية، فقط بدرجات إضاءة مختلفة لتمييز المستخدمين
-    const AVATAR_COLORS = ['#7a7d83', '#8a8d93', '#9a9da3', '#6a6d73', '#a5a8ae', '#888b91', '#979aa0', '#7d8086', '#8f9298', '#73767c'];
+    // لوحة ألوان متنوعة ومميزة لكل مستخدم (ذهبي، أخضر، أحمر، أزرق، بنفسجي...)
+    const AVATAR_COLORS = ['#e8a838', '#34d399', '#f87171', '#60a5fa', '#a78bfa', '#fb923c', '#f472b6', '#38bdf8', '#4ade80', '#facc15', '#c084fc', '#22d3ee', '#fb7185', '#a3e635', '#e879f9', '#fbbf24'];
     function getAvatarColor(name) { let hash = 0; for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash); return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]; }
     function getVideoId(url) { if (!url) return null; const patterns = [/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/live\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/, /^([a-zA-Z0-9_-]{11})$/]; for (const pattern of patterns) { const match = url.match(pattern); if (match) return match[1]; } return null; }
 
@@ -2524,7 +2523,8 @@
                         document.getElementById('comments-loading').style.display = 'none';
                         document.getElementById('comments-empty').style.display = 'none';
                         const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt));
-                        await archiveCommentsToSupabase(sorted);
+                        // أرشفة في الخلفية بدون حجب الجلب (لا نستخدم await)
+                        archiveCommentsToSupabase(sorted).catch(e => console.error('Archive bg error:', e));
                         sorted.forEach(item => {
                             const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() };
                             addCommentToUI(newItem, true);
@@ -2607,7 +2607,7 @@
     const MOD_QUOTA_COST_DELETE = 50;   // تكلفة حذف رسالة
     const MOD_QUOTA_COST_INSERT = 50;   // تكلفة إرسال رسالة
     // حدود الجلب المتكيف
-    const MOD_MIN_INTERVAL = 3000;      // أقل فاصل: 4 ثوان (متوازن بين السرعة وتوفير الحصة)
+    const MOD_MIN_INTERVAL = 3000;      // أقل فاصل: 3 ثوان (استجابة أسرع — الطاقة تكفي)
     const MOD_MAX_INTERVAL = 30000;     // أقصى فاصل: 30 ثانية (عند السكون)
     const MOD_STEP_UP = 1000;           // زيادة الفاصل عند السكون: +1 ثانية
     const MOD_STEP_DOWN = 0;            // عند وجود رسائل: ارجع للفاصل الأساسي
@@ -3412,28 +3412,8 @@
 
             if (!myId) { modUpdateStatusUI(); return; }
 
-            // الطريقة 1: جرب liveChat/moderators (يعمل فقط لو الأدمن مالك القناة)
-            try {
-                const r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/moderators?liveChatId=' + liveChatId + '&part=snippet', {
-                    headers: { Authorization: 'Bearer ' + modAdminToken }
-                });
-                if (r.ok) {
-                    const d = await r.json();
-                    if (d.items && d.items.some(i => i.snippet?.moderatorDetails?.channelId === myId)) {
-                        modIsModerator = true;
-                        modUpdateStatusUI();
-                        return;
-                    }
-                    // موجود في القائمة ولم نجد أنفسنا = لسنا مشرفين
-                    if (d.items && d.items.length >= 0) {
-                        modIsModerator = false;
-                        modUpdateStatusUI();
-                        return;
-                    }
-                }
-            } catch(e1) { /* فشل — جرب الطريقة البديلة */ }
-
-            // الطريقة 2: جلب آخر الرسائل وفحص isChatModerator لرسالة الأدمن
+            // جلب آخر الرسائل وفحص isChatModerator لرسالة الأدمن
+            // (الطريقة الوحيدة الموثوقة — liveChat/moderators يتطلب صلاحية مالك القناة ويعطي 403 للمشرف)
             try {
                 var checkUrl = 'https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=' + liveChatId + '&part=snippet,authorDetails&maxResults=50';
                 // جرب حتى 5 مفاتيح
@@ -3674,13 +3654,15 @@
                                     // تسجيل المخالفة وحساب الخطورة
                                     var newScore = modRecordViolation(msg.author, modForbiddenWords[wi]);
                                     var severity = modCalculateSeverity(msg.author);
-                                    // تأخير 4 ثوان قبل الحذف
-                                    await new Promise(r => setTimeout(r, 4000));
-                                    // محاولة الحذف
-                                    var deleted = await modDeleteMsgAndTrack(msg.id, msg.author, modForbiddenWords[wi]);
-                                    // إظهار مؤشر الخطورة على الرسالة
+                                    // إظهار مؤشر الخطورة فوراً
                                     modMarkSeverity(msg.id, msg.author, newScore, severity);
                                     modAddLog('warn', 'مخالفة "' + msg.author + '" — كلمة: "' + modForbiddenWords[wi] + '" — نقاط: ' + newScore + ' — مستوى: ' + severity.label);
+                                    // تأخير 4 ثوان قبل الحذف — بدون حجب المعالجة
+                                    var delMsgId = msg.id, delAuthor = msg.author, delWord = modForbiddenWords[wi];
+                                    setTimeout(async function() {
+                                        if (!modIsMonitoring || !modAdminToken) return;
+                                        await modDeleteMsgAndTrack(delMsgId, delAuthor, delWord);
+                                    }, 4000);
                                     break;
                                 }
                             }
@@ -4136,7 +4118,7 @@
 
     function formatTime(iso) { if(!iso) return ''; const d = Math.floor((Date.now() - new Date(iso).getTime())/1000); if(d<10) return 'الآن'; if(d<60) return `منذ ${d} ث`; if(d<3600) return `منذ ${Math.floor(d/60)} د`; return `منذ ${Math.floor(d/3600)} س`; }
     function escapeHtml(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
-    function retryFetchComments() { if (currentVideoId) startLiveStream(currentVideoId); }
+    function retryFetchComments() { if (currentVideoId) { youTubeConnectionOk = false; attemptYouTubeConnect(currentVideoId); } }
 
     // Toggle Admin Panel visibility based on app_settings.admin_panel_visible (default: hidden)
     async function syncAdminPanelVisibility() {
