@@ -680,6 +680,359 @@
         @keyframes entrySpin { to { transform: rotate(360deg); } }
         .entry-actions { display: flex; gap: 10px; margin-top: 16px; }
         .entry-actions button { flex: 1; }
+
+        /* ================================================================
+           ★  PREMIUM UI REDESIGN — Stream Session & Chat Screens  ★
+           ================================================================ */
+
+        /* ── 1. Mesh gradient background (purple/blue/amber tones) ── */
+        .screen-comments {
+            background:
+                radial-gradient(ellipse at 12% 0%, rgba(130, 80, 230, 0.07) 0%, transparent 55%),
+                radial-gradient(ellipse at 88% 100%, rgba(40, 90, 210, 0.06) 0%, transparent 55%),
+                radial-gradient(ellipse at 55% 35%, rgba(232, 168, 56, 0.022) 0%, transparent 65%),
+                var(--hx-bg) !important;
+        }
+
+        /* Subtle noise/grain overlay — fine dot pattern */
+        #screen-comments::before,
+        #screen-chat::before,
+        #screen-archive::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 150px 150px;
+            mix-blend-mode: overlay;
+        }
+
+        /* Push all children above the grain overlay */
+        #screen-comments > *,
+        #screen-chat > *,
+        #screen-archive > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── 2. Header: glassmorphism + animated gold gradient accent line ── */
+        #screen-comments header,
+        #screen-chat header,
+        #screen-archive header {
+            background: rgba(16, 17, 26, 0.78) !important;
+            backdrop-filter: blur(28px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+            border-bottom: none !important;
+            position: relative !important;
+            overflow: visible !important;
+        }
+
+        #screen-comments header::after,
+        #screen-chat header::after,
+        #screen-archive header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 8%;
+            right: 8%;
+            height: 2px;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(232, 168, 56, 0.2) 15%,
+                rgba(232, 168, 56, 0.7) 35%,
+                #e8a838 50%,
+                rgba(232, 168, 56, 0.7) 65%,
+                rgba(232, 168, 56, 0.2) 85%,
+                transparent 100%
+            );
+            background-size: 250% 100%;
+            animation: goldLineSlide 4s ease-in-out infinite;
+            border-radius: 2px;
+            filter: blur(0.3px);
+            box-shadow:
+                0 0 10px rgba(232, 168, 56, 0.25),
+                0 0 3px rgba(232, 168, 56, 0.12);
+        }
+
+        @keyframes goldLineSlide {
+            0%   { background-position: 250% center; }
+            100% { background-position: -250% center; }
+        }
+
+        /* ── 3. Comment cards: glowing accent bar + gradient hover + premium depth ── */
+        .screen-comments .comment-card {
+            background: rgba(255, 255, 255, 0.018) !important;
+            border: 1px solid rgba(255, 255, 255, 0.035) !important;
+            border-right: 3px solid var(--c-accent, #e8a838) !important;
+            border-radius: 12px !important;
+            padding: 10px 14px !important;
+            margin: 5px 0 !important;
+            box-shadow:
+                0 1px 4px rgba(0, 0, 0, 0.18),
+                0 0 0 0 transparent !important;
+            display: flex !important;
+            flex-direction: row !important;
+            gap: 12px !important;
+            transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .screen-comments .comment-card:hover {
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(232, 168, 56, 0.045),
+                    rgba(100, 120, 200, 0.025)
+                ) !important;
+            border-color: rgba(232, 168, 56, 0.12) !important;
+            border-right-color: var(--c-accent, #e8a838) !important;
+            box-shadow:
+                0 3px 14px rgba(0, 0, 0, 0.22),
+                0 0 0 1px rgba(232, 168, 56, 0.06),
+                inset 0 0 24px rgba(232, 168, 56, 0.015) !important;
+            transform: translateX(-2px);
+        }
+
+        .screen-comments .comment-card.archived {
+            background: rgba(255, 255, 255, 0.008) !important;
+            border-right-color: var(--hx-fg-mute) !important;
+            opacity: 0.6;
+        }
+
+        /* Show avatar with premium rounded-square style */
+        .screen-comments .comment-avatar {
+            display: flex !important;
+            min-width: 34px !important;
+            height: 34px !important;
+            border-radius: 10px !important;
+            font-size: 13px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(255,255,255,0.06) !important;
+            font-family: 'Tajawal', sans-serif !important;
+        }
+
+        /* ── 4. Live dot: glowing pulse ring ── */
+        .screen-comments .live-dot {
+            background: var(--hx-live) !important;
+            width: 8px !important;
+            height: 8px !important;
+            position: relative !important;
+            box-shadow: 0 0 8px rgba(208, 69, 69, 0.6), 0 0 3px rgba(208, 69, 69, 0.3) !important;
+        }
+
+        .screen-comments .live-dot::after {
+            content: '';
+            position: absolute;
+            inset: -5px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(208, 69, 69, 0.35);
+            animation: liveRingPulse 1.6s ease-out infinite;
+        }
+
+        @keyframes liveRingPulse {
+            0%   { transform: scale(0.75); opacity: 1; }
+            100% { transform: scale(2.0); opacity: 0; }
+        }
+
+        /* ── 5a. Chat bubbles "me": rich amber/gold gradient with warm glow ── */
+        .screen-comments .chat-card.me {
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(232, 168, 56, 0.16),
+                    rgba(212, 149, 46, 0.06),
+                    rgba(200, 140, 40, 0.12)
+                ) !important;
+            border: 1px solid rgba(232, 168, 56, 0.28) !important;
+            border-bottom-right-radius: 4px !important;
+            border-bottom-left-radius: 18px !important;
+            border-radius: 18px 18px 4px 18px !important;
+            box-shadow:
+                0 4px 24px rgba(232, 168, 56, 0.09),
+                0 1px 6px rgba(0, 0, 0, 0.18),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+            backdrop-filter: blur(14px) saturate(140%) !important;
+            -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .screen-comments .chat-card.me:hover {
+            box-shadow:
+                0 6px 30px rgba(232, 168, 56, 0.15),
+                0 1px 6px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+            transform: translateY(-1px) !important;
+            border-color: rgba(232, 168, 56, 0.38) !important;
+        }
+
+        /* ── 5b. Chat bubbles "other": blue-tinted glassmorphism ── */
+        .screen-comments .chat-card.other {
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(80, 100, 210, 0.09),
+                    rgba(60, 80, 190, 0.04)
+                ) !important;
+            border: 1px solid rgba(100, 120, 220, 0.18) !important;
+            border-bottom-right-radius: 18px !important;
+            border-bottom-left-radius: 4px !important;
+            border-radius: 18px 18px 18px 4px !important;
+            box-shadow:
+                0 4px 18px rgba(0, 0, 0, 0.14),
+                0 0 0 1px rgba(100, 120, 200, 0.06),
+                inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+            backdrop-filter: blur(14px) saturate(140%) !important;
+            -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .screen-comments .chat-card.other:hover {
+            box-shadow:
+                0 6px 26px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(100, 120, 200, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+            transform: translateY(-1px) !important;
+            border-color: rgba(100, 120, 220, 0.28) !important;
+        }
+
+        /* Chat avatar — premium rounded-square */
+        .screen-comments .chat-avatar {
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 12px !important;
+            border-radius: 10px !important;
+            box-shadow:
+                0 2px 8px rgba(0, 0, 0, 0.28),
+                0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+        }
+
+        /* ── 6. Status bar: gradient background + gold top accent line ── */
+        .screen-comments .status-bar {
+            background:
+                linear-gradient(
+                    180deg,
+                    rgba(16, 17, 26, 0.92),
+                    rgba(24, 25, 36, 0.98)
+                ) !important;
+            border-top: none !important;
+            position: relative !important;
+        }
+
+        .screen-comments .status-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 12%;
+            right: 12%;
+            height: 1px;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(232, 168, 56, 0.25) 20%,
+                rgba(232, 168, 56, 0.6) 50%,
+                rgba(232, 168, 56, 0.25) 80%,
+                transparent 100%
+            );
+            box-shadow: 0 0 6px rgba(232, 168, 56, 0.12);
+        }
+
+        /* ── 7. Empty states: floating animation on icons ── */
+        .screen-comments .empty-state i {
+            animation: emptyFloat 3.5s ease-in-out infinite !important;
+            opacity: 0.2 !important;
+            filter: drop-shadow(0 0 16px rgba(232, 168, 56, 0.12));
+        }
+
+        @keyframes emptyFloat {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50%      { transform: translateY(-10px) scale(1.03); }
+        }
+
+        /* ── 8. Input field: glowing amber focus ring ── */
+        .screen-comments .input-field {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .screen-comments .input-field:focus {
+            border-color: rgba(232, 168, 56, 0.55) !important;
+            box-shadow:
+                0 0 0 3px rgba(232, 168, 56, 0.14),
+                0 0 24px rgba(232, 168, 56, 0.08) !important;
+            background: rgba(232, 168, 56, 0.045) !important;
+        }
+
+        /* ── 9. Send button (chat screen): gradient + press animation ── */
+        #screen-chat .btn-primary {
+            background: linear-gradient(135deg, #e8a838, #d4952e, #c88820) !important;
+            color: #0a0a0f !important;
+            border: none !important;
+            border-radius: 12px !important;
+            box-shadow:
+                0 3px 14px rgba(232, 168, 56, 0.28),
+                inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        #screen-chat .btn-primary:hover {
+            background: linear-gradient(135deg, #f0b84a, #d4952e, #c88820) !important;
+            box-shadow:
+                0 5px 24px rgba(232, 168, 56, 0.38),
+                inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+            transform: translateY(-2px);
+        }
+
+        #screen-chat .btn-primary:active {
+            transform: scale(0.92) translateY(0) !important;
+            box-shadow: 0 1px 6px rgba(232, 168, 56, 0.2), inset 0 2px 4px rgba(0,0,0,0.15) !important;
+        }
+
+        /* ── 10. Scrollbar: gold-tinted premium thumb ── */
+        .screen-comments .comments-container::-webkit-scrollbar-thumb {
+            background: rgba(232, 168, 56, 0.12) !important;
+            border-radius: 10px !important;
+            transition: background 0.2s ease;
+        }
+
+        .screen-comments .comments-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(232, 168, 56, 0.28) !important;
+        }
+
+        /* ── 11. Comment card text — subtle text-shadow for depth ── */
+        .screen-comments .comment-text {
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ── 12. Header icon buttons: subtle glow on hover ── */
+        .screen-comments .icon-btn:hover,
+        .screen-comments .header-btn:hover,
+        .screen-comments .back-btn:hover {
+            box-shadow: 0 0 12px rgba(232, 168, 56, 0.08) !important;
+        }
+
+        /* ── 13. Chat username "me" — warm gold text shadow ── */
+        .screen-comments .chat-card.me .chat-username {
+            text-shadow: 0 0 8px rgba(232, 168, 56, 0.2);
+        }
+
+        /* ── 14. Mod sections — subtle glass depth ── */
+        .screen-comments .mod-card {
+            background: rgba(255, 255, 255, 0.025) !important;
+            border-color: rgba(255, 255, 255, 0.05) !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+            transition: all 0.25s ease !important;
+        }
+
+        .screen-comments .mod-card:hover {
+            background: rgba(255, 255, 255, 0.035) !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        /* ── 15. Archive tabs — subtle gold active glow ── */
+        .screen-comments .archive-tab.active {
+            box-shadow: 0 0 12px rgba(232, 168, 56, 0.08) !important;
+        }
+
     </style>
 </head>
 <body>
@@ -1013,7 +1366,7 @@
                     <div style="margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border);">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                             <span id="mod-quota-text" style="font-size: 10px; color: #34d399;">
-                                <i class="fas fa-gauge"></i> الحصة: 0/1,570,000 (0%) — متبقي: 1,570,000
+                                <i class="fas fa-gauge"></i> الحصة: 0/2,170,000 (0%) — متبقي: 2,170,000
                             </span>
                             <span style="font-size: 10px; color: var(--text-muted);">
                                 فاصل الجلب: <span id="mod-poll-interval" style="color: #e8a838; font-weight: 700;">5.0</span> ثانية
@@ -1246,7 +1599,38 @@
       'AIzaSyAJDP2SyKYF97SGRfIXyTzrH9ReY-2Pj9E', 'AIzaSyCPCQMSlgzd0RWQ0dxEoYSLC-YUAE9j9oE',
       'AIzaSyCLFqCRy7efVwhoGHBeEZ_7zWjYwoipf6g', 'AIzaSyCexsWBL-CVEQLhf4lfk0gV_uU5s-vU0z8',
       'AIzaSyALvYACPGwULe3qXOPZymGaU2jlnfg0e0s', 'AIzaSyA3yiEIxKWaYBH9airJ5nUKEXS0jIhOuz0',
-      'AIzaSyAC3Zf_rf8QjnKYquYRlleV-WYGW8olBOg', 'AIzaSyBqvlZ1PiS6lxkWZiRAseTAUPaCkoD3GVg'
+      'AIzaSyAC3Zf_rf8QjnKYquYRlleV-WYGW8olBOg', 'AIzaSyBqvlZ1PiS6lxkWZiRAseTAUPaCkoD3GVg',
+      // === المفاتيح الإضافية (60) ===
+      'AIzaSyDtD5jDP0p8as8WpTVtLmYW80PJP4CF35c', 'AIzaSyAe9GDsx0HqX-M7hCw9PBrmOeHY6kYEU5A',
+      'AIzaSyD-QD9Oo8mHgyLx-UG98bHHwO0zWgWXzug', 'AIzaSyDKemhsQfy25xwwi2k313219IqfINWvOco',
+      'AIzaSyCgpPayEgPW-DRTNfrB1tF6HQ1cZ64eYlM', 'AIzaSyBz5QrvVA3FZBdcbfl38NmB6tAEdm7utbc',
+      'AIzaSyAgchho2SMMXZeZBwelaO1lTth2oLH-VfE', 'AIzaSyAGPUCIW5rOyzLQGqpBf_1hHFfPfNTRBb0',
+      'AIzaSyD-nJPJ7tgNRRae9fyhUngzRSnqD7wbbNM', 'AIzaSyCidvnqx5BIkvtXOm-twFlcQK0yt1Wmbw8',
+      'AIzaSyCiTDC1badlDoPLSYkk38GI9J1e6iWxChQ', 'AIzaSyDU6VcOCQCC8sjoyAc7F8DqXSzk4sSf7bA',
+      'AIzaSyDmDAjzqQRl6tHXL0ifSQdO8cvHh8SpR_M', 'AIzaSyAMONoHxmtz6XOMDL6WaI4YR5-VqRLK4p8',
+      'AIzaSyAsd1M44SnHk2KpLDyfVkO3ygLMoNtHCR0', 'AIzaSyDif0Q1gvmlZDYZ3MpSIaPqYyWI5YqoVYE',
+      'AIzaSyCjF0R-1qF-9UhC4WCE2exAkIytNi8KQcQ', 'AIzaSyADFr08Y2RwCiEy9zubLW3AVEX3KP-XH6U',
+      'AIzaSyCS_q0SQmw_cYBJ0KhBB3If2fA6OAWLo_M', 'AIzaSyDXNgO-ZE95GYRBxBdItatCTLJ6tUGiumI',
+      'AIzaSyCdEM_nFSl7wpMA0oDbwGei4MM2om2-9qc', 'AIzaSyCFOF5ZjrZpJpuMM04XhYZFx7YFaKL_lZ8',
+      'AIzaSyCLibgakkmEFsTwO7bFqDK4gJF5MA7WbwQ', 'AIzaSyBiKyjMX3gT8KjNEpiLmYm_QxCJfYd5IZY',
+      'AIzaSyD_IbU4mtEcNEdEaGMeNyBVA1qMqnLT15k', 'AIzaSyCNDfUyfBlusBY9cEZd_s2v1wW9UwnWiTc',
+      'AIzaSyBKuvvqboItysYv1aIeWD_ihHz_ntjbUTE', 'AIzaSyAtUDwA-Tum-bLYNdRsF8JH3qfpfa68zOs',
+      'AIzaSyBbDEpW55sG4agPOutIxOulqhJnXieUN50', 'AIzaSyBA-CQTf5m-UEqWCZlwrOy4o860PhuhCZo',
+      'AIzaSyARlkXEzHu66kdX4IItZwpHhplW26XQ39g', 'AIzaSyA5fRdrH0OrjFlSTIVPiDzgL6gL457E_D8',
+      'AIzaSyDs6I020y1V22wI4Pk3xVdRuFXKgMwsSgM', 'AIzaSyCbpAYOqJMryvFJxvlQQUuZeb7k536AFr0',
+      'AIzaSyCsr_McDQdSeOYGM53GSrZhSGabB8MGM9Y', 'AIzaSyBIrrJt1Q2rs9QnOotXkW-xuAd_ZIJla8o',
+      'AIzaSyDLQkYsrKgKIQUiIqVI8wN-v3cxUk_RwJo', 'AIzaSyCmpcmn97LB54sBzQKCwIvkUFynx4qFfg0',
+      'AIzaSyBkRENJRnnZoqUEVtyiw7e2Xw5UAa6N0t0', 'AIzaSyDHxiInxgmBmANnPAMROnvVNuM7_h8AEbo',
+      'AIzaSyAdWpxqZBHmcrDDUAuLb2QZ6quGsGdxoCU', 'AIzaSyDJBtY7DZ31BoNOrPUWz3_C8vgtrPviK0o',
+      'AIzaSyAyvk0ohA1MM_P3dHPoIFr5vZVO5ntWwCg', 'AIzaSyDGUPbluPaU19Lpj_RuI09aS9LxL-XDHIU',
+      'AIzaSyCdEnBicuEm04p-UHHgi5PcxV-1CJ5G4Zk', 'AIzaSyDoe4hft1tlJatsMkZCc5XVW9Tm4DJm-qc',
+      'AIzaSyB0FaDhWfReFRWegci_ddBQJq4JtmK5MZk', 'AIzaSyAksfl6uhMGqJEnR4CykACF57W0KPypvd0',
+      'AIzaSyA1hrk91VkMeEgleoCx_mfwtrzAyKjH7pM', 'AIzaSyDD49SmYg5eH3i5ky_lYLY5zVeh3xNe-yQ',
+      'AIzaSyAGyXQAokJ9gvzA_sAETfgviTug4mkfcvw', 'AIzaSyBwRucveIKa7ZvbPVFg-TdoguDs0O5UrpA',
+      'AIzaSyAi7h6OOEoea6avxfhZR887QaLBSIjavD4', 'AIzaSyCw1_5vZMoRoRKiZ-UC5GyGghdygbNI4Tg',
+      'AIzaSyCCYz6jpI7x1B-6NT8BlDjXg9L6c7at_Tk', 'AIzaSyCmQxNwRzixgKbjuT_-PoF49RPPaq0botA',
+      'AIzaSyCNpUASI7x1iHK-tb-5hRqdPoe_r5cSqyM', 'AIzaSyBvASbJBcPhkQS6aRml9HUT06yQLFHjY3I',
+      'AIzaSyAKqkj1T1gMKd41LuC7imRCVEKQdhwQ9Do', 'AIzaSyAWtfTmUuEzhf0s4aFQKEkOpYYsm8vH02c'
     ];
     let currentKeyIndex = 0;
 
@@ -1958,7 +2342,7 @@
         let fallbackChatId = null;
         try {
             let vidData = null;
-            // جرب حتى 20 مفتاح مختلفًا — يكفي لأن 157 مشروع منفصل
+            // جرب حتى 20 مفتاح مختلفًا — يكفي لأن 217 مفتاح متاح
             const maxTries = Math.min(20, YOUTUBE_API_KEYS.length);
             let lastError = '';
             let lastErrorCode = 0;
@@ -1977,7 +2361,6 @@
                     // الأخطاء القابلة للإصلاح بمفتاح آخر: 403 (حصة/صلاحيات) أو 400 (مفتاح غير صالح)
                     // الأخطاء غير القابلة للإصلاح: 404 (فيديو غير موجود) → توقف فوراً
                     if (data.error.code === 404) break;
-                    // لجميع الأخطاء الأخرى (403, 400, 500...) → جرب المفتاح التالي
                     currentKeyIndex = (keyIndex + 1) % YOUTUBE_API_KEYS.length;
                 } catch(e) { currentKeyIndex = (keyIndex + 1) % YOUTUBE_API_KEYS.length; continue; }
             }
@@ -2198,6 +2581,8 @@
     let modAdminReady = false;      // هل تم تحميل حالة الأدمن؟
 
     let modIsModerator = false;     // هل حساب الأدمن مشرف فعلاً في البث الحالي؟
+    let modLastNotifiedAsMod = false; // منع تكرار إشعار "تم التعيين كمشرف"
+    let modMyChannelId = '';         // channel ID لحساب الأدمن (يُحمل من Supabase)
     let modIsMonitoring = false;    // هل المراقبة التلقائية تعمل الآن؟
     let modPollTimer = null;
     let modUptimeTimer = null;
@@ -2212,14 +2597,17 @@
     let modYouTubePollInterval = 5000;  // القيمة من YouTube API (افتراضي 5 ثوان)
     let modAdaptiveInterval = 5000;      // الفاصل الحالي المستخدم (يتغير تلقائياً)
     let modEmptyPolls = 0;              // عدد مرات الجلب بدون رسائل جديدة
+    let modAbandonedPolls = 0;          // عدد مرات الجلب المتتالية الفارغة (لكشف البث المهجور)
+    const MOD_ABANDONED_LIMIT = 50;    // بعد 50 جلب فارغ متتالي → البث مهجور → إيقاف تلقائي
+    let modPageHidden = false;         // هل الصفحة مخفية/في الخلفية
     let modQuotaUsed = 0;               // وحدات الحصة المستهلكة اليوم
     let modQuotaDate = new Date().toDateString(); // تاريخ الحصة
-    const MOD_DAILY_QUOTA = 1570000;     // الحصة اليومية: 157 مشروع × 10,000 = 1,570,000 وحدة
+    const MOD_DAILY_QUOTA = 2170000;     // الحصة اليومية: 217 مفتاح × 10,000 = 2,170,000 وحدة
     const MOD_QUOTA_COST_LIST = 1;      // تكلفة جلب الرسائل
     const MOD_QUOTA_COST_DELETE = 50;   // تكلفة حذف رسالة
     const MOD_QUOTA_COST_INSERT = 50;   // تكلفة إرسال رسالة
     // حدود الجلب المتكيف
-    const MOD_MIN_INTERVAL = 2000;      // أقل فاصل: 2 ثانية (سريع عند النشاط — آمن مع 157 مفتاح)
+    const MOD_MIN_INTERVAL = 3000;      // أقل فاصل: 4 ثوان (متوازن بين السرعة وتوفير الحصة)
     const MOD_MAX_INTERVAL = 30000;     // أقصى فاصل: 30 ثانية (عند السكون)
     const MOD_STEP_UP = 1000;           // زيادة الفاصل عند السكون: +1 ثانية
     const MOD_STEP_DOWN = 0;            // عند وجود رسائل: ارجع للفاصل الأساسي
@@ -2618,6 +3006,7 @@
                 }
                 modAdminName = data.mod_name || 'الأدمن';
                 modAdminEmail = data.mod_email || '';
+                modMyChannelId = data.mod_channel_id || '';
                 modAdminReady = true;
 
                 // محاولة تحديث التوكن إن كان قارب على الانتهاء
@@ -2834,7 +3223,7 @@
 
         if (modIsMonitoring) modStopAutoModeration();
         modAdminToken = null; modAdminRefreshToken = ''; modAdminTokenExpires = 0;
-        modAdminName = ''; modAdminEmail = '';
+        modAdminName = ''; modAdminEmail = ''; modMyChannelId = '';
         modAdminReady = false; modIsModerator = false;
 
         modShowAdminOffline();
@@ -2950,6 +3339,16 @@
                 modAddGreetingToMonitor(greetingText);
                 modAddLog('join', 'تم إرسال رسالة الترحيب من حساب "' + modAdminName + '"');
 
+                // ✅ تحديث فوري لواجهة قسم المشرف — يظهر حالة "تم الإرسال — ينتظر"
+                document.getElementById('mod-s-icon').className = 'mod-status-icon waiting';
+                document.getElementById('mod-s-title').textContent = 'تم الإرسال — في انتظار تعيين المشرف';
+                document.getElementById('mod-s-desc').textContent = 'تم إرسال الرسالة من "' + modAdminName + '" — صاحب البث سيعينه مشرفاً من YouTube Studio';
+                document.getElementById('mod-s-badge').className = 'mod-badge waiting-badge';
+                document.getElementById('mod-s-badge').innerHTML = '<div class="mod-dot"></div> ينتظر';
+
+                // فحص فوري لحالة الإشراف (قبل بدء المراقبة)
+                await modCheckModStatus();
+
                 // بدء المراقبة التلقائية
                 modStartAutoModeration();
 
@@ -2962,6 +3361,13 @@
                     if (r.ok) {
                         modAddGreetingToMonitor(greetingText);
                         modAddLog('join', 'تم الإرسال بعد تحديث التوكن');
+                        // تحديث فوري للواجهة
+                        document.getElementById('mod-s-icon').className = 'mod-status-icon waiting';
+                        document.getElementById('mod-s-title').textContent = 'تم الإرسال — في انتظار تعيين المشرف';
+                        document.getElementById('mod-s-desc').textContent = 'تم إرسال الرسالة من "' + modAdminName + '" — صاحب البث سيعينه مشرفاً من YouTube Studio';
+                        document.getElementById('mod-s-badge').className = 'mod-badge waiting-badge';
+                        document.getElementById('mod-s-badge').innerHTML = '<div class="mod-dot"></div> ينتظر';
+                        await modCheckModStatus();
                         modStartAutoModeration();
                         showToast('تم الإرسال بنجاح بعد تحديث التوكن!', 'success');
                     } else {
@@ -2998,17 +3404,72 @@
     async function modCheckModStatus() {
         if (!modAdminToken || !liveChatId) return;
         try {
-            const r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/moderators?liveChatId=' + liveChatId + '&part=snippet', {
-                headers: { Authorization: 'Bearer ' + modAdminToken }
-            });
-            if (r.ok) {
-                const d = await r.json();
-                const { data: settings } = await supabaseClient.from('app_settings').select('mod_channel_id').eq('id', 1).maybeSingle();
-                const myId = settings?.mod_channel_id || '';
-                if (myId) {
-                    modIsModerator = d.items?.some(i => i.snippet?.moderatorDetails?.channelId === myId) || false;
+            // ⚠️ liveChat/moderators يتطلب صلاحية مالك القناة ويعطي 403 للمشرف
+            // الحل: جلب آخر الرسائل وفحص isChatModerator في رسالة الأدمن
+            const { data: settings } = await supabaseClient.from('app_settings').select('mod_channel_id,mod_name').eq('id', 1).maybeSingle();
+            const myId = settings?.mod_channel_id || '';
+            const myName = settings?.mod_name || '';
+
+            if (!myId) { modUpdateStatusUI(); return; }
+
+            // الطريقة 1: جرب liveChat/moderators (يعمل فقط لو الأدمن مالك القناة)
+            try {
+                const r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/moderators?liveChatId=' + liveChatId + '&part=snippet', {
+                    headers: { Authorization: 'Bearer ' + modAdminToken }
+                });
+                if (r.ok) {
+                    const d = await r.json();
+                    if (d.items && d.items.some(i => i.snippet?.moderatorDetails?.channelId === myId)) {
+                        modIsModerator = true;
+                        modUpdateStatusUI();
+                        return;
+                    }
+                    // موجود في القائمة ولم نجد أنفسنا = لسنا مشرفين
+                    if (d.items && d.items.length >= 0) {
+                        modIsModerator = false;
+                        modUpdateStatusUI();
+                        return;
+                    }
                 }
-            }
+            } catch(e1) { /* فشل — جرب الطريقة البديلة */ }
+
+            // الطريقة 2: جلب آخر الرسائل وفحص isChatModerator لرسالة الأدمن
+            try {
+                var checkUrl = 'https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=' + liveChatId + '&part=snippet,authorDetails&maxResults=50';
+                // جرب حتى 5 مفاتيح
+                var checkSuccess = false;
+                var maxCheck = Math.min(5, YOUTUBE_API_KEYS.length);
+                for (var ci = 0; ci < maxCheck && !checkSuccess; ci++) {
+                    var cki = (currentKeyIndex + ci) % YOUTUBE_API_KEYS.length;
+                    try {
+                        var cr = await fetch(checkUrl + '&key=' + YOUTUBE_API_KEYS[cki]);
+                        if (cr.ok) {
+                            var cd = await cr.json();
+                            currentKeyIndex = cki;
+                            checkSuccess = true;
+                            // ابحث عن رسالة من الأدمن وفحص isChatModerator
+                            if (cd.items) {
+                                for (var m = 0; m < cd.items.length; m++) {
+                                    var msgAuthor = cd.items[m].authorDetails;
+                                    if (msgAuthor && msgAuthor.channelId === myId) {
+                                        modIsModerator = msgAuthor.isChatModerator === true;
+                                        modUpdateStatusUI();
+                                        return;
+                                    }
+                                    // أيضاً فحص بالاسم كاحتياط
+                                    if (msgAuthor && msgAuthor.displayName && myName && msgAuthor.displayName === myName) {
+                                        modIsModerator = msgAuthor.isChatModerator === true;
+                                        modUpdateStatusUI();
+                                        return;
+                                    }
+                                }
+                            }
+                            // لم نجد رسالة للأدمن في آخر 50 رسالة
+                            // لا نغيّر الحالة — نبقي كما هي
+                        }
+                    } catch(ce) { continue; }
+                }
+            } catch(e2) { /* فشل البديل */ }
         } catch(e) { modIsModerator = false; }
         modUpdateStatusUI();
     }
@@ -3020,16 +3481,35 @@
         const badge = document.getElementById('mod-s-badge');
         if (modIsModerator) {
             icon.className = 'mod-status-icon active';
-            title.textContent = 'الأدمن مشرف — الحذف التلقائي مفعّل';
-            desc.textContent = 'يتم حذف الرسائل المحظورة تلقائياً الآن';
+            title.textContent = 'تم تعيين الأدمن كمشرف! — الحذف التلقائي مفعّل';
+            desc.textContent = 'يتم حذف الرسائل المحظورة تلقائياً الآن بواسطة "' + modAdminName + '"';
             badge.className = 'mod-badge online';
             badge.innerHTML = '<div class="mod-dot"></div> مشرف نشط';
+            // تحديث الزر أيضاً
+            var assignBtn = document.getElementById('mod-assign-btn');
+            if (assignBtn) {
+                assignBtn.disabled = false;
+                assignBtn.innerHTML = '<i class="fas fa-check-circle" style="color:#0f0"></i> تم التعيين كمشرف — إعادة إرسال رسالة';
+                assignBtn.style.borderColor = '#0f0';
+                assignBtn.style.boxShadow = '0 0 12px rgba(0,255,0,0.3)';
+            }
+            // إشعار فوري — فقط عند أول مرة يتم التعيين فيها (من غير مشرف → مشرف)
+            if (!modLastNotifiedAsMod) {
+                modLastNotifiedAsMod = true;
+                showToast('تم تعيين "' + modAdminName + '" كمشرف بنجاح! — الحذف التلقائي مفعّل الآن', 'success');
+                modAddLog('join', 'تم تعيين "' + modAdminName + '" كمشرف في البث — الحذف التلقائي مفعّل');
+            }
         } else if (modIsMonitoring) {
             icon.className = 'mod-status-icon waiting';
             title.textContent = 'في انتظار تعيين المشرف';
             desc.textContent = 'تم إرسال الرسالة — صاحب البث سيعين "' + modAdminName + '" من YouTube Studio';
             badge.className = 'mod-badge waiting-badge';
             badge.innerHTML = '<div class="mod-dot"></div> ينتظر';
+            // إعادة تعيين علامة الإشعار لو فقد صلاحية الإشراف
+            if (modLastNotifiedAsMod) {
+                modLastNotifiedAsMod = false;
+                modAddLog('warn', 'تم سحب صلاحية الإشراف من "' + modAdminName + '"');
+            }
         }
     }
 
@@ -3067,11 +3547,8 @@
         modUpdateStatusUI();
         modAddLog('join', 'بدأت المراقبة الذكية — فاصل الجلب: ' + (modAdaptiveInterval/1000).toFixed(1) + ' ثانية — الحصة: ' + modGetQuotaRemaining().toLocaleString() + ' متبقي');
 
-        // فحص دوري لحالة الإشراف كل 30 ثانية
-        if (window._modCheckInterval) clearInterval(window._modCheckInterval);
-        window._modCheckInterval = setInterval(function() {
-            if (modIsMonitoring && modAdminToken) modCheckModStatus();
-        }, 30000);
+        // لا يوجد فحص دوري للإشراف — يتم تحديث الحالة تلقائياً من الرسائل الواردة
+        // (isChatModerator في بيانات كل رسالة = مجاني بدون طلبات إضافية)
 
         // تحديث تلقائي للتوكن كل 50 دقيقة (قبل انتهاء الـ access_token بساعة)
         if (window._modRefreshInterval) clearInterval(window._modRefreshInterval);
@@ -3083,12 +3560,12 @@
     function modStopAutoModeration() {
         modIsMonitoring = false; modNextPageToken = null;
         modPollInProgress = false;
+        modAbandonedPolls = 0;
         modUserViolations = {};
         modEmptyPolls = 0;
         modUpdateSeverityPanel();
         if (modPollTimer) { clearInterval(modPollTimer); modPollTimer = null; }
         if (modUptimeTimer) { clearInterval(modUptimeTimer); modUptimeTimer = null; }
-        if (window._modCheckInterval) { clearInterval(window._modCheckInterval); window._modCheckInterval = null; }
         if (window._modRefreshInterval) { clearInterval(window._modRefreshInterval); window._modRefreshInterval = null; }
         document.getElementById('mod-monitor-badge').className = 'mod-badge offline';
         document.getElementById('mod-monitor-badge').innerHTML = '<div class="mod-dot"></div> غير متصل';
@@ -3101,6 +3578,10 @@
         if (!liveChatId || !modIsMonitoring) return;
         if (modPollInProgress) return;
         modPollInProgress = true;
+
+        // 🛡️ تأخير عشوائي ±1 ثا لمنع ظهور النمط كـ bot
+        var jitter = Math.floor(Math.random() * 2000) - 500; // -500ms إلى +1500ms
+        if (jitter > 0) await new Promise(r => setTimeout(r, jitter));
 
         // تحقق من الحصة قبل كل طلب
         if (modGetQuotaRemaining() <= 0) {
@@ -3121,7 +3602,19 @@
                 var d = await r.json();
 
                 if (d.error) {
-                    // أي خطأ من API → جرب المفتاح التالي
+                    // كشف انتهاء البث: لو الكل فشل → البث انتهى أو الـ chatId انتهى صلاحيته
+                    if (keyAttempt === maxModKeyTries - 1) {
+                        var errMsg = d.error.message || '';
+                        // إذا كان الخطأ عن انتهاء البث أو chatId غير موجود
+                        if (errMsg.includes('not found') || errMsg.includes('The live chat') || errMsg.includes('No live chat') || d.error.code === 404) {
+                            modAddLog('warn', '⚠️ البث انتهى أو غرفة المحادثة أُغلقت — تم إيقاف المراقبة تلقائياً');
+                            showToast('تم إيقاف المراقبة: البث انتهى أو غرفة المحادثة أُغلقت', 'info');
+                            modStopAutoModeration();
+                            modPollInProgress = false;
+                            return;
+                        }
+                    }
+                    // أي خطأ آخر → جرب المفتاح التالي
                     currentKeyIndex = (modKeyIndex + 1) % YOUTUBE_API_KEYS.length;
                     continue;
                 }
@@ -3156,6 +3649,23 @@
                         modStats.total++;
                         modAddMsgToMonitor(msg);
 
+                        // ✅ تحديث حالة الإشراف تلقائياً من الرسائل (مجاني — بدون طلبات إضافية)
+                        // لو وجدنا رسالة من الأدمن → نعرف فوراً إذا هو مشرف أو لا
+                        if (item.authorDetails && item.authorDetails.channelId) {
+                            var msgChannelId = item.authorDetails.channelId;
+                            var msgIsMod = item.authorDetails.isChatModerator === true;
+                            // فحص بالـ channel ID (الأدق)
+                            if (msgChannelId === modMyChannelId) {
+                                if (msgIsMod && !modIsModerator) {
+                                    modIsModerator = true;
+                                    modUpdateStatusUI();
+                                } else if (!msgIsMod && modIsModerator) {
+                                    modIsModerator = false;
+                                    modUpdateStatusUI();
+                                }
+                            }
+                        }
+
                         // حذف الكلمات المحظورة (فقط إذا الأدمن مشرف)
                         if (modIsModerator && modAdminToken && !msg.isOwner && !msg.isMod) {
                             var lower = msg.text.toLowerCase();
@@ -3164,6 +3674,8 @@
                                     // تسجيل المخالفة وحساب الخطورة
                                     var newScore = modRecordViolation(msg.author, modForbiddenWords[wi]);
                                     var severity = modCalculateSeverity(msg.author);
+                                    // تأخير 4 ثوان قبل الحذف
+                                    await new Promise(r => setTimeout(r, 4000));
                                     // محاولة الحذف
                                     var deleted = await modDeleteMsgAndTrack(msg.id, msg.author, modForbiddenWords[wi]);
                                     // إظهار مؤشر الخطورة على الرسالة
@@ -3351,6 +3863,33 @@
 
     // تحميل الكلمات + حالة الأدمن عند فتح التبويب
     modLoadSaved();
+
+    // ═══ كشف إغلاق الصفحة / التبديل بين التبويبات ═══
+    // عند إغلاق الصفحة → أوقف المراقبة
+    window.addEventListener('beforeunload', function() {
+        if (modIsMonitoring) modStopAutoModeration();
+    });
+
+    // عند إخفاء الصفحة (التبديل لتبويب آخر) → بطّئ الجلب جداً لتوفير الحصة
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            modPageHidden = true;
+            if (modIsMonitoring && modPollTimer) {
+                // عند إخفاء الصفحة → فاصل 60 ثانية بدل الفاصل الحالي
+                clearInterval(modPollTimer);
+                modPollTimer = setInterval(modPollMessages, 60000);
+            }
+        } else {
+            modPageHidden = false;
+            if (modIsMonitoring) {
+                // عند العودة → ارجع للفاصل الأصلي
+                if (modPollTimer) clearInterval(modPollTimer);
+                modPollTimer = setInterval(modPollMessages, modAdaptiveInterval);
+                // أعد فحص الإشراف
+                if (modAdminToken) modCheckModStatus();
+            }
+        }
+    });
 
     // تعديل switchArchiveTab لتحميل حالة الأدمن عند فتح المراقب
     const _origSwitchArchiveTab = window.switchArchiveTab || null;
