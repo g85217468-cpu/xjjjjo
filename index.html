@@ -2494,8 +2494,23 @@
         }
     }
 
-    function startYouTubePolling() { if (youtubePollTimer) clearInterval(youtubePollTimer); fetchComments(); youtubePollTimer = setInterval(fetchComments, 2000); }
-    function stopYouTubePolling() { if (youtubePollTimer) { clearInterval(youtubePollTimer); youtubePollTimer = null; } }
+    let youtubePollScheduled = false;
+    function startYouTubePolling() {
+        if (youtubePollScheduled) return;
+        youtubePollScheduled = true;
+        scheduleNextFetch();
+    }
+    function stopYouTubePolling() { youtubePollScheduled = false; if (youtubePollTimer) { clearTimeout(youtubePollTimer); youtubePollTimer = null; } }
+    function scheduleNextFetch() {
+        if (!youtubePollScheduled || !liveChatId) return;
+        const start = performance.now();
+        fetchComments().finally(() => {
+            if (!youtubePollScheduled) return;
+            const elapsed = performance.now() - start;
+            const delay = Math.max(100, 2000 - elapsed); // التعويض: لو أخذ الجلب 1.5ث، الانتظار 0.5ث فقط
+            youtubePollTimer = setTimeout(scheduleNextFetch, delay);
+        });
+    }
 
     let fetchInProgress = false;
     // عدد المرات المتتالية التي فشل فيها كل المفاتيح (لكشف البث المنتهي)
@@ -2514,17 +2529,24 @@
                 const currentApiKey = YOUTUBE_API_KEYS[keyIndex];
                 let apiUrl = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=200&key=${currentApiKey}`;
                 if (nextPageToken) apiUrl += `&pageToken=${nextPageToken}`;
+                let controller, fetchTimeout;
                 try {
-                    // timeout 5 ثوان لمنع التعليق (بدون هذا، fetch يعلّق 30+ ثانية!)
-                    const controller = new AbortController();
-                    const fetchTimeout = setTimeout(() => controller.abort(), 5000);
+                    // timeout 3 ثوان (أقل من فترة الجلب 2ث لضمان عدم تجاوزها)
+                    controller = new AbortController();
+                    fetchTimeout = setTimeout(() => controller.abort(), 3000);
                     const resp = await fetch(apiUrl, { signal: controller.signal });
                     clearTimeout(fetchTimeout);
+                    fetchTimeout = null;
                     const data = await resp.json();
                     if (data.error) {
-                        // كشف البث المنتهي أو غرفة المحادثة المغلقة
+                        // كشف البث المنتهي أو غرفة المحادثة المغلقة (رسائل محددة فقط)
+                        const errCode = data.error.code || 0;
                         const errMsg = data.error.message || '';
-                        if (errMsg.includes('not found') || errMsg.includes('No live chat') || errMsg.includes('The live chat') || data.error.code === 404) {
+                        const isStreamDead = errCode === 404
+                            || errMsg.includes('not found')
+                            || errMsg.includes('No live chat')
+                            || errMsg.includes('live chat is no longer live');
+                        if (isStreamDead) {
                             console.log('YouTube: غرفة المحادثة أُغلقت أو البث انتهى — إيقاف الجلب');
                             stopYouTubePolling();
                             showStreamWarning('غرفة المحادثة أُغلقت — لا يمكن جلب تعليقات جديدة');
@@ -2536,13 +2558,12 @@
                     }
                     // نجاح!
                     currentKeyIndex = keyIndex;
-                    fetchConsecutiveFails = 0; // إعادة تعيين العداد
+                    fetchConsecutiveFails = 0;
                     if (data.nextPageToken) nextPageToken = data.nextPageToken;
                     if (data.items && data.items.length > 0) {
                         document.getElementById('comments-loading').style.display = 'none';
                         document.getElementById('comments-empty').style.display = 'none';
                         const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt));
-                        // أرشفة في الخلفية بدون حجب الجلب
                         archiveCommentsToSupabase(sorted).catch(e => console.error('Archive bg error:', e));
                         sorted.forEach(item => {
                             const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() };
@@ -2551,12 +2572,8 @@
                     }
                     success = true;
                 } catch(fetchErr) {
-                    clearTimeout(fetchTimeout);
-                    // لو كان timeout → جرب المفتاح التالي فوراً
-                    if (fetchErr.name === 'AbortError') {
-                        currentKeyIndex = (keyIndex + 1) % YOUTUBE_API_KEYS.length;
-                        continue;
-                    }
+                    if (fetchTimeout) { clearTimeout(fetchTimeout); fetchTimeout = null; }
+                    // جرب المفتاح التالي فوراً (سواء timeout أو خطأ شبكة)
                     currentKeyIndex = (keyIndex + 1) % YOUTUBE_API_KEYS.length;
                     continue;
                 }
