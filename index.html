@@ -1657,6 +1657,299 @@
     let renderedComments = new Set();
     let renderedChats = new Set();
 
+    // ══════════════════════════════════════════════════════════════
+    // 🌐 الجالب الشامل (Global Streamer) — يجلب كل 15 بث كل 1.5 ثانية
+    // ══════════════════════════════════════════════════════════════
+    // يعمل في الخلفية بغض النظر عن أي بث تشاهده
+    // يخزن كل التعليقات في archived_comments فتصل لكل المشاهدين عبر Realtime
+    // ══════════════════════════════════════════════════════════════
+    const GS = {
+        timer: null,           // مؤقت الدورة
+        lockTimer: null,       // مؤقت تجديد القفل
+        isGlobalLeader: false, // هل هذا التاب هو القائد الشامل؟
+        isRunning: false,      // هل جارٍ جلب حالي؟
+        streams: [],           // قائمة البثوث النشطة من saved_streams
+        tokens: {},            // { videoId: nextPageToken } لكل بث
+        chatIds: {},           // { videoId: liveChatId } مخزّنة
+        keyIdx: 0,             // مؤشر المفتاح الحالي (مستقل عن المفاتيح الأخرى)
+        cycleCount: 0,
+        totalArchived: 0,
+        LOCK_ID: '__global_all_streams__',
+        INTERVAL: 1500,        // 1.5 ثانية
+
+        // بدء الجالب الشامل
+        async start() {
+            if (this.timer) return; // يعمل بالفعل
+            console.log('[GS] 🌐 بدء الجالب الشامل — كل 1.5 ثانية لكل البثوث');
+            // تحميل البثوث النشطة مرة واحدة
+            await this.loadStreams();
+            // محاولة الحصول على القيادة الشاملة
+            this.checkGlobalLock();
+            this.lockTimer = setInterval(() => this.checkGlobalLock(), 8000);
+            // بدء دورات الجلب
+            this.scheduleNext();
+        },
+
+        // إيقاف الجالب الشامل
+        stop() {
+            if (this.timer) { clearTimeout(this.timer); this.timer = null; }
+            if (this.lockTimer) { clearInterval(this.lockTimer); this.lockTimer = null; }
+            this.isGlobalLeader = false;
+            this.isRunning = false;
+            console.log('[GS] 🛑 تم إيقاف الجالب الشامل');
+        },
+
+        // تحميل البثوث النشطة من Supabase
+        async loadStreams() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('saved_streams')
+                    .select('id, stream_url, live_chat_id, next_page_token')
+                    .eq('is_active', true);
+                if (error) throw error;
+                if (!data || data.length === 0) {
+                    this.streams = [];
+                    return;
+                }
+                this.streams = data;
+                // تحميل nextPageToken المخزن لكل بث
+                data.forEach(s => {
+                    const vid = getVideoId(s.stream_url);
+                    if (vid) {
+                        if (s.next_page_token) this.tokens[vid] = s.next_page_token;
+                        if (s.live_chat_id) this.chatIds[vid] = s.live_chat_id;
+                    }
+                });
+                console.log('[GS] تم تحميل ' + data.length + ' بث نشط');
+            } catch(e) {
+                console.error('[GS] فشل تحميل البثوث:', e);
+            }
+        },
+
+        // انتخاب القائد الشامل — تاب واحد فقط يجلب كل البثوث
+        async checkGlobalLock() {
+            try {
+                const { data, error } = await supabaseClient.rpc('try_acquire_lock', {
+                    p_stream_id: this.LOCK_ID,
+                    p_client_id: clientId
+                });
+                if (error) return;
+                const wasLeader = this.isGlobalLeader;
+                this.isGlobalLeader = (data === true);
+                if (this.isGlobalLeader && !wasLeader) {
+                    console.log('[GS] 👑 أصبحت القائد الشامل — سأجلب كل البثوث');
+                } else if (!this.isGlobalLeader && wasLeader) {
+                    console.log('[GS] تنازلت عن القيادة الشاملة');
+                }
+            } catch(e) {
+                // فشل القفل → لا مشكلة، Realtime يكفي
+            }
+        },
+
+        // جدولة الدورة التالية
+        scheduleNext() {
+            if (this.timer) clearTimeout(this.timer);
+            this.timer = setTimeout(() => this.cycle(), this.INTERVAL);
+        },
+
+        // دورة واحدة — تجلب كل البثوث بالتوازي
+        async cycle() {
+            if (!supabaseClient) { this.scheduleNext(); return; }
+
+            // فقط القائد الشامل يجلب (لتوفير الحصة)
+            if (!this.isGlobalLeader) {
+                this.scheduleNext();
+                return;
+            }
+
+            // منع التداخل
+            if (this.isRunning) {
+                this.scheduleNext();
+                return;
+            }
+            this.isRunning = true;
+            const start = performance.now();
+
+            try {
+                // تحديث قائمة البثوث كل 30 دورة (~45 ثانية)
+                this.cycleCount++;
+                if (this.cycleCount % 30 === 1) {
+                    await this.loadStreams();
+                }
+
+                if (this.streams.length === 0) {
+                    this.isRunning = false;
+                    this.scheduleNext();
+                    return;
+                }
+
+                // جلب كل البثوث بالتوازي
+                const results = await Promise.allSettled(
+                    this.streams.map(stream => this.fetchStream(stream))
+                );
+
+                // حفظ كل التعليقات الجديدة دفعة واحدة
+                const allNewComments = [];
+                for (const r of results) {
+                    if (r.status === 'fulfilled' && r.value && r.value.length > 0) {
+                        allNewComments.push(...r.value);
+                    }
+                }
+
+                if (allNewComments.length > 0) {
+                    try {
+                        const { error } = await supabaseClient
+                            .from('archived_comments')
+                            .upsert(allNewComments, {
+                                onConflict: 'stream_id,author_name,published_at,comment_text',
+                                ignoreDuplicates: true
+                            });
+                        if (error) console.error('[GS] خطأ حفظ:', error.message);
+                        else {
+                            this.totalArchived += allNewComments.length;
+                            // تحديث nextPageToken في saved_streams لكل بث
+                            for (const vid of Object.keys(this.tokens)) {
+                                const stream = this.streams.find(s => getVideoId(s.stream_url) === vid);
+                                if (stream && this.tokens[vid] !== stream.next_page_token) {
+                                    supabaseClient.from('saved_streams')
+                                        .update({ next_page_token: this.tokens[vid] })
+                                        .eq('id', stream.id)
+                                        .then(() => {}).catch(() => {});
+                                }
+                            }
+                        }
+                    } catch(e) {
+                        console.error('[GS] استثناء حفظ:', e);
+                    }
+                }
+
+                const elapsed = Math.round(performance.now() - start);
+                if (this.cycleCount % 20 === 0) {
+                    console.log(`[GS] دورة #${this.cycleCount}: ${allNewComments.length} تعليق جديد (${elapsed}ms) — المجموع: ${this.totalArchived}`);
+                }
+            } catch(e) {
+                console.error('[GS] خطأ في الدورة:', e);
+            }
+
+            this.isRunning = false;
+            this.scheduleNext();
+        },
+
+        // جلب بث واحد — يُرجع مصفوفة تعليقات جديدة أو فارغة
+        async fetchStream(stream) {
+            const videoId = getVideoId(stream.stream_url);
+            if (!videoId) return [];
+
+            let chatId = this.chatIds[videoId] || stream.live_chat_id;
+
+            // جلب liveChatId إن لم يكن معروفاً
+            if (!chatId) {
+                chatId = await this.getChatId(videoId);
+                if (chatId) {
+                    this.chatIds[videoId] = chatId;
+                    // حفظه في Supabase أيضاً
+                    supabaseClient.from('saved_streams')
+                        .update({ live_chat_id: chatId })
+                        .eq('id', stream.id)
+                        .then(() => {}).catch(() => {});
+                } else {
+                    return []; // البث لم يبدأ أو لا يوجد شات
+                }
+            }
+
+            const pageToken = this.tokens[videoId] || '';
+            const maxTries = Math.min(3, YOUTUBE_API_KEYS.length);
+
+            for (let attempt = 0; attempt < maxTries; attempt++) {
+                const keyIndex = (this.keyIdx + attempt) % YOUTUBE_API_KEYS.length;
+                const apiKey = YOUTUBE_API_KEYS[keyIndex];
+                let controller, fetchTimeout;
+
+                try {
+                    let url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${chatId}&part=snippet,authorDetails&maxResults=200&key=${apiKey}`;
+                    if (pageToken) url += `&pageToken=${pageToken}`;
+
+                    controller = new AbortController();
+                    fetchTimeout = setTimeout(() => controller.abort(), 3000);
+                    const resp = await fetch(url, { signal: controller.signal });
+                    clearTimeout(fetchTimeout);
+                    fetchTimeout = null;
+                    const data = await resp.json();
+
+                    if (data.error) {
+                        const errMsg = data.error.message || '';
+                        const isDead = data.error.code === 404
+                            || errMsg.includes('not found')
+                            || errMsg.includes('No live chat')
+                            || errMsg.includes('live chat is no longer live');
+                        if (isDead) {
+                            delete this.chatIds[videoId]; // أعد المحاولة لاحقاً
+                            return [];
+                        }
+                        this.keyIdx = (keyIndex + 1) % YOUTUBE_API_KEYS.length;
+                        continue;
+                    }
+
+                    this.keyIdx = keyIndex;
+
+                    // حفظ nextPageToken دائماً
+                    if (data.nextPageToken) {
+                        this.tokens[videoId] = data.nextPageToken;
+                    }
+
+                    if (!data.items || data.items.length === 0) return [];
+
+                    // تحويل العناصر
+                    return data.items.map(item => ({
+                        stream_id: videoId,
+                        author_name: item.authorDetails?.displayName || 'مجهول',
+                        comment_text: item.snippet?.displayMessage || '',
+                        published_at: item.snippet?.publishedAt || new Date().toISOString(),
+                    })).filter(c => c.comment_text !== '');
+
+                } catch(e) {
+                    if (fetchTimeout) { clearTimeout(fetchTimeout); fetchTimeout = null; }
+                    this.keyIdx = (this.keyIdx + 1) % YOUTUBE_API_KEYS.length;
+                    continue;
+                }
+            }
+            return [];
+        },
+
+        // جلب liveChatId لبث واحد
+        async getChatId(videoId) {
+            const maxTries = Math.min(5, YOUTUBE_API_KEYS.length);
+            for (let i = 0; i < maxTries; i++) {
+                const keyIndex = (this.keyIdx + i) % YOUTUBE_API_KEYS.length;
+                let controller, fetchTimeout;
+                try {
+                    controller = new AbortController();
+                    fetchTimeout = setTimeout(() => controller.abort(), 3000);
+                    const resp = await fetch(
+                        `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoId}&key=${YOUTUBE_API_KEYS[keyIndex]}`,
+                        { signal: controller.signal }
+                    );
+                    clearTimeout(fetchTimeout); fetchTimeout = null;
+                    const data = await resp.json();
+                    if (data.error) {
+                        if (data.error.code === 403 || data.error.code === 400) {
+                            this.keyIdx = (keyIndex + 1) % YOUTUBE_API_KEYS.length;
+                            continue;
+                        }
+                        return null;
+                    }
+                    this.keyIdx = keyIndex;
+                    return data.items?.[0]?.liveStreamingDetails?.activeLiveChatId || null;
+                } catch(e) {
+                    if (fetchTimeout) { clearTimeout(fetchTimeout); fetchTimeout = null; }
+                    this.keyIdx = (this.keyIdx + 1) % YOUTUBE_API_KEYS.length;
+                    continue;
+                }
+            }
+            return null;
+        }
+    };
+
     // لوحة ألوان متنوعة ومميزة لكل مستخدم (ذهبي، أخضر، أحمر، أزرق، بنفسجي...)
     const AVATAR_COLORS = ['#e8a838', '#34d399', '#f87171', '#60a5fa', '#a78bfa', '#fb923c', '#f472b6', '#38bdf8', '#4ade80', '#facc15', '#c084fc', '#22d3ee', '#fb7185', '#a3e635', '#e879f9', '#fbbf24'];
     function getAvatarColor(name) { let hash = 0; for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash); return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]; }
@@ -2195,6 +2488,17 @@
         // 3ج: انتخاب القائد في الخلفية
         try { startLeaderElection(); } catch(e) { console.error('Leader election start error:', e); }
 
+        // 3هـ: Fallback — إذا لم يصبح هذا التاب قائداً خلال 8 ثوان، ابدأ الجلب مباشرة
+        // (يحل مشكلة فشل try_acquire_lock RPC)
+        setTimeout(() => {
+            if (myToken !== sessionToken) return;
+            if (!isLeader && youTubeConnectionOk && liveChatId && !youtubePollScheduled) {
+                console.log('[FALLBACK] لم يصبح قائداً خلال 8 ثوان — بدء الجلب مباشرة كاحتياطي');
+                startYouTubePolling();
+                document.getElementById('status-text').textContent = 'جلب احتياطي مباشر';
+            }
+        }, 8000);
+
         // 3د: محاولة الاتصال بيوتيوب في الخلفية (مع إعادة المحاولة التلقائية)
         setEntryStep(3, 'active');
         attemptYouTubeConnect(effectiveVideoId)
@@ -2495,19 +2799,29 @@
     }
 
     let youtubePollScheduled = false;
+    let _fetchCycle = 0;
     function startYouTubePolling() {
-        if (youtubePollScheduled) return;
+        if (youtubePollScheduled) { console.log('[POLL] startYouTubePolling: مُفعّل بالفعل'); return; }
         youtubePollScheduled = true;
+        console.log('[POLL] ✅ بدء الجلب كل 2 ثانية — liveChatId:', liveChatId ? liveChatId.substring(0, 20) + '...' : 'NULL');
         scheduleNextFetch();
     }
-    function stopYouTubePolling() { youtubePollScheduled = false; if (youtubePollTimer) { clearTimeout(youtubePollTimer); youtubePollTimer = null; } }
+    function stopYouTubePolling() {
+        console.log('[POLL] 🛑 إيقاف الجلب');
+        youtubePollScheduled = false; if (youtubePollTimer) { clearTimeout(youtubePollTimer); youtubePollTimer = null; }
+    }
     function scheduleNextFetch() {
-        if (!youtubePollScheduled || !liveChatId) return;
+        if (!youtubePollScheduled) { console.log('[POLL] scheduleNextFetch: تم إيقاف الجلب'); return; }
+        if (!liveChatId) { console.log('[POLL] scheduleNextFetch: liveChatId فارغ!'); return; }
         const start = performance.now();
+        _fetchCycle++;
+        const cycleNum = _fetchCycle;
+        console.log(`[POLL] 🔄 دورة #${cycleNum} بدأت`);
         fetchComments().finally(() => {
-            if (!youtubePollScheduled) return;
-            const elapsed = performance.now() - start;
-            const delay = Math.max(100, 2000 - elapsed); // التعويض: لو أخذ الجلب 1.5ث، الانتظار 0.5ث فقط
+            const elapsed = Math.round(performance.now() - start);
+            if (!youtubePollScheduled) { console.log(`[POLL] دورة #${cycleNum}: الجلب توقف أثناء التنفيذ (${elapsed}ms)`); return; }
+            const delay = Math.max(100, Math.round(1500 - elapsed));
+            console.log(`[POLL] دورة #${cycleNum}: انتهت في ${elapsed}ms → الانتظار ${delay}ms → المجموع ${elapsed + delay}ms`);
             youtubePollTimer = setTimeout(scheduleNextFetch, delay);
         });
     }
@@ -2518,8 +2832,8 @@
     const FETCH_FAIL_LIMIT = 5; // بعد 5 فشلات متتالية → البث انتهى → أوقف الجلب
 
     async function fetchComments() {
-        if (!liveChatId) return;
-        if (fetchInProgress) return;
+        if (!liveChatId) { console.log('[FETCH] إلغاء: liveChatId فارغ'); return; }
+        if (fetchInProgress) { console.log('[FETCH] إلغاء: جلب سابق قيد التنفيذ'); return; }
         fetchInProgress = true;
         try {
             let success = false;
@@ -2559,6 +2873,8 @@
                     // نجاح!
                     currentKeyIndex = keyIndex;
                     fetchConsecutiveFails = 0;
+                    const itemCount = data.items ? data.items.length : 0;
+                    console.log(`[FETCH] ✅ نجاح بمفتاح #${keyIndex} — ${itemCount} تعليق`);
                     if (data.nextPageToken) nextPageToken = data.nextPageToken;
                     if (data.items && data.items.length > 0) {
                         document.getElementById('comments-loading').style.display = 'none';
@@ -2573,6 +2889,7 @@
                     success = true;
                 } catch(fetchErr) {
                     if (fetchTimeout) { clearTimeout(fetchTimeout); fetchTimeout = null; }
+                    console.log(`[FETCH] ⚠️ المفتاح #${keyIndex} فشل: ${fetchErr.name || 'خطأ'}`);
                     // جرب المفتاح التالي فوراً (سواء timeout أو خطأ شبكة)
                     currentKeyIndex = (keyIndex + 1) % YOUTUBE_API_KEYS.length;
                     continue;
@@ -2581,6 +2898,7 @@
             // لو كل المفاتيح فشلت
             if (!success) {
                 fetchConsecutiveFails++;
+                console.log(`[FETCH] ❌ كل المفاتيح فشلت (${fetchConsecutiveFails}/${FETCH_FAIL_LIMIT})`);
                 if (fetchConsecutiveFails >= FETCH_FAIL_LIMIT) {
                     console.log('YouTube: ' + FETCH_FAIL_LIMIT + ' فشلات متتالية — إيقاف الجلب مؤقتاً');
                     stopYouTubePolling();
@@ -4163,6 +4481,7 @@
         // تنظيف كامل للموارد
         cleanupPreviousSession();
         if (youTubeReconnectTimer) { clearTimeout(youTubeReconnectTimer); youTubeReconnectTimer = null; }
+        // ملاحظة: الجالب الشامل (GS) يستمر — لا نوقفه عند الخروج من بث واحد
         localStorage.removeItem('vrtx_last_stream');
         document.getElementById('comments-list').innerHTML = '';
         document.getElementById('archive-list').innerHTML = '';
@@ -4196,6 +4515,8 @@
     document.addEventListener('DOMContentLoaded', () => {
         updateUserCircle(); const lastStream = localStorage.getItem('vrtx_last_stream'); if (lastStream) { startLiveStream(lastStream); }
         syncAdminPanelVisibility();
+        // 🌐 بدء الجالب الشامل — يجلب كل البثوث كل 1.5 ثانية
+        GS.start();
         document.getElementById('new-pass').addEventListener('keydown', e => { if (e.key === 'Enter') handleNewRegister(); });
         document.getElementById('modal-pass-input').addEventListener('keydown', e => { if (e.key === 'Enter') confirmLoginFromList(); });
         document.getElementById('admin-pass-input').addEventListener('keydown', e => { if (e.key === 'Enter') handleAdminDelete(); });
