@@ -293,10 +293,8 @@
         .mod-status-text h4 { font-size: 14px; font-weight: 700; }
         .mod-status-text p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
         .mod-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-
         .comment-card.deleting { opacity: 0.3; transform: translateX(30px); transition: all 0.6s ease; pointer-events: none; }
-        .stream-mod-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
-
+.stream-mod-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
         .mod-badge.online { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
         .mod-badge.waiting-badge { background: rgba(232,168,56,0.12); color: #e8a838; border: 1px solid rgba(232,168,56,0.2); }
         .mod-badge.offline { background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.2); }
@@ -1208,21 +1206,82 @@
             <div id="archive-container" class="comments-container"><div id="archive-list"></div></div>
         </div>
 
-        <!-- لوح المراقب الذكي -->
+        <!-- لوح المراقب الذكي المُحسّن: أدمن → تخزين التوكن → المستخدم يطلب تعيين -->
         <div id="monitor-pane" class="archive-pane">
             <div class="mod-section" style="overflow-y: auto; max-height: 100%;">
 
-                <!-- الكلمات المفتاحية (مراقبة + حظر) -->
+                <!-- ═══════ قسم الأدمن (صاحب الموقع) — محمي بكلمة سر ═══════ -->
+                <!-- الكلمات المحظورة (للحذف التلقائي) -->
+                <!-- كلمات المراقبة الأصلية (إشعارات فقط) -->
                 <div class="mod-card">
-                    <div class="mod-card-title"><i class="fas fa-eye"></i> الكلمات المفتاحية</div>
-                    <p class="text-xs mb-2" style="color: var(--text-muted);">أي تعليق يحتوي كلمة من هنا → يُحذف من الشاشة فوراً + إشعار</p>
+                    <div class="mod-card-title"><i class="fas fa-eye"></i> كلمات المراقبة (للإشعارات)</div>
                     <div style="display: flex; gap: 8px;">
-                        <input id="keyword-input" type="text" class="input-field" placeholder="أضف كلمة للمراقبة..." style="text-align: right; flex: 1;" />
+                        <input id="keyword-input" type="text" class="input-field" placeholder="مثال: سؤال، هدية، تحدٍّ..." style="text-align: right; flex: 1;" />
                         <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="addKeyword()"><i class="fas fa-plus"></i></button>
                     </div>
                     <div id="keywords-list" class="flex flex-wrap gap-2" style="margin-top: 8px;"></div>
+                    <p class="text-xs mt-2" style="color: var(--text-muted);">تطابق → إشارة على أيقونة الجرس <i class="fas fa-bell" style="color: var(--accent);"></i></p>
                 </div>
 
+                <!-- مراقبة البث المباشر -->
+                <!-- سجل العمليات -->
+                <div class="mod-card hidden" id="mod-log-card">
+                    <div class="mod-card-title"><i class="fas fa-list-check"></i> سجل العمليات</div>
+                    <div class="mod-log" id="mod-log-area">
+                        <div class="empty-state" style="padding: 16px;"><i class="fas fa-clock-rotate-left" style="font-size: 22px;"></i><p style="color: var(--text-muted); margin-top: 6px; font-size: 11px;">فارغ</p></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال تسجيل الدخول/الحساب -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex gap-2 mb-5 p-1 rounded-xl" style="background: rgba(0,0,0,0.3);">
+                <div class="auth-tab active" onclick="switchAuthTab('signin', event)">تسجيل الدخول</div>
+                <div class="auth-tab" onclick="switchAuthTab('signup', event)">حساب جديد</div>
+                <div class="auth-tab" onclick="switchAuthTab('quick', event)">دخول سريع</div>
+            </div>
+            <div id="auth-fields"></div>
+            <button id="auth-submit-btn" class="btn-primary mt-4" onclick="handleAuthAction()">متابعة</button>
+            <button class="btn-ghost mt-2" onclick="closeAuthModal()">إلغاء</button>
+        </div>
+    </div>
+
+    <!-- مودال الملف الشخصي (Profile) -->
+    <div id="profile-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-lg font-bold mb-1">الملف الشخصي</h3>
+            <p class="text-sm mb-5" style="color: var(--text-muted);">إدارة بيانات حسابك.</p>
+            
+            <div id="profile-view">
+                <div class="space-y-3 mb-6">
+                    <div class="input-field" id="profile-name-display" style="cursor: default; background: rgba(255,255,255,0.02);"></div>
+                    <div class="input-field" id="profile-user-display" style="cursor: default; background: rgba(255,255,255,0.02);"></div>
+                    <div class="flex items-center gap-2">
+                        <input type="password" id="profile-pass-display" class="input-field" style="cursor: default; background: rgba(255,255,255,0.02);" disabled>
+                        <button class="btn-ghost" onclick="togglePassVisibility()"><i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button class="btn-ghost flex-1" onclick="closeProfileModal()">إغلاق</button>
+                    <button class="btn-primary flex-1" style="width: auto; background: transparent; border: 1px solid var(--accent); color: var(--accent);" onclick="toggleEditMode(true)">تعديل</button>
+                    <button class="btn-danger flex-1" style="width: auto;" onclick="handleLogout()">تسجيل الخروج</button>
+                </div>
+            </div>
+
+            <div id="profile-edit" style="display: none;">
+                <div class="space-y-3 mb-6">
+                    <input type="text" id="edit-name" class="input-field" placeholder="الاسم الجديد">
+                    <input type="text" id="edit-user" class="input-field" placeholder="اسم المستخدم الجديد">
+                    <p class="text-xs" style="color: var(--text-muted);">* لا يمكن تغيير كلمة المرور من هنا.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button class="btn-ghost flex-1" onclick="toggleEditMode(false)">إلغاء</button>
+                    <button class="btn-primary flex-1" style="width: auto;" onclick="saveProfileChanges()">حفظ التغييرات</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1902,12 +1961,6 @@
                 left.innerHTML = `<div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-glow);"><i class="fas fa-video text-sm" style="color: var(--accent);"></i></div><div><h3 class="font-bold text-sm"></h3><p class="text-xs" style="color: var(--text-muted);"></p></div>`;
                 left.querySelector('h3').textContent = stream.username;
                 left.querySelector('p').textContent = videoId || '—';
-                if (stream.stream_moderator) {
-                    const badge = document.createElement('span');
-                    badge.className = 'stream-mod-badge';
-                    badge.innerHTML = '<i class="fas fa-shield-halved"></i> مشرف';
-                    left.querySelector('p').after(badge);
-                }
                 const btn = document.createElement('button');
                 btn.className = 'btn-ghost text-xs'; btn.textContent = 'دخول';
                 btn.addEventListener('click', () => openPasswordModal(stream.username, stream.stream_url));
@@ -2347,7 +2400,7 @@
 
         realtimeChannel = supabaseClient.channel('public:archived_comments')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'archived_comments', filter: `stream_id=eq.${videoId}` }, payload => {
-                if (myToken !== sessionToken) return;
+                if (myToken !== sessionToken) return; // تجاهل الرسائل من جلسة قديمة
                 addCommentToUI(payload.new, true);
             }).subscribe();
 
@@ -2716,9 +2769,9 @@
         const uniqueId = item.stream_id + item.author_name + item.published_at + item.comment_text; if (renderedComments.has(uniqueId)) return; renderedComments.add(uniqueId);
         const list = document.getElementById('comments-list'); const displayName = item.author_name || 'مجهول'; const message = item.comment_text || ''; const color = getAvatarColor(displayName);
         const card = document.createElement('div'); card.className = 'comment-card'; card.style.setProperty('--c-accent', color);
-        card.innerHTML = typeBadge + `<div class="comment-avatar" style="background: ${color};">${escapeHtml(displayName.charAt(0).toUpperCase())}</div><div style="flex:1; min-width:0;"><div class="flex items-center" style="margin-bottom:2px;"><span class="comment-username" style="color:${color};">${escapeHtml(displayName)}</span><span class="comment-time">${formatTime(item.published_at)}</span></div><div class="comment-text">${escapeHtml(message)}</div></div>`;
-        list.appendChild(card); if (countIncrement) { commentsTotal++; document.getElementById('comments-count').textContent = `${commentsTotal} تعليق`; }
-        checkAndDeleteIfBanned(card, message);
+        card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${escapeHtml(displayName.charAt(0).toUpperCase())}</div><div style="flex:1; min-width:0;"><div class="flex items-center" style="margin-bottom:2px;"><span class="comment-username" style="color:${color};">${escapeHtml(displayName)}</span><span class="comment-time">${formatTime(item.published_at)}</span></div><div class="comment-text">${escapeHtml(message)}</div></div>`;
+        list.appendChild(card); if (countIncrement)
+        checkAndDeleteIfBanned(card, message); { commentsTotal++; document.getElementById('comments-count').textContent = `${commentsTotal} تعليق`; }
         // إخفاء حالات الـ loading/empty/error فور وصول أي تعليق
         document.getElementById('comments-loading').style.display = 'none';
         document.getElementById('comments-empty').style.display = 'none';
@@ -2726,11 +2779,8 @@
         if (isAtBottom) list.parentElement.scrollTop = list.parentElement.scrollHeight;
     }
 
-    // تعديل switchArchiveTab لتحميل حالة الأدمن عند فتح المراقب
-
-    // === نظام المراقب الذكي الأصلي (إشعارات Supabase) ===
-    // مودال الإشعارات يعرض السجل فقط. إدارة الكلمات أصبحت داخل شاشة الأرشيف (تبويب المراقب الذكي).
-    function openNotificationsModal() {
+    // حالة المشرف المخزّنة
+function openNotificationsModal() {
         document.getElementById('notif-dot').classList.remove('show');
         document.getElementById('notifications-modal').classList.add('show');
         renderNotifications();
@@ -2747,6 +2797,10 @@
             document.getElementById('monitor-tab-btn').classList.add('active');
             document.getElementById('monitor-pane').classList.add('active');
             renderKeywords();
+            // تحميل حالة الأدمن من Supabase عند فتح المراقب
+            
+            // فحص خفيف لتوكن الأدمن حتى زر "جعله مشرف" يعمل للمستخدمين العاديين
+            
         } else {
             // default: archive
             document.getElementById('archive-tab-btn').classList.add('active');
@@ -2777,6 +2831,7 @@
         } catch(e) { showToast('فشل الحذف', 'error'); }
     }
 
+    
     // تحميل الكلمات المفتاحية في الذاكرة لفحص Realtime
     let _monitorKeywordsCache = [];
     async function refreshKeywords() {
@@ -2797,8 +2852,7 @@
             setTimeout(() => { if (commentEl.parentNode) commentEl.remove(); }, 2000);
         }
     }
-
-    async function renderKeywords() {
+async function renderKeywords() {
         const container = document.getElementById('keywords-list');
         container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">جارٍ التحميل...</p>';
         if (!currentVideoId) return;
@@ -2816,8 +2870,8 @@
                 tag.style.background = 'rgba(239, 68, 68, 0.1)'; tag.style.border = '1px solid rgba(239, 68, 68, 0.2)'; tag.style.color = '#f87171';
             }
             const icon = isMonitor ? 'fa-eye' : 'fa-ban';
-            const safeKw = k.keyword.replace(/'/g, "\'").replace(/"/g, '&quot;');
-            tag.innerHTML = '<i class="fas ' + icon + '" style="font-size:10px;"></i> <span>' + escapeHtml(k.keyword) + '</span><button onclick="removeKeyword('' + safeKw + '')" style="background:none;border:none;cursor:pointer;font-size:14px;opacity:0.6;">&times;</button>';
+            const safeKw = k.keyword.replace(/'/g, "");
+            tag.innerHTML = `<i class="fas ${icon}" style="font-size:10px;"></i> <span>${escapeHtml(k.keyword)}</span><button onclick="removeKeyword('${safeKw}')" style="background:none;border:none;cursor:pointer;font-size:14px;opacity:0.6;">&times;</button>`;
             container.appendChild(tag);
         });
         refreshKeywords();
@@ -2837,11 +2891,11 @@
             const color = getAvatarColor(notif.author_name);
             const kwType = notif.keyword_type || 'monitor';
             const typeBadge = kwType === 'ban' ? '<span style="background:rgba(239,68,68,0.15);color:#f87171;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px;"><i class="fas fa-ban"></i> حظر</span>' : '<span style="background:rgba(232,168,56,0.15);color:#e8a838;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;margin-right:6px;"><i class="fas fa-eye"></i> مراقبة</span>';
-            const highlightedMsg = escapeHtml(notif.comment_text).replace(new RegExp(escapeHtml(notif.keyword).replace(/[.*+?^${}()|[\]\]/g, '\\$&'), 'gi'), '<span class="keyword-highlight">$&</span>');
+                        const highlightedMsg = escapeHtml(notif.comment_text).replace(new RegExp(escapeHtml(notif.keyword), 'gi'), '<span class="keyword-highlight">$&</span>');
             const card = document.createElement('div');
             card.className = 'comment-card';
             card.style.setProperty('--c-accent', color);
-            card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${notif.author_name.charAt(0).toUpperCase()}</div><div style="flex:1; min-width:0;"><div class="flex items-center"><span class="comment-username" style="color:${color};">${escapeHtml(notif.author_name)}</span><span class="comment-time">${formatTime(notif.created_at)}</span></div><div class="comment-text">${highlightedMsg}</div></div>`;
+            card.innerHTML = typeBadge + `<div class="comment-avatar" style="background: ${color};">${notif.author_name.charAt(0).toUpperCase()}</div><div style="flex:1; min-width:0;"><div class="flex items-center"><span class="comment-username" style="color:${color};">${escapeHtml(notif.author_name)}</span><span class="comment-time">${formatTime(notif.created_at)}</span></div><div class="comment-text">${highlightedMsg}</div></div>`;
             list.appendChild(card);
         });
     }
