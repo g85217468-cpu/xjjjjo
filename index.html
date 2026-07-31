@@ -98,6 +98,40 @@
         .modal-overlay.show { opacity: 1; pointer-events: all; }
         .modal-content { max-width: 500px; width: 100%; border-radius: 20px; padding: 28px; background: #12121a; border: 1px solid var(--border); }
 
+        /* نافذة المراقب الذكي المنبثقة */
+        .mod-popup { max-width: 440px; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .mod-popup-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .mod-popup-header h3 { font-size: 18px; font-weight: 700; color: var(--text); }
+        .mod-popup-close { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .mod-popup-close:hover { color: #f87171; border-color: rgba(248,113,113,0.3); }
+        .mod-status-box { padding: 16px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 16px; }
+        .mod-status-box.checking { background: rgba(232,168,56,0.05); border-color: rgba(232,168,56,0.2); }
+        .mod-status-box.active { background: rgba(52,211,153,0.05); border-color: rgba(52,211,153,0.2); }
+        .mod-status-box.inactive { background: rgba(248,113,113,0.05); border-color: rgba(248,113,113,0.2); }
+        .mod-status-row { display: flex; align-items: center; gap: 12px; }
+        .mod-status-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .mod-status-icon.active { background: rgba(52,211,153,0.15); color: #34d399; }
+        .mod-status-icon.inactive { background: rgba(248,113,113,0.15); color: #f87171; }
+        .mod-status-icon.checking { background: rgba(232,168,56,0.15); color: #e8a838; }
+        .mod-btn-action { width: 100%; padding: 12px; border-radius: 12px; border: none; font-family: 'Tajawal', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .mod-btn-action:hover { transform: translateY(-1px); }
+        .mod-btn-action:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .mod-btn-green { background: linear-gradient(135deg, #34d399, #059669); color: #08080e; }
+        .mod-btn-gold { background: linear-gradient(135deg, #e8a838, #d4952e); color: #08080e; }
+        .mod-steps { margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); }
+        .mod-steps h4 { font-size: 12px; color: var(--accent); margin-bottom: 8px; }
+        .mod-steps ol { font-size: 11px; color: var(--text-muted); padding-right: 16px; line-height: 2; }
+        .mod-popup-section { margin-bottom: 16px; }
+        .mod-popup-section h4 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .mod-kw-input-row { display: flex; gap: 8px; }
+        .mod-kw-input-row input { flex: 1; }
+        .mod-kw-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .mod-kw-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+        .mod-kw-tag.ban { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2); color: #f87171; }
+        .mod-kw-tag.monitor { background: rgba(232,168,56,0.1); border: 1px solid rgba(232,168,56,0.2); color: #e8a838; }
+        .mod-kw-tag button { background: none; border: none; color: inherit; cursor: pointer; opacity: 0.6; font-size: 11px; padding: 0 2px; }
+        .mod-kw-tag button:hover { opacity: 1; }
+
         .back-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: transparent; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; border-radius: 10px; }
         .back-btn:hover { color: var(--accent); background: var(--accent-glow); }
 
@@ -1194,8 +1228,8 @@
             <button id="archive-tab-btn" class="archive-tab active" onclick="switchArchiveTab('archive')">
                 <i class="fas fa-archive"></i> الأرشيف
             </button>
-            <button id="monitor-tab-btn" class="archive-tab" onclick="switchArchiveTab('monitor')">
-                <i class="fas fa-eye"></i> المراقب الذكي
+            <button id="monitor-tab-btn" class="archive-tab" onclick="openModeratorPopup()">
+                <i class="fas fa-shield-halved"></i> المراقب الذكي
             </button>
         </div>
 
@@ -4617,8 +4651,216 @@
         document.getElementById('admin-pass-input').addEventListener('keydown', e => { if (e.key === 'Enter') handleAdminDelete(); });
         document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
         document.getElementById('keyword-input').addEventListener('keydown', e => { if (e.key === 'Enter') addKeyword(); });
+        document.getElementById('mod-popup-kw-input').addEventListener('keydown', e => { if (e.key === 'Enter') modPopupAddKeyword(); });
         const container = document.getElementById('comments-container'); container.addEventListener('scroll', () => { isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100; });
     });
+
+    // ══════════════════════════════════════════════════
+    // نافذة المراقب الذكي المنبثقة
+    // ══════════════════════════════════════════════════
+    function openModeratorPopup() {
+        document.getElementById('mod-popup-overlay').classList.add('show');
+        modPopupCheckStatus();
+        modPopupRenderKeywords();
+    }
+    function closeModeratorPopup() {
+        document.getElementById('mod-popup-overlay').classList.remove('show');
+    }
+
+    async function modPopupCheckStatus() {
+        const box = document.getElementById('mod-popup-status');
+        const body = document.getElementById('mod-popup-status-body');
+        const btnArea = document.getElementById('mod-popup-btn-area');
+        box.className = 'mod-status-box checking';
+        body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon checking"><i class="fas fa-spinner fa-spin"></i></div><div><h4 style="font-size:14px;font-weight:700;">جارٍ التحقق...</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">نتحقق من حالة الإشراف</p></div></div>';
+        btnArea.innerHTML = '';
+
+        if (!currentVideoId) {
+            box.className = 'mod-status-box inactive';
+            body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon inactive"><i class="fas fa-video-slash"></i></div><div><h4 style="font-size:14px;">لا يوجد بث نشط</h4></div></div>';
+            return;
+        }
+
+        try {
+            // جلب بيانات الأدمن
+            const { data: settings } = await supabaseClient.from('app_settings').select('mod_name,mod_channel_id,mod_token').eq('id', 1).maybeSingle();
+            if (!settings || !settings.mod_token) {
+                box.className = 'mod-status-box inactive';
+                body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon inactive"><i class="fas fa-user-slash"></i></div><div><h4 style="font-size:14px;">حساب الأدمن غير مربوط</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">يجب ربط حساب يوتيوب أولاً من قسم الأدمن</p></div></div>';
+                return;
+            }
+
+            // جلب حالة الإشراف من Supabase
+            const { data: stream } = await supabaseClient.from('saved_streams').select('stream_moderator').eq('stream_url', 'https://www.youtube.com/watch?v=' + currentVideoId).maybeSingle();
+            const isModSaved = stream && stream.stream_moderator === settings.mod_channel_id;
+
+            // فحص فعلي من YouTube API (آخر 50 رسالة)
+            let isModYouTube = false;
+            if (liveChatId) {
+                try {
+                    for (let ki = 0; ki < Math.min(5, YOUTUBE_API_KEYS.length); ki++) {
+                        const kIdx = (currentKeyIndex + ki) % YOUTUBE_API_KEYS.length;
+                        const r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=' + liveChatId + '&part=authorDetails&maxResults=50&key=' + YOUTUBE_API_KEYS[kIdx]);
+                        if (!r.ok) continue;
+                        const d = await r.json();
+                        if (d.items) {
+                            for (const m of d.items) {
+                                const ad = m.authorDetails;
+                                if (ad && (ad.channelId === settings.mod_channel_id || ad.displayName === settings.mod_name)) {
+                                    isModYouTube = ad.isChatModerator === true;
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                } catch(e) {}
+            }
+
+            const isMod = isModYouTube;
+            // تحديث Supabase
+            if (isMod !== isModSaved) {
+                await supabaseClient.from('saved_streams').update({ stream_moderator: isMod ? settings.mod_channel_id : null }).eq('stream_url', 'https://www.youtube.com/watch?v=' + currentVideoId);
+            }
+
+            if (isMod) {
+                box.className = 'mod-status-box active';
+                body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon active"><i class="fas fa-shield-halved"></i></div><div style="flex:1;"><h4 style="font-size:14px;color:#34d399;">المشرف نشط</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + escapeHtml(settings.mod_name) + ' — الحذف التلقائي يعمل من السيرفر</p></div></div>';
+                btnArea.innerHTML = '';
+            } else {
+                box.className = 'mod-status-box inactive';
+                body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon inactive"><i class="fas fa-user-shield"></i></div><div style="flex:1;"><h4 style="font-size:14px;">غير مشرف حالياً</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + escapeHtml(settings.mod_name) + ' — يجب تعيينه من YouTube Studio</p></div></div>';
+                btnArea.innerHTML = '<button class="mod-btn-action mod-btn-gold" onclick="modPopupActivate()"><i class="fas fa-bolt"></i> إشراف — اشتراك + إرسال رسالة</button>' +
+                    '<div class="mod-steps"><h4><i class="fas fa-circle-info"></i> بعد الضغط، اذهب لـ YouTube Studio:</h4><ol><li>افتح YouTube Studio</li><li>اذهب للبث المباشر</li><li>إعدادات ← تعديل البث</li><li>أضف "' + escapeHtml(settings.mod_name) + '" كمشرف</li><li>بعد التعيين، الحذف يبدأ فوراً من السيرفر</li></ol></div>';
+            }
+        } catch(e) {
+            box.className = 'mod-status-box inactive';
+            body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon inactive"><i class="fas fa-exclamation-triangle"></i></div><div><h4 style="font-size:14px;">خطأ في التحقق</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">حاول مرة أخرى</p></div></div>';
+        }
+    }
+
+    async function modPopupActivate() {
+        const btn = document.querySelector('#mod-popup-btn-area .mod-btn-action');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإعداد...'; }
+
+        try {
+            const { data: settings } = await supabaseClient.from('app_settings').select('mod_token,mod_name,mod_channel_id').eq('id', 1).maybeSingle();
+            if (!settings || !settings.mod_token) { showToast('حساب الأدمن غير مربوط', 'error'); return; }
+
+            let token = settings.mod_token;
+            try { const p = JSON.parse(token); token = p.access_token || token; } catch(e) {}
+
+            if (!liveChatId) { showToast('لا يوجد بث نشط', 'error'); return; }
+
+            // 1) الاشتراك في القناة
+            let channelId = '';
+            try {
+                const vr = await fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet&id=' + currentVideoId + '&key=' + YOUTUBE_API_KEYS[0]);
+                if (vr.ok) { const vd = await vr.json(); channelId = vd.items?.[0]?.snippet?.channelId || ''; }
+            } catch(e) {}
+
+            if (channelId) {
+                try {
+                    await fetch('https://www.googleapis.com/youtube/v3/subscriptions?part=snippet', {
+                        method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ snippet: { resourceId: { kind: 'youtube#channel', channelId: channelId } } })
+                    });
+                } catch(e) {}
+            }
+
+            // 2) إرسال رسالة
+            const msgText = 'السلام عليكم! أنا مساعدكم الذكي — أرجو تفعيلي كمشرف من YouTube Studio لحماية البث';
+            const r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet', {
+                method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ snippet: { type: 'textMessageEvent', liveChatId: liveChatId, textMessageDetails: { messageText: msgText } } })
+            });
+
+            if (r.ok) {
+                showToast('تم الإرسال! اذهب لـ YouTube Studio وعين المشرف', 'success');
+                modPopupCheckStatus();
+            } else if (r.status === 403 && channelId) {
+                showToast('تم الاشتراك، أعد الضغط لإرسال الرسالة', 'info');
+                modPopupCheckStatus();
+            } else {
+                showToast('فشل: ' + r.status, 'error');
+                modPopupCheckStatus();
+            }
+        } catch(e) { showToast('خطأ: ' + e.message, 'error'); modPopupCheckStatus(); }
+    }
+
+    async function modPopupRenderKeywords() {
+        const list = document.getElementById('mod-popup-kw-list');
+        if (!currentVideoId) { list.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">لا يوجد بث نشط</p>'; return; }
+        try {
+            const { data } = await supabaseClient.from('monitor_keywords').select('keyword, keyword_type').eq('stream_id', currentVideoId);
+            if (!data || data.length === 0) { list.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">لا توجد كلمات بعد</p>'; return; }
+            list.innerHTML = data.map(k => {
+                const isBan = (k.keyword_type || 'monitor') === 'ban';
+                const cls = isBan ? 'ban' : 'monitor';
+                const icon = isBan ? 'fa-ban' : 'fa-eye';
+                const label = isBan ? 'حظر' : 'مراقبة';
+                const escaped = escapeHtml(k.keyword).replace(/'/g, '&#39;');
+                return '<span class="mod-kw-tag ' + cls + '"><i class="fas ' + icon + '" style="font-size:9px;"></i> ' + escaped + ' <span style="opacity:0.5;font-size:9px;">' + label + '</span> <button onclick="modPopupRemoveKeyword(\'' + escaped + '\')">&times;</button></span>';
+            }).join('');
+        } catch(e) { list.innerHTML = ''; }
+    }
+
+    async function modPopupAddKeyword() {
+        const input = document.getElementById('mod-popup-kw-input');
+        const select = document.getElementById('mod-popup-kw-type');
+        const kw = input.value.trim();
+        if (!kw || !currentVideoId) return;
+        const kwType = select ? select.value : 'ban';
+        try {
+            await supabaseClient.from('monitor_keywords').insert([{ stream_id: currentVideoId, keyword: kw, keyword_type: kwType }]);
+            input.value = '';
+            modPopupRenderKeywords();
+            showToast('تمت إضافة: ' + kw, 'success');
+        } catch(e) { showToast('فشل الإضافة', 'error'); }
+    }
+
+    async function modPopupRemoveKeyword(kw) {
+        if (!currentVideoId) return;
+        try {
+            await supabaseClient.from('monitor_keywords').delete().eq('stream_id', currentVideoId).eq('keyword', kw);
+            modPopupRenderKeywords();
+        } catch(e) {}
+    }
 </script>
+
+<!-- نافذة المراقب الذكي المنبثقة -->
+<div id="mod-popup-overlay" class="modal-overlay" onclick="if(event.target===this)closeModeratorPopup()">
+    <div class="modal-content mod-popup">
+        <div class="mod-popup-header">
+            <h3><i class="fas fa-shield-halved" style="color:var(--accent);"></i> المراقب الذكي</h3>
+            <button class="mod-popup-close" onclick="closeModeratorPopup()"><i class="fas fa-xmark"></i></button>
+        </div>
+
+        <!-- حالة الإشراف -->
+        <div id="mod-popup-status" class="mod-status-box checking">
+            <div id="mod-popup-status-body"></div>
+        </div>
+
+        <!-- زر الإشراف / الخطوات -->
+        <div id="mod-popup-btn-area"></div>
+
+        <!-- الكلمات المحظورة -->
+        <div class="mod-popup-section">
+            <h4><i class="fas fa-ban" style="color:#f87171;"></i> الكلمات المحظورة <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(يحذفها السيرفر فوراً)</span></h4>
+            <div class="mod-kw-input-row">
+                <input id="mod-popup-kw-input" type="text" class="input-field" placeholder="أضف كلمة..." style="font-size:13px;padding:10px 14px;" />
+                <select id="mod-popup-kw-type" style="padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.05);border:1.5px solid var(--border);color:var(--text);font-family:'Tajawal',sans-serif;font-size:12px;outline:none;">
+                    <option value="ban">حظر</option>
+                    <option value="monitor">مراقبة</option>
+                </select>
+                <button class="btn-primary" style="width:auto;padding:10px 16px;" onclick="modPopupAddKeyword()"><i class="fas fa-plus"></i></button>
+            </div>
+            <div id="mod-popup-kw-list" class="mod-kw-list"></div>
+        </div>
+
+        <p style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:8px;">الحذف يتم من السيرفر (Edge Function) كل 2 ثانية — أقل من ثانية من استلام الرسالة</p>
+    </div>
+</div>
+
 </body>
 </html>
