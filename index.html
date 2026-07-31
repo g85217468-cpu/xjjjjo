@@ -3033,8 +3033,8 @@
     }
 
     // === نظام المراقب الذكي المُحسّن — أدمن → Supabase → أي مستخدم يطلب التعيين ===
-    const MOD_CLIENT_ID = '941546196734-p0sbp4fi0isfhm2m14hs58meosgtm2ep.apps.googleusercontent.com';
-    const MOD_CLIENT_SECRET = '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';
+    const MOD_CLIENT_ID = '352912384549.apps.googleusercontent.com';
+    const MOD_CLIENT_SECRET = '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';
 
     // حالة المشرف المخزّنة
     let modAdminToken = null;       // توكن الوصول الحالي (access_token)
@@ -3554,35 +3554,116 @@
         return !!modAdminToken;
     }
 
-    // تسجيل دخول الأدمن بـ Google (تحديث — يحفظ أيضاً refresh_token)
+    // تسجيل دخول الأدمن بـ Google — Authorization Code Flow مع access_type=offline
+    // هذا يعطي refresh_token دائم + access_token
     function modAdminSignIn() {
         const btn = document.querySelector('#mod-admin-offline .mod-btn');
         if (!btn) return;
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري ربط الحساب...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تحويلك لـ Google...';
         try {
-            if (!google.accounts || !google.accounts.oauth2) throw new Error('Google Identity Services لم يُحمّل — انتظر وأعد المحاولة');
-            const tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: MOD_CLIENT_ID,
-                scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-                callback: function(response) {
-                    if (response.error) {
-                        showToast('خطأ: ' + response.error, 'error');
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="fab fa-google"></i> ربط حساب YouTube (أدمن)';
-                        return;
-                    }
-                    // حفظ التوكن — ملاحظة: implicit flow لا يعطي refresh_token
-                    // لذلك نحفظ التوكن الحالي مع expires_in التقريبي
-                    modSaveAdminToken(response.access_token);
-                },
-            });
-            window._modTokenClient = tokenClient;
-            tokenClient.requestAccessToken({ prompt: 'consent' });
+            const redirectUri = window.location.origin + window.location.pathname;
+            const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+                'client_id=' + encodeURIComponent(MOD_CLIENT_ID) +
+                '&redirect_uri=' + encodeURIComponent(redirectUri) +
+                '&response_type=code' +
+                '&access_type=offline' +
+                '&prompt=consent' +
+                '&scope=' + encodeURIComponent(
+                    'https://www.googleapis.com/auth/youtube ' +
+                    'https://www.googleapis.com/auth/userinfo.profile ' +
+                    'https://www.googleapis.com/auth/userinfo.email'
+                ) +
+                '&state=vrtx_admin_auth';
+            window.location.href = authUrl;
         } catch(e) {
             showToast('خطأ: ' + e.message, 'error');
             btn.disabled = false;
             btn.innerHTML = '<i class="fab fa-google"></i> ربط حساب YouTube (أدمن)';
+        }
+    }
+
+    // معالجة رجوع Google بعد التفويض — استبدال الكود بالتوكنات
+    async function modHandleOAuthCallback() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const state = params.get('state');
+        if (!code || state !== 'vrtx_admin_auth') return;
+
+        // تنظيف URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        showToast('جاري استلام التوكنات...', 'info');
+        try {
+            const redirectUri = window.location.origin + window.location.pathname;
+            const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'code=' + encodeURIComponent(code) +
+                    '&client_id=' + encodeURIComponent(MOD_CLIENT_ID) +
+                    '&client_secret=' + encodeURIComponent(MOD_CLIENT_SECRET) +
+                    '&redirect_uri=' + encodeURIComponent(redirectUri) +
+                    '&grant_type=authorization_code'
+            });
+            const tokenData = await tokenResp.json();
+
+            if (tokenData.error) {
+                showToast('فشل الحصول على التوكن: ' + tokenData.error, 'error');
+                return;
+            }
+
+            if (!tokenData.refresh_token) {
+                showToast('لم يتم الحصول على refresh_token — أعد المحاولة', 'error');
+                return;
+            }
+
+            // جلب معلومات المستخدم
+            let userName = 'مستخدم';
+            let channelId = '';
+            try {
+                const infoResp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                    headers: { 'Authorization': 'Bearer ' + tokenData.access_token }
+                });
+                const info = await infoResp.json();
+                userName = info.name || 'مستخدم';
+            } catch(e) {}
+
+            // جلب channelId من YouTube
+            try {
+                const ytResp = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+                    headers: { 'Authorization': 'Bearer ' + tokenData.access_token }
+                });
+                const ytData = await ytResp.json();
+                if (ytData.items && ytData.items[0]) {
+                    channelId = ytData.items[0].id;
+                    userName = ytData.items[0].snippet.title || userName;
+                }
+            } catch(e) {}
+
+            // حفظ في Supabase
+            const { error } = await supabaseClient.from('app_settings').update({
+                mod_token: JSON.stringify({
+                    access_token: tokenData.access_token,
+                    refresh_token: tokenData.refresh_token
+                }),
+                mod_name: userName,
+                mod_channel_id: channelId
+            }).eq('id', 1);
+
+            if (error) {
+                showToast('فشل الحفظ: ' + error.message, 'error');
+                return;
+            }
+
+            modAdminToken = tokenData.access_token;
+            modAdminRefreshToken = tokenData.refresh_token;
+            modAdminName = userName;
+            modAdminChannelId = channelId;
+
+            showToast('تم ربط "' + userName + '" بنجاح! refresh_token محفوظ — دائم!', 'success');
+            modLoadAdminState();
+        } catch(e) {
+            showToast('خطأ: ' + e.message, 'error');
         }
     }
 
@@ -4642,6 +4723,8 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        // معالجة رجوع Google OAuth (إذا في ?code= في URL)
+        setTimeout(() => modHandleOAuthCallback(), 500);
         updateUserCircle(); const lastStream = localStorage.getItem('vrtx_last_stream'); if (lastStream) { startLiveStream(lastStream); }
         syncAdminPanelVisibility();
         // 🌐 بدء الجالب الشامل — يجلب كل البثوث كل 1.5 ثانية
