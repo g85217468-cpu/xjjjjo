@@ -69,7 +69,8 @@
         .comments-container::-webkit-scrollbar { width: 5px; }
         .comments-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
 
-        .comment-card { display: flex; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.025); border-right: 3px solid var(--c-accent, #e8a838); margin-bottom: 8px; animation: commentSlide 0.35s ease; transition: background 0.2s ease; }
+        .comment-card { display: flex; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.025); border-right: 3px solid var(--c-accent, #e8a838); margin-bottom: 8px; animation: commentSlide 0.35s ease; transition: background 0.2s ease, opacity 0.5s ease; }
+    .comment-card.deleting { background: rgba(239,68,68,0.08) !important; border-right-color: #f87171 !important; }
         .comment-card:hover { background: rgba(255,255,255,0.04); }
         .comment-card.archived { background: rgba(255,255,255,0.015); border-right-color: #4a4a5e; }
         
@@ -1323,30 +1324,24 @@
                     </div>
                 </div>
 
-                <!-- الكلمات المحظورة (للحذف التلقائي) -->
-                <div class="mod-card" id="mod-words-card">
-                    <div class="mod-card-title"><i class="fas fa-ban"></i> الكلمات المحظورة (حذف تلقائي)</div>
-                    <p class="text-xs mb-2" style="color: var(--text-muted);">عند تعيين المشرف، أي رسالة تحتوي هذه الكلمات تُحذف فوراً.</p>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" class="mod-input" id="mod-new-word" placeholder="أضف كلمة مسيئة..." onkeydown="if(event.key==='Enter')modAddWord()" />
-                        <button class="mod-btn mod-btn-danger" onclick="modAddWord()" style="width: auto; padding: 10px 14px; flex-shrink: 0;"><i class="fas fa-plus"></i></button>
-                    </div>
-                    <div class="mod-words-container" id="mod-words-list"></div>
-                </div>
 
-                <!-- كلمات المراقبة الأصلية (إشعارات فقط) -->
+
+                <!-- ═══ كلمات المراقبة والحظر (نظام مدمج) ═══ -->
                 <div class="mod-card">
-                    <div class="mod-card-title"><i class="fas fa-eye"></i> كلمات المراقبة (للإشعارات)</div>
+                    <div class="mod-card-title"><i class="fas fa-shield-halved"></i> كلمات المراقبة والحظر</div>
+                    <p class="text-xs mb-2" style="color: var(--text-muted);">
+                        <span style="color:#f0b84a;">مراقبة</span> = إشعار فقط &nbsp;|&nbsp; 
+                        <span style="color:#f87171;">حظر</span> = حذف فوري من يوتيوب + إخفاء من الواجهة
+                    </p>
                     <div style="display: flex; gap: 8px;">
-                        <input id="keyword-input" type="text" class="input-field" placeholder="كلمة مفتاحية..." style="text-align: right; flex: 1;" />
+                        <input id="keyword-input" type="text" class="input-field" placeholder="أضف كلمة..." style="text-align: right; flex: 1;" />
                         <select id="keyword-type-select" style="padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.05);border:1.5px solid var(--border);color:var(--text);font-family:'Tajawal',sans-serif;font-size:13px;outline:none;">
-                            <option value="monitor">مراقبة</option>
                             <option value="ban">حظر</option>
+                            <option value="monitor">مراقبة</option>
                         </select>
                         <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="addKeyword()"><i class="fas fa-plus"></i></button>
                     </div>
                     <div id="keywords-list" class="flex flex-wrap gap-2" style="margin-top: 8px;"></div>
-                    <p class="text-xs mt-2" style="color: var(--text-muted);">تطابق → إشارة على أيقونة الجرس <i class="fas fa-bell" style="color: var(--accent);"></i></p>
                 </div>
 
                 <!-- مراقبة البث المباشر -->
@@ -2956,6 +2951,8 @@
         document.getElementById('comments-loading').style.display = 'none';
         document.getElementById('comments-empty').style.display = 'none';
         document.getElementById('comments-error').style.display = 'none';
+        // فحص الكلمات المحظورة — إخفاء فوري من الواجهة (2 ثانية)
+        checkAndDeleteIfBanned(card, message);
         if (isAtBottom) list.parentElement.scrollTop = list.parentElement.scrollHeight;
     }
 
@@ -2967,24 +2964,36 @@
         try {
             const { data } = await supabaseClient.from('monitor_keywords').select('keyword, keyword_type').eq('stream_id', currentVideoId);
             _monitorKeywordsCache = (data || []).map(k => ({ keyword: k.keyword.toLowerCase(), keyword_type: k.keyword_type || 'monitor' }));
-            // مزامنة مع نظام المراقب الذكي (الكلمات المحظورة للحذف من يوتيوب)
-            const banWords = (data || []).filter(k => (k.keyword_type || 'monitor') === 'ban').map(k => k.keyword.toLowerCase());
-            if (banWords.length > 0 && modForbiddenWords.length === 0) {
-                modForbiddenWords = banWords;
-            } else {
-                // دمج: الكلمات من القائمة دائماً تُستخدم
-                modForbiddenWords = banWords;
-            }
-        } catch(e) {}
+            // مزامنة الكلمات المحظورة للحذف من يوتيوب — المصدر الوحيد هو Supabase
+            modForbiddenWords = (data || []).filter(k => (k.keyword_type || 'monitor') === 'ban').map(k => k.keyword.toLowerCase());
+            console.log('[KEYWORDS] تم تحديث الكلمات: ' + _monitorKeywordsCache.length + ' كلمة (' + modForbiddenWords.length + ' حظر)');
+        } catch(e) { console.error('[KEYWORDS] خطأ:', e); }
     }
 
-    // فحص تعليق Realtime + حذف فوري من UI (2 ثانية)
+    // فحص تعليق + حذف فوري من UI (2 ثانية) — يدعم تجاوز الفلاتر (نقاط، مسافات)
     function checkAndDeleteIfBanned(commentEl, commentText) {
         if (_monitorKeywordsCache.length === 0) return;
         const lower = commentText.toLowerCase();
+        // فحص عادي أولاً
         const matched = _monitorKeywordsCache.find(kw => lower.includes(kw.keyword));
         if (matched) {
             commentEl.classList.add('deleting');
+            commentEl.style.opacity = '0.3';
+            commentEl.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => { if (commentEl.parentNode) commentEl.remove(); }, 2000);
+            return;
+        }
+        // فحص متقدم: إزالة النقاط والمسافات (للكلمات مثل ك.س أو ع.ير)
+        const cleaned = lower.replace(/[.\s\-_,;:!?]/g, '');
+        const banKws = _monitorKeywordsCache.filter(k => k.keyword_type === 'ban');
+        const bypassMatch = banKws.find(kw => {
+            const kwClean = kw.keyword.replace(/[.\s\-_,;:!?]/g, '');
+            return kwClean.length >= 2 && cleaned.includes(kwClean);
+        });
+        if (bypassMatch) {
+            commentEl.classList.add('deleting');
+            commentEl.style.opacity = '0.3';
+            commentEl.style.transition = 'opacity 0.5s ease';
             setTimeout(() => { if (commentEl.parentNode) commentEl.remove(); }, 2000);
         }
     }
@@ -3159,51 +3168,10 @@
         return modAdaptiveInterval;
     }
 
-    const MOD_DEFAULT_WORDS = ['سب', 'غبي', 'حمار', 'كلب'];
-    let modForbiddenWords = [];
-
     // ════════════════════════════════════════════
-    // 1) الكلمات المحظورة (localStorage)
+    // 1) الكلمات المحظورة — مصدر واحد فقط: monitor_keywords من Supabase
     // ════════════════════════════════════════════
-    function modLoadSaved() {
-        try {
-            const s = localStorage.getItem('vtrx_mod_forbidden');
-            if (s) modForbiddenWords = JSON.parse(s);
-            else modForbiddenWords = [...MOD_DEFAULT_WORDS];
-        } catch(e) { modForbiddenWords = [...MOD_DEFAULT_WORDS]; }
-        modRenderWords();
-    }
-    function modSaveWords() { localStorage.setItem('vtrx_mod_forbidden', JSON.stringify(modForbiddenWords)); }
-
-    function modRenderWords() {
-        const c = document.getElementById('mod-words-list');
-        if (!c) return;
-        if (modForbiddenWords.length === 0) {
-            c.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">لا توجد كلمات محظورة بعد.</p>';
-            return;
-        }
-        c.innerHTML = modForbiddenWords.map(w =>
-            '<span class="mod-word-tag">' + escapeHtml(w) +
-            '<button onclick="modRemoveWord(\'' + escapeHtml(w).replace(/'/g, "\\'") + '\')"><i class="fas fa-xmark"></i></button></span>'
-        ).join('');
-    }
-
-    function modAddWord() {
-        const i = document.getElementById('mod-new-word');
-        const w = i.value.trim(); if (!w) return;
-        const wl = w.toLowerCase();
-        if (modForbiddenWords.includes(wl)) { showToast('الكلمة موجودة مسبقاً', 'info'); return; }
-        modForbiddenWords.push(wl);
-        i.value = '';
-        modRenderWords();
-        modSaveWords();
-    }
-
-    function modRemoveWord(w) {
-        modForbiddenWords = modForbiddenWords.filter(x => x !== w);
-        modRenderWords();
-        modSaveWords();
-    }
+    let modForbiddenWords = [];  // تُملأ من refreshKeywords() فقط
 
     // ════════════════════════════════════════════
     // 2) حماية قسم الأدمن بكلمة سر
@@ -3875,6 +3843,34 @@
         modUpdateStatusUI();
     }
 
+    // حفظ حالة المشرف في Supabase + localStorage
+    async function modSaveModeratorStatus(isMod) {
+        try {
+            // حفظ في Supabase (للمشاركة بين الأجهزة)
+            if (currentVideoId) {
+                await supabaseClient.from('saved_streams').update({ stream_moderator: isMod ? modMyChannelId : null }).eq('stream_url', 'https://www.youtube.com/watch?v=' + currentVideoId);
+            }
+        } catch(e) { console.error('[MOD_STATUS] فشل الحفظ في Supabase:', e); }
+        try {
+            // حفظ في localStorage (للاسترجاع السريع)
+            localStorage.setItem('vrtx_mod_status_' + currentVideoId, isMod ? 'active' : 'inactive');
+        } catch(e) {}
+    }
+
+    // استعادة حالة المشرف المحفوظة عند فتح البث
+    async function modRestoreModeratorStatus() {
+        if (!currentVideoId || !modAdminToken) return;
+        try {
+            // فحص Supabase أولاً
+            const { data } = await supabaseClient.from('saved_streams').select('stream_moderator').eq('stream_url', 'https://www.youtube.com/watch?v=' + currentVideoId).maybeSingle();
+            if (data && data.stream_moderator && data.stream_moderator === modMyChannelId) {
+                // كان مشرفاً — تحقق إذا لا يزال مشرفاً
+                modAddLog('join', 'تم استعادة حالة الإشراف المحفوظة — جاري التحقق...');
+                await modCheckModStatus();
+            }
+        } catch(e) { console.error('[MOD_STATUS] فشل استعادة الحالة:', e); }
+    }
+
     function modUpdateStatusUI() {
         const icon = document.getElementById('mod-s-icon');
         const title = document.getElementById('mod-s-title');
@@ -3882,15 +3878,15 @@
         const badge = document.getElementById('mod-s-badge');
         if (modIsModerator) {
             icon.className = 'mod-status-icon active';
-            title.textContent = 'تم تعيين الأدمن كمشرف! — الحذف التلقائي مفعّل';
-            desc.textContent = 'يتم حذف الرسائل المحظورة تلقائياً الآن بواسطة "' + modAdminName + '"';
+            title.textContent = 'المشرف نشط — الحذف التلقائي مفعّل';
+            desc.textContent = 'يتم حذف الرسائل المحظورة فوراً بواسطة "' + modAdminName + '"';
             badge.className = 'mod-badge online';
             badge.innerHTML = '<div class="mod-dot"></div> مشرف نشط';
             // تحديث الزر أيضاً
             var assignBtn = document.getElementById('mod-assign-btn');
             if (assignBtn) {
                 assignBtn.disabled = false;
-                assignBtn.innerHTML = '<i class="fas fa-check-circle" style="color:#0f0"></i> تم التعيين كمشرف — إعادة إرسال رسالة';
+                assignBtn.innerHTML = '<i class="fas fa-check-circle" style="color:#0f0"></i> المشرف نشط — إعادة إرسال رسالة';
                 assignBtn.style.borderColor = '#0f0';
                 assignBtn.style.boxShadow = '0 0 12px rgba(0,255,0,0.3)';
             }
@@ -3898,8 +3894,10 @@
             if (!modLastNotifiedAsMod) {
                 modLastNotifiedAsMod = true;
                 showToast('تم تعيين "' + modAdminName + '" كمشرف بنجاح! — الحذف التلقائي مفعّل الآن', 'success');
-                modAddLog('join', 'تم تعيين "' + modAdminName + '" كمشرف في البث — الحذف التلقائي مفعّل');
+                modAddLog('join', 'المشرف نشط — "' + modAdminName + '" — الحذف التلقائي مفعّل');
             }
+            // حفظ حالة الإشراف في Supabase
+            modSaveModeratorStatus(true);
         } else if (modIsMonitoring) {
             icon.className = 'mod-status-icon waiting';
             title.textContent = 'في انتظار تعيين المشرف';
@@ -3910,6 +3908,8 @@
             if (modLastNotifiedAsMod) {
                 modLastNotifiedAsMod = false;
                 modAddLog('warn', 'تم سحب صلاحية الإشراف من "' + modAdminName + '"');
+                // حفظ حالة فقدان الإشراف
+                modSaveModeratorStatus(false);
             }
         }
     }
@@ -3950,8 +3950,14 @@
         modUpdateStatusUI();
         modAddLog('join', 'بدأت المراقبة الذكية — فاصل الجلب: ' + (modAdaptiveInterval/1000).toFixed(1) + ' ثانية — الحصة: ' + modGetQuotaRemaining().toLocaleString() + ' متبقي');
 
-        // لا يوجد فحص دوري للإشراف — يتم تحديث الحالة تلقائياً من الرسائل الواردة
-        // (isChatModerator في بيانات كل رسالة = مجاني بدون طلبات إضافية)
+        // استعادة حالة الإشراف المحفوظة
+        modRestoreModeratorStatus();
+
+        // فحص دوري لحالة الإشراف كل 20 ثانية
+        if (window._modStatusCheckInterval) clearInterval(window._modStatusCheckInterval);
+        window._modStatusCheckInterval = setInterval(function() {
+            if (modIsMonitoring && modAdminToken) modCheckModStatus();
+        }, 20000);
 
         // تحديث تلقائي للتوكن كل 50 دقيقة (قبل انتهاء الـ access_token بساعة)
         if (window._modRefreshInterval) clearInterval(window._modRefreshInterval);
@@ -3970,6 +3976,7 @@
         if (modPollTimer) { clearInterval(modPollTimer); modPollTimer = null; }
         if (modUptimeTimer) { clearInterval(modUptimeTimer); modUptimeTimer = null; }
         if (window._modRefreshInterval) { clearInterval(window._modRefreshInterval); window._modRefreshInterval = null; }
+        if (window._modStatusCheckInterval) { clearInterval(window._modStatusCheckInterval); window._modStatusCheckInterval = null; }
         document.getElementById('mod-monitor-badge').className = 'mod-badge offline';
         document.getElementById('mod-monitor-badge').innerHTML = '<div class="mod-dot"></div> غير متصل';
     }
@@ -4074,22 +4081,38 @@
                             var lower = msg.text.toLowerCase();
                             // تحديث الكلمات المحظورة من Supabase كل 10 رسائل
                             if (modStats.total % 10 === 0) refreshKeywords();
+                            var bannedWordFound = null;
+                            // فحص عادي
                             for (var wi = 0; wi < modForbiddenWords.length; wi++) {
                                 if (lower.includes(modForbiddenWords[wi])) {
-                                    // تسجيل المخالفة وحساب الخطورة
-                                    var newScore = modRecordViolation(msg.author, modForbiddenWords[wi]);
-                                    var severity = modCalculateSeverity(msg.author);
-                                    // إظهار مؤشر الخطورة فوراً
-                                    modMarkSeverity(msg.id, msg.author, newScore, severity);
-                                    modAddLog('warn', 'مخالفة "' + msg.author + '" — كلمة: "' + modForbiddenWords[wi] + '" — نقاط: ' + newScore + ' — مستوى: ' + severity.label);
-                                    // تأخير 4 ثوان قبل الحذف — بدون حجب المعالجة
-                                    var delMsgId = msg.id, delAuthor = msg.author, delWord = modForbiddenWords[wi];
-                                    setTimeout(async function() {
-                                        if (!modIsMonitoring || !modAdminToken) return;
-                                        await modDeleteMsgAndTrack(delMsgId, delAuthor, delWord);
-                                    }, 4000);
+                                    bannedWordFound = modForbiddenWords[wi];
                                     break;
                                 }
+                            }
+                            // فحص متقدم: تجاوز الفلاتر (نقاط، مسافات) مثل ك.س أو ع.ير
+                            if (!bannedWordFound) {
+                                var cleaned = lower.replace(/[.\s\-_,;:!?]/g, '');
+                                for (var wi2 = 0; wi2 < modForbiddenWords.length; wi2++) {
+                                    var kwClean = modForbiddenWords[wi2].replace(/[.\s\-_,;:!?]/g, '');
+                                    if (kwClean.length >= 2 && cleaned.includes(kwClean)) {
+                                        bannedWordFound = modForbiddenWords[wi2];
+                                        break;
+                                    }
+                                }
+                            }
+                            if (bannedWordFound) {
+                                // تسجيل المخالفة وحساب الخطورة
+                                var newScore = modRecordViolation(msg.author, bannedWordFound);
+                                var severity = modCalculateSeverity(msg.author);
+                                // إظهار مؤشر الخطورة فوراً
+                                modMarkSeverity(msg.id, msg.author, newScore, severity);
+                                modAddLog('warn', 'مخالفة "' + msg.author + '" — كلمة: "' + bannedWordFound + '" — نقاط: ' + newScore + ' — مستوى: ' + severity.label);
+                                // حذف فوري — بدون تأخير
+                                var delMsgId = msg.id, delAuthor = msg.author, delWord = bannedWordFound;
+                                (async function() {
+                                    if (!modIsMonitoring || !modAdminToken) return;
+                                    await modDeleteMsgAndTrack(delMsgId, delAuthor, delWord);
+                                })();
                             }
                         }
                     }
@@ -4268,8 +4291,8 @@
         panel.innerHTML = html;
     }
 
-    // تحميل الكلمات + حالة الأدمن عند فتح التبويب
-    modLoadSaved();
+
+
 
     // ═══ كشف إغلاق الصفحة / التبديل بين التبويبات ═══
     // عند إغلاق الصفحة → أوقف المراقبة
