@@ -1697,10 +1697,10 @@
     let renderedChats = new Set();
 
     // ══════════════════════════════════════════════════════════════
-    // 🌐 الجالب الشامل (Global Streamer) — يجلب كل 15 بث كل 1.5 ثانية
+    // 🌐 الجالب الشامل (Global Streamer) — يجلب كل البثوث كل 1.5 ثانية
     // ══════════════════════════════════════════════════════════════
     // يعمل في الخلفية بغض النظر عن أي بث تشاهده
-    // يخزن كل التعليقات في archived_comments فتصل لكل المشاهدين عبر Realtime
+    // يخزن التعليقات في جداول البث (msgs_{videoId}) عبر fn_gs_archive_to_stream
     // ══════════════════════════════════════════════════════════════
     const GS = {
         timer: null,           // مؤقت الدورة
@@ -1837,24 +1837,26 @@
 
                 if (allNewComments.length > 0) {
                     try {
-                        const { error } = await supabaseClient
-                            .from('archived_comments')
-                            .upsert(allNewComments, {
-                                onConflict: 'stream_id,author_name,published_at,comment_text',
-                                ignoreDuplicates: true
-                            });
-                        if (error) console.error('[GS] خطأ حفظ:', error.message);
-                        else {
-                            this.totalArchived += allNewComments.length;
-                            // تحديث nextPageToken في saved_streams لكل بث
-                            for (const vid of Object.keys(this.tokens)) {
-                                const stream = this.streams.find(s => getVideoId(s.stream_url) === vid);
-                                if (stream && this.tokens[vid] !== stream.next_page_token) {
-                                    supabaseClient.from('saved_streams')
-                                        .update({ next_page_token: this.tokens[vid] })
-                                        .eq('id', stream.id)
-                                        .then(() => {}).catch(() => {});
-                                }
+                        // حفظ في جداول البث عبر RPC (بنية per-stream)
+                        for (const vid of Object.keys(this.chatIds)) {
+                            const vidComments = allNewComments.filter(c => c.stream_id === vid);
+                            if (vidComments.length > 0) {
+                                const { error: rpcErr } = await supabaseClient.rpc('fn_gs_archive_to_stream', {
+                                    p_stream_id: vid,
+                                    p_comments: vidComments
+                                });
+                                if (rpcErr) console.error('[GS] خطأ حفظ ' + vid + ':', rpcErr.message);
+                            }
+                        }
+                        this.totalArchived += allNewComments.length;
+                        // تحديث nextPageToken في saved_streams لكل بث
+                        for (const vid of Object.keys(this.tokens)) {
+                            const stream = this.streams.find(s => getVideoId(s.stream_url) === vid);
+                            if (stream && this.tokens[vid] !== stream.next_page_token) {
+                                supabaseClient.from('saved_streams')
+                                    .update({ next_page_token: this.tokens[vid] })
+                                    .eq('id', stream.id)
+                                    .then(() => {}).catch(() => {});
                             }
                         }
                     } catch(e) {
@@ -2214,15 +2216,20 @@
                 showToast('جارٍ حذف بيانات البث...', 'info');
                 
                 const deleteResults = await Promise.allSettled([
-                    supabaseClient.from('archived_comments').delete().eq('stream_id', videoId),
-                    supabaseClient.from('stream_messages').delete().eq('stream_id', videoId),
                     supabaseClient.from('monitor_keywords').delete().eq('stream_id', videoId),
                     supabaseClient.from('monitor_notifications').delete().eq('stream_id', videoId),
                     supabaseClient.from('stream_locks').delete().eq('stream_id', videoId),
                 ]);
-                
+
+                // حذف جداول البث الخاصة (msgs_{videoId} + banned_{videoId})
+                // ملاحظة: لا يمكن حذف جداول ديناميكية من العميل مباشرة
+                // ستحتاج لحذفها يدوياً من SQL Editor أو عبر Edge Function
+                try {
+                    await supabaseClient.from('stream_tables').delete().eq('stream_id', videoId);
+                } catch(e) { console.warn('حذف سجل stream_tables:', e); }
+
                 // Log failures (non-blocking)
-                const tables = ['archived_comments', 'stream_messages', 'monitor_keywords', 'monitor_notifications', 'stream_locks'];
+                const tables = ['monitor_keywords', 'monitor_notifications', 'stream_locks', 'per-stream tables'];
                 const failedTables = deleteResults
                     .map((r, i) => r.status === 'rejected' ? tables[i] : null)
                     .filter(Boolean);
@@ -2612,11 +2619,8 @@
         if (realtimeChannel) { try { supabaseClient.removeChannel(realtimeChannel); } catch(e) {} realtimeChannel = null; }
         if (notifChannel) { try { supabaseClient.removeChannel(notifChannel); } catch(e) {} notifChannel = null; }
 
-        realtimeChannel = supabaseClient.channel('public:archived_comments')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'archived_comments', filter: `stream_id=eq.${videoId}` }, payload => {
-                if (myToken !== sessionToken) return; // تجاهل الرسائل من جلسة قديمة
-                addCommentToUI(payload.new, true);
-            }).subscribe();
+        // Realtime على archived_comments تمت إزالته — v7 يكتب في جداول per-stream
+        // التعليقات تظهر مباشرة من YouTube API polling (كل 2 ثانية)
 
         notifChannel = supabaseClient.channel('public:monitor_notifications')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'monitor_notifications', filter: `stream_id=eq.${videoId}` }, payload => {
@@ -2630,32 +2634,27 @@
 
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-    // === تحميل التعليقات المحفوظة (بدون حد — يجلب كل التعليقات) ===
+    // === تحميل التعليقات المحفوظة من جداول البث (per-stream) ===
     async function loadExistingComments(videoId) {
         if (!videoId) return 0;
         try {
-            let allComments = [];
-            let page = 0;
-            let hasMore = true;
-            while (hasMore) {
-                const from = page * 1000;
-                const to = from + 999;
-                const { data, error } = await supabaseClient
-                    .from('archived_comments')
-                    .select('*')
-                    .eq('stream_id', videoId)
-                    .order('published_at', { ascending: true })
-                    .range(from, to);
-                if (error) throw error;
-                if (!data || data.length === 0) break;
-                allComments = allComments.concat(data);
-                if (data.length < 1000) hasMore = false;
-                page++;
-            }
-            if (allComments.length === 0) return 0;
+            const { data: allComments, error } = await supabaseClient.rpc('fn_get_stream_messages', {
+                p_stream_id: videoId,
+                p_limit: 2000
+            });
+            if (error) throw error;
+            if (!allComments || allComments.length === 0) return 0;
             document.getElementById('comments-loading').style.display = 'none';
             document.getElementById('comments-empty').style.display = 'none';
-            allComments.forEach(item => addCommentToUI(item, true));
+            // تحويل الأعمدة الجديدة لتناسب addCommentToUI
+            allComments.forEach(item => {
+                addCommentToUI({
+                    stream_id: videoId,
+                    author_name: item.display_name || 'مجهول',
+                    comment_text: item.message_text || '',
+                    published_at: item.published_at
+                }, true);
+            });
             return allComments.length;
         } catch(e) {
             console.error('Load existing error:', e);
@@ -2928,6 +2927,7 @@
                         document.getElementById('comments-empty').style.display = 'none';
                         const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt));
                         archiveCommentsToSupabase(sorted).catch(e => console.error('Archive bg error:', e));
+                        saveToStreamMessages(sorted).catch(e => console.error('stream_messages bg error:', e));
                         sorted.forEach(item => {
                             const ytMsgId = item.id;
                             const msgText = item.snippet?.displayMessage || '';
@@ -2975,20 +2975,31 @@
         } catch(e) { console.error('Fetch error:', e); } finally { fetchInProgress = false; }
     }
 
-    async function archiveCommentsToSupabase(comments) {
+    // archiveCommentsToSupabase — تمت إزالته
+    // كل شيء يُخزّن الآن عبر saveToStreamMessages → fn_insert_messages (جداول per-stream)
+    async function archiveCommentsToSupabase(comments) { /* لا يعمل شيء — fn_insert_messages يكفي */ }
+
+    // === حفظ الرسائل في الجدول الخاص بالبث (msgs_{videoId}) ===
+    async function saveToStreamMessages(comments) {
         if (!supabaseClient || !currentVideoId) return;
-        const batchData = comments.map(item => ({
-            stream_id: currentVideoId,
-            author_name: item.authorDetails?.displayName || 'مجهول',
-            comment_text: item.snippet?.displayMessage || '',
+        const batch = comments.map(item => ({
+            yt_message_id: item.id || '',
+            user_id: item.authorDetails?.channelId || '',
+            display_name: item.authorDetails?.displayName || '',
+            username: item.authorDetails?.channelId || '',
+            message_text: item.snippet?.displayMessage || '',
             published_at: item.snippet?.publishedAt || new Date().toISOString()
-        })).filter(c => c.comment_text !== '');
-        if (batchData.length === 0) return;
+        })).filter(c => c.message_text !== '');
+        if (batch.length === 0) return;
         try {
-            const { error } = await supabaseClient.from('archived_comments')
-                .upsert(batchData, { onConflict: 'stream_id,author_name,published_at,comment_text', ignoreDuplicates: true });
-            if (error) console.error('Archive upsert error:', error);
-        } catch (e) { console.error('Archive upsert exception:', e); }
+            const { data, error } = await supabaseClient.rpc('fn_insert_messages', {
+                p_stream_id: currentVideoId,
+                p_ban_words: modForbiddenWords,
+                p_messages: batch
+            });
+            if (error) console.error('[STREAM] RPC error:', error.message);
+            else console.log('[STREAM] ✅', (data?.processed||0), 'رسالة (', (data?.banned||0), 'محظورة) →', data?.table);
+        } catch (e) { console.error('[STREAM] exception:', e.message); }
     }
 
     function addCommentToUI(item, countIncrement = false) {
@@ -4602,30 +4613,25 @@
     }
 
     // === نظام المحادثة (Chat) ===
+    let chatPollingTimer = null;
     function openChatScreen() {
         if (!currentUser) { showToast('يجب تسجيل الدخول لاستخدام المحادثة', 'error'); openAuthModal(); return; }
         showScreen('screen-chat'); loadChatMessages();
-        if (chatChannel) supabaseClient.removeChannel(chatChannel);
-        chatChannel = supabaseClient.channel('public:stream_messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stream_messages', filter: `stream_id=eq.${currentVideoId}` }, payload => { addChatMessageToUI(payload.new); }).subscribe();
+        // Realtime على stream_messages تمت إزالته — نستخدم polling بدلاً منه
+        if (chatPollingTimer) clearInterval(chatPollingTimer);
+        chatPollingTimer = setInterval(() => loadChatMessages(), 3000);
     }
 
     async function loadChatMessages() {
-        const list = document.getElementById('chat-list'); list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>'; renderedChats.clear();
+        if (!currentVideoId) return;
+        const list = document.getElementById('chat-list'); list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>';
         try {
-            // تحميل كل الرسائل بدون حد — Supabase يرجع حتى 1000 صف بالصفحة الواحدة تلقائياً
-            let allMessages = [];
-            let page = 0;
-            let hasMore = true;
-            while (hasMore) {
-                const from = page * 1000;
-                const to = from + 999;
-                const { data, error } = await supabaseClient.from('stream_messages').select('*').eq('stream_id', currentVideoId).order('created_at', { ascending: true }).range(from, to);
-                if (error) throw error;
-                if (!data || data.length === 0) break;
-                allMessages = allMessages.concat(data);
-                if (data.length < 1000) hasMore = false;
-                page++;
-            }
+            // قراءة من جداول البث عبر RPC
+            const { data: allMessages, error } = await supabaseClient.rpc('fn_get_stream_messages', {
+                p_stream_id: currentVideoId,
+                p_limit: 500
+            });
+            if (error) throw error;
             list.innerHTML = '';
             if (allMessages.length === 0) { list.innerHTML = '<div class="empty-state"><i class="fas fa-comment-slash"></i><p style="color: var(--text-muted);">لا توجد رسائل بعد. كن أول من يبدأ الحديث!</p></div>'; return; }
             allMessages.forEach(msg => addChatMessageToUI(msg));
@@ -4666,17 +4672,21 @@
         if (!currentVideoId) { showToast('لا يوجد بث نشط', 'error'); return; }
         input.value = '';
         try {
-            const { error } = await supabaseClient.from('stream_messages').insert([{
-                stream_id: currentVideoId,
-                user_id: currentUser.id,
-                display_name: currentUser.display_name,
-                username: currentUser.username,
-                message_text: text
-            }]);
+            // إرسال عبر RPC (جداول per-stream)
+            const { error } = await supabaseClient.rpc('fn_send_chat_message', {
+                p_stream_id: currentVideoId,
+                p_user_id: currentUser.id,
+                p_display_name: currentUser.display_name,
+                p_username: currentUser.username,
+                p_message_text: text
+            });
             if (error) {
-                console.error('Chat insert error:', error);
+                console.error('Chat RPC error:', error);
                 showToast('فشل الإرسال: ' + (error.message || 'خطأ غير معروف'), 'error');
                 input.value = text;
+            } else {
+                // إعادة تحميل المحادثة لعرض الرسالة الجديدة
+                setTimeout(() => loadChatMessages(), 300);
             }
         } catch(e) {
             console.error('Chat send exception:', e);
@@ -4690,44 +4700,42 @@
     async function loadArchivedComments(searchTerm = '', searchUser = '') {
         const list = document.getElementById('archive-list'); const status = document.getElementById('archive-status'); list.innerHTML = ''; status.textContent = 'جاري التحميل...';
         try {
-            // ترقيم كامل — يجلب كل التعليقات بدون حد 1000
-            let allData = [];
-            let page = 0;
-            let hasMore = true;
-            while (hasMore) {
-                const from = page * 1000;
-                const to = from + 999;
-                let query = supabaseClient.from('archived_comments').select('*').eq('stream_id', currentVideoId);
-                if (searchTerm) query = query.ilike('comment_text', `%${searchTerm}%`); if (searchUser) query = query.ilike('author_name', `%${searchUser}%`);
-                query = query.order('published_at', { ascending: true }).range(from, to);
-                const { data, error } = await query; if (error) throw error;
-                if (!data || data.length === 0) break;
-                allData = allData.concat(data);
-                if (data.length < 1000) hasMore = false;
-                page++;
-            }
-            if (allData.length === 0) { 
-                status.innerHTML = '<i class="fas fa-inbox ml-1"></i> لا توجد نتائج مطابقة'; 
+            // قراءة من جداول البث عبر RPC (يدعم البحث)
+            const { data: allData, error } = await supabaseClient.rpc('fn_get_stream_messages', {
+                p_stream_id: currentVideoId,
+                p_search: searchTerm,
+                p_user_id: searchUser,
+                p_limit: 2000
+            });
+            if (error) throw error;
+            if (!allData || allData.length === 0) {
+                status.innerHTML = '<i class="fas fa-inbox ml-1"></i> لا توجد نتائج مطابقة';
                 list.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open" style="font-size:32px; opacity:0.3;"></i><p class="mt-3" style="color: var(--text-muted);">لا توجد تعليقات مؤرشفة تطابق بحثك</p></div>';
-                return; 
+                return;
             }
-            status.innerHTML = `<i class="fas fa-list ml-1" style="color: var(--accent);"></i> ${allData.length} تعليق مؤرشف`;
-            allData.forEach(item => { 
-                const color = getAvatarColor(item.author_name); 
-                const card = document.createElement('div'); 
-                card.className = 'comment-card archived'; 
-                card.style.setProperty('--c-accent', color); 
+            // فلترة حسب اسم المستخدم إن لم يكن فارغاً (RPC لا يدعم بحث display_name مباشرة)
+            let filtered = allData;
+            if (searchUser) {
+                const su = searchUser.toLowerCase();
+                filtered = allData.filter(m => (m.display_name || '').toLowerCase().includes(su));
+            }
+            status.innerHTML = `<i class="fas fa-list ml-1" style="color: var(--accent);"></i> ${filtered.length} تعليق مؤرشف`;
+            filtered.forEach(item => {
+                const color = getAvatarColor(item.display_name || 'مجهول');
+                const card = document.createElement('div');
+                card.className = 'comment-card archived';
+                card.style.setProperty('--c-accent', color);
                 card.innerHTML = `
-                    <div class="comment-avatar" style="background: ${color};">${item.author_name.charAt(0).toUpperCase()}</div>
+                    <div class="comment-avatar" style="background: ${color};">${(item.display_name || 'م').charAt(0).toUpperCase()}</div>
                     <div style="flex:1; min-width:0;">
                         <div class="flex items-center" style="gap: 6px;">
-                            <span class="comment-username" style="color:${color};">${escapeHtml(item.author_name)}</span>
+                            <span class="comment-username" style="color:${color};">${escapeHtml(item.display_name || 'مجهول')}</span>
                             <span class="comment-time"><i class="far fa-clock ml-1" style="opacity:0.5;"></i>${new Date(item.published_at).toLocaleTimeString('ar-EG', {hour:'2-digit',minute:'2-digit'})}</span>
                         </div>
-                        <div class="comment-text" style="margin-top:3px;">${escapeHtml(item.comment_text)}</div>
+                        <div class="comment-text" style="margin-top:3px;">${escapeHtml(item.message_text)}</div>
                     </div>
-                `; 
-                list.appendChild(card); 
+                `;
+                list.appendChild(card);
             });
         } catch(e) { status.innerHTML = '<i class="fas fa-exclamation-triangle ml-1" style="color:#f87171;"></i> فشل التحميل'; }
     }
