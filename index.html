@@ -11,7 +11,7 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
         tailwind.config = {
-            theme: {ِ
+            theme: {
                 extend: {
                     fontFamily: { 'main': ['Tajawal', 'sans-serif'] },
                     colors: {
@@ -2453,7 +2453,6 @@
         // === تهيئة متغيرات الجلسة الجديدة قبل أي async ===
         currentVideoId = effectiveVideoId;
         localStorage.setItem('vrtx_last_stream', effectiveVideoId);
-        modLoadBanWords();
         commentsTotal = 0;
         nextPageToken = streamData.next_page_token || '';
         liveChatId = streamData.live_chat_id || null;
@@ -2518,7 +2517,8 @@
 
         // 3ب: تحميل الكلمات المفتاحية + إعداد قنوات Realtime في الخلفية
         setEntryStep(2, 'active');
-        refreshKeywords();
+        await refreshKeywords();
+        console.log('[BAN] modForbiddenWords جاهزة:', modForbiddenWords.length, 'كلمة محظورة');
         setupRealtimeChannels(effectiveVideoId, myToken)
             .then(() => {
                 if (myToken !== sessionToken) return;
@@ -2933,10 +2933,16 @@
                             const msgText = item.snippet?.displayMessage || '';
                             const isOwner = !!item.authorDetails?.isChatOwner;
                             const isMod = !!item.authorDetails?.isChatModerator;
-                            const isBanned = !isOwner && !isMod && modBanWords.length > 0 && modBanWords.some(w => {
-                                const lo = msgText.toLowerCase(); const st = msgText.replace(/[^\w\u0600-\u06FF]+/g, '').toLowerCase();
-                                return lo.includes(w.toLowerCase()) || st.includes(w.replace(/[^\w\u0600-\u06FF]+/g, '').toLowerCase());
-                            });
+                            // كشف فوري بالكلمات المحظورة (modForbiddenWords يُملأ من refreshKeywords)
+                            let isBanned = false;
+                            if (!isOwner && !isMod && modForbiddenWords.length > 0) {
+                                const lo = msgText.toLowerCase();
+                                const st = msgText.replace(/[^\w\u0600-\u06FF]+/g, '').toLowerCase();
+                                isBanned = modForbiddenWords.some(w => {
+                                    const wClean = w.replace(/[^\w\u0600-\u06FF]+/g, '').toLowerCase();
+                                    return lo.includes(w) || (wClean.length >= 2 && st.includes(wClean));
+                                });
+                            }
                             if (isBanned && ytMsgId) { instantDeleteBanned(ytMsgId); console.log('[BAN] حذف فوري:', msgText); return; }
                             const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: msgText, published_at: item.snippet?.publishedAt || new Date().toISOString() };
                             addCommentToUI(newItem, true);
@@ -3101,18 +3107,7 @@
         { max: Infinity, label: 'خطر — يُنصح بالحظر', color: '#ef4444', icon: 'fa-skull-crossbones', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.15)' }
     ];
 
-    // === كلمات محظورة (ban) ===
-    let modBanWords = [];
-    async function modLoadBanWords() {
-        if (!currentVideoId) return;
-        try {
-            const { data } = await supabaseClient.from('monitor_keywords').select('keyword').eq('stream_id', currentVideoId).eq('keyword_type', 'ban');
-            modBanWords = data ? data.map(k => k.keyword) : [];
-            console.log('[BAN] تم تحميل', modBanWords.length, 'كلمة محظورة');
-        } catch(e) { console.error('[BAN] خطأ تحميل الكلمات:', e); }
-    }
-
-    // === حذف فوري للكلمات المحظورة ===
+    // === حذف فوري للكلمات المحظورة عبر Edge Function ===
     const DELETES_URL = SUPABASE_URL + '/functions/v1/archive-comments';
     const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0d2RhbnB4aGtrcXNzamdub25wIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDkxOTE5MSwiZXhwIjoyMTAwNDk1MTkxfQ.AM1mS1uKhZRoqrcveXwKyDEQj_2Kb_joLokjgFwsMjY';
     let _instantDeleteInProgress = false;
