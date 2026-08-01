@@ -11,7 +11,7 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script>
         tailwind.config = {
-            theme: {
+            theme: {ِ
                 extend: {
                     fontFamily: { 'main': ['Tajawal', 'sans-serif'] },
                     colors: {
@@ -69,7 +69,8 @@
         .comments-container::-webkit-scrollbar { width: 5px; }
         .comments-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
 
-        .comment-card { display: flex; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.025); border-right: 3px solid var(--c-accent, #e8a838); margin-bottom: 8px; animation: commentSlide 0.35s ease; transition: background 0.2s ease; }
+        .comment-card { display: flex; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.025); border-right: 3px solid var(--c-accent, #e8a838); margin-bottom: 8px; animation: commentSlide 0.35s ease; transition: background 0.2s ease, opacity 0.5s ease; }
+    .comment-card.deleting { background: rgba(239,68,68,0.08) !important; border-right-color: #f87171 !important; }
         .comment-card:hover { background: rgba(255,255,255,0.04); }
         .comment-card.archived { background: rgba(255,255,255,0.015); border-right-color: #4a4a5e; }
         
@@ -96,6 +97,40 @@
         .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .modal-overlay.show { opacity: 1; pointer-events: all; }
         .modal-content { max-width: 500px; width: 100%; border-radius: 20px; padding: 28px; background: #12121a; border: 1px solid var(--border); }
+
+        /* نافذة المراقب الذكي المنبثقة */
+        .mod-popup { max-width: 440px; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .mod-popup-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .mod-popup-header h3 { font-size: 18px; font-weight: 700; color: var(--text); }
+        .mod-popup-close { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .mod-popup-close:hover { color: #f87171; border-color: rgba(248,113,113,0.3); }
+        .mod-status-box { padding: 16px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 16px; }
+        .mod-status-box.checking { background: rgba(232,168,56,0.05); border-color: rgba(232,168,56,0.2); }
+        .mod-status-box.active { background: rgba(52,211,153,0.05); border-color: rgba(52,211,153,0.2); }
+        .mod-status-box.inactive { background: rgba(248,113,113,0.05); border-color: rgba(248,113,113,0.2); }
+        .mod-status-row { display: flex; align-items: center; gap: 12px; }
+        .mod-status-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .mod-status-icon.active { background: rgba(52,211,153,0.15); color: #34d399; }
+        .mod-status-icon.inactive { background: rgba(248,113,113,0.15); color: #f87171; }
+        .mod-status-icon.checking { background: rgba(232,168,56,0.15); color: #e8a838; }
+        .mod-btn-action { width: 100%; padding: 12px; border-radius: 12px; border: none; font-family: 'Tajawal', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .mod-btn-action:hover { transform: translateY(-1px); }
+        .mod-btn-action:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .mod-btn-green { background: linear-gradient(135deg, #34d399, #059669); color: #08080e; }
+        .mod-btn-gold { background: linear-gradient(135deg, #e8a838, #d4952e); color: #08080e; }
+        .mod-steps { margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); }
+        .mod-steps h4 { font-size: 12px; color: var(--accent); margin-bottom: 8px; }
+        .mod-steps ol { font-size: 11px; color: var(--text-muted); padding-right: 16px; line-height: 2; }
+        .mod-popup-section { margin-bottom: 16px; }
+        .mod-popup-section h4 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .mod-kw-input-row { display: flex; gap: 8px; }
+        .mod-kw-input-row input { flex: 1; }
+        .mod-kw-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .mod-kw-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+        .mod-kw-tag.ban { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2); color: #f87171; }
+        .mod-kw-tag.monitor { background: rgba(232,168,56,0.1); border: 1px solid rgba(232,168,56,0.2); color: #e8a838; }
+        .mod-kw-tag button { background: none; border: none; color: inherit; cursor: pointer; opacity: 0.6; font-size: 11px; padding: 0 2px; }
+        .mod-kw-tag button:hover { opacity: 1; }
 
         .back-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: transparent; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; border-radius: 10px; }
         .back-btn:hover { color: var(--accent); background: var(--accent-glow); }
@@ -280,16 +315,30 @@
         .archive-pane { display: none; }
         .archive-pane.active { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; overflow: hidden; }
 
-        /* === أنماط المراقب الذكي (مُبسَّط — Edge Function يعمل في الخلفية) === */
+        /* === أنماط المراقب الذكي المُحسّن === */
         .mod-section { padding: 16px; max-width: 600px; margin: 0 auto; width: 100%; }
         .mod-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 14px; }
         .mod-card-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
         .mod-card-title i { color: var(--accent); font-size: 15px; }
+        .mod-status-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+        .mod-status-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .mod-status-icon.active { background: rgba(52,211,153,0.12); color: #34d399; }
+        .mod-status-icon.waiting { background: rgba(232,168,56,0.12); color: #e8a838; }
+        .mod-status-icon.inactive { background: rgba(248,113,113,0.12); color: #f87171; }
+        .mod-status-text h4 { font-size: 14px; font-weight: 700; }
+        .mod-status-text p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .mod-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .mod-badge.online { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+        .mod-badge.waiting-badge { background: rgba(232,168,56,0.12); color: #e8a838; border: 1px solid rgba(232,168,56,0.2); }
+        .mod-badge.offline { background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.2); }
+        .mod-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: livePulse 1.5s ease-in-out infinite; }
         .mod-btn { width: 100%; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 700; font-family: 'Tajawal'; cursor: pointer; border: none; outline: none; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .mod-btn-primary { background: linear-gradient(135deg, #e8a838, #d4952e); color: #08080e; }
         .mod-btn-primary:hover { box-shadow: 0 4px 20px rgba(232,168,56,0.3); transform: translateY(-1px); }
+        .mod-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
         .mod-btn-secondary { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
         .mod-btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+        .mod-btn-danger { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.2); }
         .mod-btn-google { background: #ffffff; color: #333; font-size: 13px; padding: 10px 16px; }
         .mod-btn-google:hover { background: #f0f0f0; }
         .mod-input { width: 100%; padding: 10px 14px; border-radius: 10px; font-size: 13px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--text); font-family: 'Tajawal'; outline: none; transition: border-color .2s; text-align: right; }
@@ -299,20 +348,38 @@
         .mod-word-tag { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 600; background: rgba(248,113,113,0.1); color: #f87171; border: 1px solid rgba(248,113,113,0.15); }
         .mod-word-tag button { background: none; border: none; color: #f87171; cursor: pointer; font-size: 11px; opacity: 0.7; }
         .mod-word-tag button:hover { opacity: 1; }
-        .mod-status-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
-        .mod-status-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-        .mod-status-icon.active { background: rgba(52,211,153,0.12); color: #34d399; }
-        .mod-status-icon.waiting { background: rgba(232,168,56,0.12); color: #e8a838; }
-        .mod-status-text h4 { font-size: 14px; font-weight: 700; }
-        .mod-status-text p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-        .mod-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-        .mod-badge.online { background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
-        .mod-badge.offline { background: rgba(248,113,113,0.12); color: #f87171; border: 1px solid rgba(248,113,113,0.2); }
-        .mod-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: livePulse 1.5s ease-in-out infinite; }
+        .mod-log { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+        .mod-log-entry { padding: 6px 10px; border-radius: 8px; font-size: 12px; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.02); }
+        .mod-log-entry .log-icon { width: 18px; text-align: center; flex-shrink: 0; font-size: 11px; }
+        .mod-log-entry .log-msg { flex: 1; font-size: 12px; }
+        .mod-log-entry .log-time { color: var(--text-muted); font-size: 10px; flex-shrink: 0; }
+        .mod-log-entry.log-delete .log-icon { color: #f87171; }
+        .mod-log-entry.log-join .log-icon { color: #34d399; }
+        .mod-log-entry.log-warn .log-icon { color: #fbbf24; }
         .studio-hint { margin-top: 12px; padding: 14px; border-radius: 12px; background: rgba(232,168,56,0.06); border: 1px solid rgba(232,168,56,0.12); }
         .studio-hint h4 { font-size: 12px; font-weight: 700; color: #e8a838; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
         .studio-hint ol { font-size: 11px; color: var(--text-muted); line-height: 2; padding-right: 18px; }
         .studio-hint ol li::marker { color: #e8a838; font-weight: 700; }
+        .mod-user-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); }
+        .mod-user-avatar { width: 34px; height: 34px; border-radius: 8px; background: #e8a838; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: #08080e; flex-shrink: 0; }
+        .mod-user-name { font-size: 13px; font-weight: 700; }
+        .mod-user-email { font-size: 11px; color: var(--text-muted); }
+        .mod-monitor-area { background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 10px; height: 250px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+        .mod-monitor-msg { padding: 7px 10px; border-radius: 8px; font-size: 12px; display: flex; align-items: flex-start; gap: 8px; animation: msgSlide .3s ease; }
+        @keyframes msgSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .mod-monitor-msg.normal { background: rgba(255,255,255,0.03); }
+        .mod-monitor-msg.deleted { background: rgba(248,113,113,0.08); opacity: 0.5; text-decoration: line-through; }
+        .mod-monitor-msg.greeting-msg { background: rgba(232,168,56,0.1); border: 1px solid rgba(232,168,56,0.15); }
+        .mod-monitor-msg .msg-av { width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-muted); }
+        .mod-monitor-msg .msg-body { flex: 1; min-width: 0; }
+        .mod-monitor-msg .msg-auth { font-size: 10px; font-weight: 700; color: #e8a838; }
+        .mod-monitor-msg .msg-txt { font-size: 12px; word-break: break-word; margin-top: 1px; }
+        .mod-monitor-msg .msg-time { font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
+        .del-badge { font-size: 9px; font-weight: 700; color: #f87171; background: rgba(248,113,113,0.15); padding: 1px 5px; border-radius: 4px; margin-right: 4px; }
+        .mod-stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 10px; }
+        .mod-stat-box { text-align: center; padding: 10px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); }
+        .mod-stat-val { font-size: 22px; font-weight: 900; color: #e8a838; }
+        .mod-stat-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
         .hidden { display: none !important; }
 
         /* === واجهة داكنة دافئة مريحة للعين — تُطبّق على البث والمحادثة والأرشيف === */
@@ -1001,6 +1068,12 @@
             box-shadow: 0 0 12px rgba(232, 168, 56, 0.08) !important;
         }
 
+    
+    .comment-card.deleting { opacity: 0; transform: translateX(40px); transition: all 0.6s ease; pointer-events: none; }
+    .keyword-tag-monitor { background: rgba(232,168,56,0.1); border: 1px solid rgba(232,168,56,0.25); color: #e8a838; }
+    .keyword-tag-ban { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #f87171; }
+    .mod-badge-stream { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 10px; background: rgba(52,211,153,0.1); color: #34d399; border: 1px solid rgba(52,211,153,0.2); margin-right: 6px; }
+
     </style>
 </head>
 <body>
@@ -1156,7 +1229,7 @@
                 <i class="fas fa-archive"></i> الأرشيف
             </button>
             <button id="monitor-tab-btn" class="archive-tab" onclick="switchArchiveTab('monitor')">
-                <i class="fas fa-eye"></i> المراقب الذكي
+                <i class="fas fa-shield-halved"></i> المراقب الذكي
             </button>
         </div>
 
@@ -1172,69 +1245,201 @@
             <div id="archive-container" class="comments-container"><div id="archive-list"></div></div>
         </div>
 
-        <!-- لوح المراقب الذكي (مُبسَّط — Edge Function يعمل في الخلفية) -->
+        <!-- لوح المراقب الذكي المُحسّن: أدمن → تخزين التوكن → المستخدم يطلب تعيين -->
         <div id="monitor-pane" class="archive-pane">
             <div class="mod-section" style="overflow-y: auto; max-height: 100%;">
-                <div class="mod-card" style="text-align: center;">
-                    <div style="font-size: 36px; margin-bottom: 10px;"><i class="fas fa-shield-halved" style="color: #34d399;"></i></div>
-                    <div class="mod-card-title" style="justify-content: center;">الحماية التلقائية تعمل</div>
-                    <p class="text-xs" style="color: var(--text-muted); line-height: 1.8;">الروبوت يعمل في الخلفية كل <strong style="color:#e8a838;">2.5 ثانية</strong> على البثوث النشطة.<br>يكشف الرسائل المسيئة ويحذفها فوراً ثم يؤرشفها تلقائياً.<br>لا حاجة لفتح هذه الصفحة — الحماية مستمرة دائماً.</p>
-                </div>
+
+                <!-- ═══════ قسم الأدمن (صاحب الموقع) — محمي بكلمة سر ═══════ -->
                 <div class="mod-card" id="mod-admin-card">
-                    <div class="mod-card-title"><i class="fas fa-crown" style="color: #fbbf24;"></i> ربط حساب المشرف (أدمن فقط)</div>
+                    <div class="mod-card-title"><i class="fas fa-crown" style="color: #fbbf24;"></i> إعداد حساب المشرف (للأدمن فقط)</div>
+
+                    <!-- حالة: مقفل بكلمة سر -->
                     <div id="mod-admin-locked">
-                        <p class="text-xs mb-3" style="color: var(--text-muted);">محمي بكلمة سر — فقط صاحب الموقع يستطيع الوصول.</p>
+                        <p class="text-xs mb-3" style="color: var(--text-muted);">
+                            هذا القسم محمي بكلمة سر. فقط صاحب الموقع يستطيع الوصول.
+                        </p>
                         <div style="display: flex; gap: 8px;">
                             <input type="password" class="mod-input" id="mod-admin-password-input" placeholder="كلمة سر الأدمن..." onkeydown="if(event.key==='Enter')modUnlockAdmin()" />
-                            <button class="mod-btn mod-btn-primary" onclick="modUnlockAdmin()" style="width: auto; padding: 10px 16px; flex-shrink: 0;"><i class="fas fa-lock-open"></i> فتح</button>
+                            <button class="mod-btn mod-btn-primary" onclick="modUnlockAdmin()" style="width: auto; padding: 10px 16px; flex-shrink: 0;">
+                                <i class="fas fa-lock-open"></i> فتح
+                            </button>
                         </div>
                         <p id="mod-admin-lock-error" class="text-xs mt-2" style="color: #f87171; display: none;">كلمة السر خاطئة</p>
                     </div>
+
+                    <!-- حالة: مفتوح — إظهار أدوات الأدمن -->
                     <div id="mod-admin-unlocked" class="hidden">
+                        <!-- لم يتم الربط بعد -->
                         <div id="mod-admin-offline">
-                            <p class="text-xs mb-3" style="color: var(--text-muted);">ربط حساب YouTube مرة واحدة فقط — بعد ذلك الروبوت يحذف الرسائل المسيئة تلقائياً في الخلفية.</p>
-                            <button class="mod-btn mod-btn-google" onclick="modAdminSignIn()"><i class="fab fa-google"></i> ربط حساب YouTube (أدمن)</button>
+                            <p class="text-xs mb-3" style="color: var(--text-muted);">
+                                يجب ربط حسابك في يوتيوب مرة واحدة فقط. بعد ذلك، أي مستخدم يستطيع طلب تعيين حسابك كمشرف لأي بث.
+                            </p>
+                            <button class="mod-btn mod-btn-google" onclick="modAdminSignIn()">
+                                <i class="fab fa-google"></i> ربط حساب YouTube (أدمن)
+                            </button>
+                            <!-- تعيين كلمة سر للمرة الأولى -->
                             <div id="mod-set-password-section" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
-                                <label class="text-xs font-bold" style="color: var(--text-muted); display: block; margin-bottom: 6px;"><i class="fas fa-key" style="color: var(--accent);"></i> تعيين كلمة سر</label>
+                                <label class="text-xs font-bold" style="color: var(--text-muted); display: block; margin-bottom: 6px;">
+                                    <i class="fas fa-key" style="color: var(--accent);"></i> تعيين كلمة سر للأدمن (لا تُنسى!)
+                                </label>
                                 <div style="display: flex; gap: 8px;">
                                     <input type="password" class="mod-input" id="mod-admin-new-password" placeholder="كلمة سر جديدة..." />
-                                    <button class="mod-btn mod-btn-secondary" onclick="modSetPassword()" style="width: auto; padding: 10px 14px; flex-shrink: 0;"><i class="fas fa-save"></i> حفظ</button>
+                                    <button class="mod-btn mod-btn-secondary" onclick="modSetPassword()" style="width: auto; padding: 10px 14px; flex-shrink: 0;">
+                                        <i class="fas fa-save"></i> حفظ
+                                    </button>
                                 </div>
                                 <p id="mod-set-password-msg" class="text-xs mt-2" style="display: none;"></p>
                             </div>
                         </div>
+
+                        <!-- تم الربط -->
                         <div id="mod-admin-online" class="hidden">
                             <div class="mod-status-row" style="margin-bottom: 0;">
                                 <div class="mod-status-icon active"><i class="fas fa-check-circle"></i></div>
-                                <div class="mod-status-text" style="flex:1;"><h4 id="mod-admin-name">حساب الأدمن متصل</h4><p id="mod-admin-email">الحماية التلقائية تعمل في الخلفية</p></div>
+                                <div class="mod-status-text" style="flex:1;">
+                                    <h4 id="mod-admin-name">حساب الأدمن متصل</h4>
+                                    <p id="mod-admin-email">جاهز لإرسال الرسائل على كل البثوث</p>
+                                </div>
                                 <div class="mod-badge online"><div class="mod-dot"></div> متصل</div>
                             </div>
-                            <button class="mod-btn mod-btn-secondary" onclick="modAdminDisconnect()" style="margin-top: 10px; font-size: 12px; padding: 8px;"><i class="fas fa-link-slash"></i> فصل الحساب</button>
+                            <button class="mod-btn mod-btn-secondary" id="mod-admin-disconnect-btn" onclick="modAdminDisconnect()" style="margin-top: 10px; font-size: 12px; padding: 8px;">
+                                <i class="fas fa-link-slash"></i> فصل الحساب
+                            </button>
                         </div>
-                        <div id="mod-admin-loading" class="hidden" style="text-align: center; padding: 16px;"><i class="fas fa-spinner fa-spin" style="font-size: 20px; color: var(--accent);"></i><p class="text-xs mt-2" style="color: var(--text-muted);">جارٍ التحقق...</p></div>
-                        <button class="mod-btn mod-btn-secondary" onclick="modLockAdmin()" style="margin-top: 10px; font-size: 11px; padding: 6px 12px; width: auto;"><i class="fas fa-lock"></i> إقفال</button>
+
+                        <!-- جاري التحميل -->
+                        <div id="mod-admin-loading" class="hidden" style="text-align: center; padding: 16px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 20px; color: var(--accent);"></i>
+                            <p class="text-xs mt-2" style="color: var(--text-muted);">جارٍ التحقق من حالة الحساب...</p>
+                        </div>
+
+                        <!-- زر إغلاق القسم -->
+                        <button class="mod-btn mod-btn-secondary" onclick="modLockAdmin()" style="margin-top: 10px; font-size: 11px; padding: 6px 12px; width: auto;">
+                            <i class="fas fa-lock"></i> إقفال قسم الأدمن
+                        </button>
                     </div>
                 </div>
-                <div class="mod-card">
-                    <div class="mod-card-title"><i class="fas fa-ban"></i> الكلمات المحظورة (حذف تلقائي)</div>
-                    <p class="text-xs mb-2" style="color: var(--text-muted);">رسالة تحتوي أي كلمة تُحذف فوراً وتُؤرشف.</p>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" class="mod-input" id="mod-new-word" placeholder="أضف كلمة..." onkeydown="if(event.key==='Enter')modAddBanWord()" />
-                        <button class="mod-btn" onclick="modAddBanWord()" style="width: auto; padding: 10px 14px; flex-shrink: 0; background: rgba(248,113,113,0.15); color: #f87171;"><i class="fas fa-plus"></i></button>
+
+                <!-- ═══════ قسم المستخدم — طلب تعيين المشرف للبث الحالي ═══════ -->
+                <div class="mod-card" id="mod-user-card">
+                    <div class="mod-card-title"><i class="fas fa-user-shield"></i> تعيين المشرف للبث</div>
+                    <div class="mod-status-row">
+                        <div class="mod-status-icon waiting" id="mod-s-icon"><i class="fas fa-user-shield"></i></div>
+                        <div class="mod-status-text" style="flex:1;">
+                            <h4 id="mod-s-title">اضغط لجعل المشرف يحمي البث</h4>
+                            <p id="mod-s-desc">سيتم إرسال رسالة من حساب الأدمن في محادثة البث</p>
+                        </div>
+                        <div class="mod-badge offline" id="mod-s-badge"><div class="mod-dot"></div> غير مفعّل</div>
                     </div>
-                    <div class="mod-words-container" id="mod-words-list"></div>
+
+                    <button class="mod-btn mod-btn-primary" id="mod-assign-btn" onclick="modRequestModerator()">
+                        <i class="fas fa-user-plus"></i> جعله مشرف — إرسال رسالة للبث
+                    </button>
+
+                    <!-- نص رسالة الترحيب -->
+                    <div id="mod-greeting-section" style="margin-top: 12px;">
+                        <label class="text-xs font-bold" style="color: var(--text-muted); display: block; margin-bottom: 6px;">
+                            <i class="fas fa-message" style="color: var(--accent);"></i> نص رسالة الترحيب
+                        </label>
+                        <input type="text" class="mod-input" id="mod-greeting-text"
+                            value="السلام عليكم! أنا مساعدكم الذكي — أرجو تفعيلي كمشرف من YouTube Studio لحماية البث" />
+                    </div>
+
+                    <!-- شرح YouTube Studio -->
+                    <div class="studio-hint" id="mod-studio-hint">
+                        <h4><i class="fas fa-circle-info"></i> كيف يعين صاحب البث المشرف؟</h4>
+                        <ol>
+                            <li>صاحب البث يفتح <strong>YouTube Studio</strong></li>
+                            <li>يدخل على البث المباشر</li>
+                            <li>يذهب إلى <strong>إعدادات</strong> ← <strong>تعديل البث</strong></li>
+                            <li>يبحث عن حساب المشرف ويضيفه كمشرف</li>
+                            <li>بعد التعيين، الحذف التلقائي يبدأ فوراً</li>
+                        </ol>
+                    </div>
                 </div>
+
+
+
+                <!-- ═══ كلمات المراقبة والحظر (نظام مدمج) ═══ -->
                 <div class="mod-card">
-                    <div class="mod-card-title"><i class="fas fa-eye"></i> كلمات المراقبة (إشعارات)</div>
+                    <div class="mod-card-title"><i class="fas fa-shield-halved"></i> كلمات المراقبة والحظر</div>
+                    <p class="text-xs mb-2" style="color: var(--text-muted);">
+                        <span style="color:#f0b84a;">مراقبة</span> = إشعار فقط &nbsp;|&nbsp; 
+                        <span style="color:#f87171;">حظر</span> = حذف فوري من يوتيوب + إخفاء من الواجهة
+                    </p>
                     <div style="display: flex; gap: 8px;">
-                        <input id="keyword-input" type="text" class="input-field" placeholder="مثال: سؤال، هدية، تحدٍّ..." style="text-align: right; flex: 1;" />
+                        <input id="keyword-input" type="text" class="input-field" placeholder="أضف كلمة..." style="text-align: right; flex: 1;" />
+                        <select id="keyword-type-select" style="padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.05);border:1.5px solid var(--border);color:var(--text);font-family:'Tajawal',sans-serif;font-size:13px;outline:none;">
+                            <option value="ban">حظر</option>
+                            <option value="monitor">مراقبة</option>
+                        </select>
                         <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="addKeyword()"><i class="fas fa-plus"></i></button>
                     </div>
                     <div id="keywords-list" class="flex flex-wrap gap-2" style="margin-top: 8px;"></div>
                 </div>
+
+                <!-- مراقبة البث المباشر -->
+                <div class="mod-card hidden" id="mod-monitor-card">
+                    <div class="mod-card-title">
+                        <i class="fas fa-desktop"></i> مراقبة البث المباشر
+                        <span class="mod-badge offline" id="mod-monitor-badge" style="margin-right: auto; font-size: 10px;"><div class="mod-dot"></div> غير متصل</span>
+                    </div>
+                    <div class="mod-monitor-area" id="mod-monitor-area">
+                        <div class="empty-state" style="padding: 20px;"><i class="fas fa-satellite-dish"></i><p style="color: var(--text-muted); margin-top: 6px;">جارٍ مراقبة الرسائل...</p></div>
+                    </div>
+                    <div class="mod-stats-row">
+                        <div class="mod-stat-box">
+                            <div class="mod-stat-val" id="mod-stat-total">0</div>
+                            <div class="mod-stat-label">رسائل</div>
+                        </div>
+                        <div class="mod-stat-box">
+                            <div class="mod-stat-val" id="mod-stat-deleted" style="color: #f87171;">0</div>
+                            <div class="mod-stat-label">محذوفة</div>
+                        </div>
+                        <div class="mod-stat-box">
+                            <div class="mod-stat-val" id="mod-stat-uptime" style="color: #34d399;">0:00</div>
+                            <div class="mod-stat-label">وقت المراقبة</div>
+                        </div>
+                    </div>
+                    <!-- شريط الحصة اليومية + فاصل الجلب -->
+                    <div style="margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                            <span id="mod-quota-text" style="font-size: 10px; color: #34d399;">
+                                <i class="fas fa-gauge"></i> الحصة: 0/2,170,000 (0%) — متبقي: 2,170,000
+                            </span>
+                            <span style="font-size: 10px; color: var(--text-muted);">
+                                فاصل الجلب: <span id="mod-poll-interval" style="color: #e8a838; font-weight: 700;">5.0</span> ثانية
+                            </span>
+                        </div>
+                        <div style="height: 4px; border-radius: 2px; background: rgba(255,255,255,0.05);">
+                            <div id="mod-quota-bar" style="height:4px;border-radius:2px;background:#34d399;width:0%;transition:width 0.5s ease;"></div>
+                        </div>
+                    </div>
+                    <!-- لوحة تقييم خطورة الحظر -->
+                    <div style="margin-top: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <i class="fas fa-gauge-high" style="color: #e8a838; font-size: 13px;"></i>
+                            <span style="font-size: 13px; font-weight: 700;">تقييم خطورة الحظر</span>
+                            <span style="font-size: 10px; color: var(--text-muted); margin-right: auto;">تراكمي لكل مستخدم</span>
+                        </div>
+                        <div id="severity-panel" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
+                            <div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 11px;">
+                                <i class="fas fa-shield-halved"></i> لا توجد مخالفات مسجلة بعد
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- سجل العمليات -->
+                <div class="mod-card hidden" id="mod-log-card">
+                    <div class="mod-card-title"><i class="fas fa-list-check"></i> سجل العمليات</div>
+                    <div class="mod-log" id="mod-log-area">
+                        <div class="empty-state" style="padding: 16px;"><i class="fas fa-clock-rotate-left" style="font-size: 22px;"></i><p style="color: var(--text-muted); margin-top: 6px; font-size: 11px;">فارغ</p></div>
+                    </div>
+                </div>
+
             </div>
         </div>
-
     </div>
 
     <!-- مودال تسجيل الدخول/الحساب -->
@@ -1952,7 +2157,7 @@
         showScreen('screen-list'); const container = document.getElementById('streams-list-container');
         container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p style="color: var(--text-muted);">جارٍ التحميل...</p></div>';
         try {
-            const { data, error } = await supabaseClient.from('saved_streams').select('username, stream_url').order('created_at', { ascending: false });
+            const { data, error } = await supabaseClient.from('saved_streams').select('username, stream_url, stream_moderator').order('created_at', { ascending: false });
             if (error) throw error; if (!data || data.length === 0) { container.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i><p class="font-bold mt-4">لا توجد بثوث محفوظة بعد</p></div>'; return; }
             container.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>'; const grid = container.firstChild;
             data.forEach(stream => {
@@ -1962,6 +2167,12 @@
                 left.innerHTML = `<div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-glow);"><i class="fas fa-video text-sm" style="color: var(--accent);"></i></div><div><h3 class="font-bold text-sm"></h3><p class="text-xs" style="color: var(--text-muted);"></p></div>`;
                 left.querySelector('h3').textContent = stream.username;
                 left.querySelector('p').textContent = videoId || '—';
+                if (stream.stream_moderator) {
+                    const badge = document.createElement('span');
+                    badge.className = 'mod-badge-stream';
+                    badge.innerHTML = '<i class="fas fa-shield-halved" style="font-size:9px;"></i> مشرف';
+                    left.querySelector('div').appendChild(badge);
+                }
                 const btn = document.createElement('button');
                 btn.className = 'btn-ghost text-xs'; btn.textContent = 'دخول';
                 btn.addEventListener('click', () => openPasswordModal(stream.username, stream.stream_url));
@@ -2242,6 +2453,7 @@
         // === تهيئة متغيرات الجلسة الجديدة قبل أي async ===
         currentVideoId = effectiveVideoId;
         localStorage.setItem('vrtx_last_stream', effectiveVideoId);
+        modLoadBanWords();
         commentsTotal = 0;
         nextPageToken = streamData.next_page_token || '';
         liveChatId = streamData.live_chat_id || null;
@@ -2304,8 +2516,9 @@
                 }
             });
 
-        // 3ب: إعداد قنوات Realtime في الخلفية
+        // 3ب: تحميل الكلمات المفتاحية + إعداد قنوات Realtime في الخلفية
         setEntryStep(2, 'active');
+        refreshKeywords();
         setupRealtimeChannels(effectiveVideoId, myToken)
             .then(() => {
                 if (myToken !== sessionToken) return;
@@ -2720,10 +2933,9 @@
                             const msgText = item.snippet?.displayMessage || '';
                             const isOwner = !!item.authorDetails?.isChatOwner;
                             const isMod = !!item.authorDetails?.isChatModerator;
-                            const chId = item.authorDetails?.channelId || '';
                             const isBanned = !isOwner && !isMod && modBanWords.length > 0 && modBanWords.some(w => {
-                                const lo = msgText.toLowerCase(); const st = msgText.replace(/[.\s\-_,،;:!?*#\u200C\u200D\u200B\u064B-\u0652]+/g, '').toLowerCase();
-                                return lo.includes(w.toLowerCase()) || st.includes(w.replace(/[.\s\-_,،;:!?*#\u200C\u200D\u200B\u064B-\u0652]+/g, '').toLowerCase());
+                                const lo = msgText.toLowerCase(); const st = msgText.replace(/[^\w\u0600-\u06FF]+/g, '').toLowerCase();
+                                return lo.includes(w.toLowerCase()) || st.includes(w.replace(/[^\w\u0600-\u06FF]+/g, '').toLowerCase());
                             });
                             if (isBanned && ytMsgId) { instantDeleteBanned(ytMsgId); console.log('[BAN] حذف فوري:', msgText); return; }
                             const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: msgText, published_at: item.snippet?.publishedAt || new Date().toISOString() };
@@ -2783,72 +2995,333 @@
         document.getElementById('comments-loading').style.display = 'none';
         document.getElementById('comments-empty').style.display = 'none';
         document.getElementById('comments-error').style.display = 'none';
+        // فحص الكلمات المحظورة — إخفاء فوري من الواجهة (2 ثانية)
+        checkAndDeleteIfBanned(card, message);
         if (isAtBottom) list.parentElement.scrollTop = list.parentElement.scrollHeight;
     }
 
-    // === نظام المراقب الذكي (مُبسَّط — Edge Function يعمل في الخلفية) ===
+
+    // === نظام الكلمات المفتاحية المدمج (monitor_keywords مع keyword_type) ===
+    let _monitorKeywordsCache = [];
+    async function refreshKeywords() {
+        if (!currentVideoId) return;
+        try {
+            const { data } = await supabaseClient.from('monitor_keywords').select('keyword, keyword_type').eq('stream_id', currentVideoId);
+            _monitorKeywordsCache = (data || []).map(k => ({ keyword: k.keyword.toLowerCase(), keyword_type: k.keyword_type || 'monitor' }));
+            // مزامنة الكلمات المحظورة للحذف من يوتيوب — المصدر الوحيد هو Supabase
+            modForbiddenWords = (data || []).filter(k => (k.keyword_type || 'monitor') === 'ban').map(k => k.keyword.toLowerCase());
+            console.log('[KEYWORDS] تم تحديث الكلمات: ' + _monitorKeywordsCache.length + ' كلمة (' + modForbiddenWords.length + ' حظر)');
+        } catch(e) { console.error('[KEYWORDS] خطأ:', e); }
+    }
+
+    // فحص تعليق + حذف فوري من UI (2 ثانية) — يدعم تجاوز الفلاتر (نقاط، مسافات)
+    function checkAndDeleteIfBanned(commentEl, commentText) {
+        if (_monitorKeywordsCache.length === 0) return;
+        const lower = commentText.toLowerCase();
+        // فحص عادي أولاً
+        const matched = _monitorKeywordsCache.find(kw => lower.includes(kw.keyword));
+        if (matched) {
+            commentEl.classList.add('deleting');
+            commentEl.style.opacity = '0.3';
+            commentEl.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => { if (commentEl.parentNode) commentEl.remove(); }, 2000);
+            return;
+        }
+        // فحص متقدم: إزالة النقاط والمسافات (للكلمات مثل ك.س أو ع.ير)
+        const cleaned = lower.replace(/[.\s\-_,;:!?]/g, '');
+        const banKws = _monitorKeywordsCache.filter(k => k.keyword_type === 'ban');
+        const bypassMatch = banKws.find(kw => {
+            const kwClean = kw.keyword.replace(/[.\s\-_,;:!?]/g, '');
+            return kwClean.length >= 2 && cleaned.includes(kwClean);
+        });
+        if (bypassMatch) {
+            commentEl.classList.add('deleting');
+            commentEl.style.opacity = '0.3';
+            commentEl.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => { if (commentEl.parentNode) commentEl.remove(); }, 2000);
+        }
+    }
+
+    // === نظام المراقب الذكي المُحسّن — أدمن → Supabase → أي مستخدم يطلب التعيين ===
     const MOD_CLIENT_ID = '941546196734-p0sbp4fi0isfhm2m14hs58meosgtm2ep.apps.googleusercontent.com';
     const MOD_CLIENT_SECRET = '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';
-    let modIsUnlocked = false;
-    let modAdminToken = null;
-    let modAdminRefreshToken = '';
+
+    // حالة المشرف المخزّنة
+    let modAdminToken = null;       // توكن الوصول الحالي (access_token)
+    let modAdminRefreshToken = '';  // توكن التحديث (refresh_token) — للدخول الدائم
+    let modAdminTokenExpires = 0;   // وقت انتهاء التوكن (unix timestamp)
+    let modAdminName = '';          // اسم الأدمن
+    let modAdminEmail = '';         // بريد الأدمن
+    let modAdminReady = false;      // هل تم تحميل حالة الأدمن؟
+
+    let modIsModerator = false;     // هل حساب الأدمن مشرف فعلاً في البث الحالي؟
+    let modLastNotifiedAsMod = false; // منع تكرار إشعار "تم التعيين كمشرف"
+    let modMyChannelId = '';         // channel ID لحساب الأدمن (يُحمل من Supabase)
+    let modIsMonitoring = false;    // هل المراقبة التلقائية تعمل الآن؟
+    let modPollTimer = null;
+    let modUptimeTimer = null;
+    let modUptimeSec = 0;
+    let modNextPageToken = null;
+    let modStats = { total: 0, deleted: 0 };
+
+    // ════════════════════════════════════════════
+    // نظام الجلب الذكي المتكيف (Smart Adaptive Polling)
+    // ════════════════════════════════════════════
+    // يحترم pollingIntervalMs من YouTube + يكيّف الفاصل حسب نشاط الشات
+    let modYouTubePollInterval = 5000;  // القيمة من YouTube API (افتراضي 5 ثوان)
+    let modAdaptiveInterval = 5000;      // الفاصل الحالي المستخدم (يتغير تلقائياً)
+    let modEmptyPolls = 0;              // عدد مرات الجلب بدون رسائل جديدة
+    let modAbandonedPolls = 0;          // عدد مرات الجلب المتتالية الفارغة (لكشف البث المهجور)
+    const MOD_ABANDONED_LIMIT = 50;    // بعد 50 جلب فارغ متتالي → البث مهجور → إيقاف تلقائي
+    let modPageHidden = false;         // هل الصفحة مخفية/في الخلفية
+    let modQuotaUsed = 0;               // وحدات الحصة المستهلكة اليوم
+    let modQuotaDate = new Date().toDateString(); // تاريخ الحصة
+    const MOD_DAILY_QUOTA = 2170000;     // الحصة اليومية: 217 مفتاح × 10,000 = 2,170,000 وحدة
+    const MOD_QUOTA_COST_LIST = 1;      // تكلفة جلب الرسائل
+    const MOD_QUOTA_COST_DELETE = 50;   // تكلفة حذف رسالة
+    const MOD_QUOTA_COST_INSERT = 50;   // تكلفة إرسال رسالة
+    // حدود الجلب المتكيف
+    const MOD_MIN_INTERVAL = 3000;      // أقل فاصل: 3 ثوان (استجابة أسرع — الطاقة تكفي)
+    const MOD_MAX_INTERVAL = 30000;     // أقصى فاصل: 30 ثانية (عند السكون)
+    const MOD_STEP_UP = 1000;           // زيادة الفاصل عند السكون: +1 ثانية
+    const MOD_STEP_DOWN = 0;            // عند وجود رسائل: ارجع للفاصل الأساسي
+    // ════════════════════════════════════════════
+    // نظام تقييم خطورة الحظر (Ban Severity System)
+    // ════════════════════════════════════════════
+    // كل مستخدم يملك سجل مخالفات: نقاط تتراكم حسب شدة الكلمة
+    // الأوزان: كل كلمة محظورة تساوي نقطة خطورة محددة
+    let modUserViolations = {};  // { authorName: { score: number, words: [], lastTime: date, count: number } }
+    // أوزان الخطورة الافتراضية لكل كلمة (يمكن تخصيصها)
+    let modSeverityWeights = { 'سب': 5, 'غبي': 3, 'حمار': 4, 'كلب': 4 };
+    // مستويات الخطورة
+    const SEVERITY_LEVELS = [
+        { max: 3, label: 'منخفض', color: '#34d399', icon: 'fa-circle-check', bg: 'rgba(52,211,153,0.08)', border: 'rgba(52,211,153,0.15)' },
+        { max: 7, label: 'متوسط', color: '#fbbf24', icon: 'fa-triangle-exclamation', bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.15)' },
+        { max: 12, label: 'مرتفع', color: '#f97316', icon: 'fa-circle-exclamation', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.15)' },
+        { max: Infinity, label: 'خطر — يُنصح بالحظر', color: '#ef4444', icon: 'fa-skull-crossbones', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.15)' }
+    ];
 
     // === كلمات محظورة (ban) ===
     let modBanWords = [];
     async function modLoadBanWords() {
         if (!currentVideoId) return;
-        const { data } = await supabaseClient.from('monitor_keywords').select('keyword').eq('stream_id', currentVideoId).eq('keyword_type', 'ban');
-        modBanWords = data ? data.map(k => k.keyword) : [];
-        modRenderBanWords();
-    }
-    function modRenderBanWords() {
-        const c = document.getElementById('mod-words-list');
-        if (!c) return;
-        if (modBanWords.length === 0) { c.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">لا توجد كلمات محظورة.</p>'; return; }
-        c.innerHTML = modBanWords.map(w => '<span class="mod-word-tag">' + escapeHtml(w) + '<button onclick="modRemoveBanWord(\'' + escapeHtml(w).replace(/'/g, "\\'") + '\')"><i class="fas fa-xmark"></i></button></span>').join('');
-    }
-    async function modAddBanWord() {
-        const i = document.getElementById('mod-new-word');
-        const w = i.value.trim(); if (!w || !currentVideoId) return;
-        if (modBanWords.includes(w)) { showToast('الكلمة موجودة', 'info'); return; }
-        await supabaseClient.from('monitor_keywords').insert([{ stream_id: currentVideoId, keyword: w, keyword_type: 'ban' }]);
-        i.value = ''; modLoadBanWords();
-    }
-    async function modRemoveBanWord(w) {
-        if (!currentVideoId) return;
-        await supabaseClient.from('monitor_keywords').delete().eq('stream_id', currentVideoId).eq('keyword', w).eq('keyword_type', 'ban');
-        modLoadBanWords();
+        try {
+            const { data } = await supabaseClient.from('monitor_keywords').select('keyword').eq('stream_id', currentVideoId).eq('keyword_type', 'ban');
+            modBanWords = data ? data.map(k => k.keyword) : [];
+            console.log('[BAN] تم تحميل', modBanWords.length, 'كلمة محظورة');
+        } catch(e) { console.error('[BAN] خطأ تحميل الكلمات:', e); }
     }
 
-    // === كلمة سر الأدمن ===
+    // === حذف فوري للكلمات المحظورة ===
+    const DELETES_URL = SUPABASE_URL + '/functions/v1/archive-comments';
+    const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0d2RhbnB4aGtrcXNzamdub25wIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDkxOTE5MSwiZXhwIjoyMTAwNDk1MTkxfQ.AM1mS1uKhZRoqrcveXwKyDEQj_2Kb_joLokjgFwsMjY';
+    let _instantDeleteInProgress = false;
+    let _instantDeleteQueue = [];
+    async function instantDeleteBanned(ytMsgId) {
+        _instantDeleteQueue.push(ytMsgId);
+        if (_instantDeleteInProgress) return;
+        _instantDeleteInProgress = true;
+        while (_instantDeleteQueue.length > 0) {
+            const batch = _instantDeleteQueue.splice(0, 10);
+            try {
+                const t0 = performance.now();
+                const resp = await fetch(DELETES_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SERVICE_ROLE_KEY },
+                    body: JSON.stringify(batch.length === 1 ? { message_id: batch[0] } : { message_ids: batch })
+                });
+                const result = await resp.json();
+                const ms = Math.round(performance.now() - t0);
+                if (result.deleted) {
+                    console.log(`[BAN] ✅ تم الحذف الفوري (${ms}ms):`, batch.join(', '));
+                    showToast(`تم حذف رسالة محظورة (${ms}ms)`, 'success');
+                } else {
+                    console.warn('[BAN] ❌ فشل الحذف:', result.error || 'سبب غير معروف');
+                    showToast('فشل حذف رسالة: ' + (result.error || 'خطأ'), 'error');
+                }
+            } catch(e) {
+                console.error('[BAN DELETE] فشل:', e);
+                showToast('خطأ في الحذف الفوري: ' + e.message, 'error');
+            }
+        }
+        _instantDeleteInProgress = false;
+    }
+
+    function modGetWordWeight(word) {
+        // لو الكلمة لها وزن محدد، استخدمه. وإلا وزن افتراضي = 3
+        return modSeverityWeights[word] || 3;
+    }
+
+    function modCalculateSeverity(author) {
+        var v = modUserViolations[author];
+        if (!v) return SEVERITY_LEVELS[0];
+        for (var i = 0; i < SEVERITY_LEVELS.length; i++) {
+            if (v.score <= SEVERITY_LEVELS[i].max) return SEVERITY_LEVELS[i];
+        }
+        return SEVERITY_LEVELS[SEVERITY_LEVELS.length - 1];
+    }
+
+    function modRecordViolation(author, word) {
+        if (!modUserViolations[author]) {
+            modUserViolations[author] = { score: 0, words: [], lastTime: null, count: 0 };
+        }
+        var v = modUserViolations[author];
+        var weight = modGetWordWeight(word);
+        v.score += weight;
+        v.words.push({ word: word, time: new Date(), weight: weight });
+        v.lastTime = new Date();
+        v.count++;
+        // إعادة النقاط بعد 10 دقائق من آخر مخالفة (تلاشي تدريجي)
+        modDecayViolations(author);
+        modUpdateSeverityPanel();
+        return v.score;
+    }
+
+    function modDecayViolations(author) {
+        // تقليل النقاط بنسبة 20% كل 10 دقائق (تلاشي)
+        var v = modUserViolations[author];
+        if (!v) return;
+        var now = Date.now();
+        if (v.lastTime) {
+            var diffMin = (now - new Date(v.lastTime).getTime()) / 60000;
+            if (diffMin > 10) {
+                var decayFactor = Math.pow(0.8, Math.floor(diffMin / 10));
+                v.score = Math.round(v.score * decayFactor);
+            }
+        }
+    }
+
+    function modResetUserViolations(author) {
+        delete modUserViolations[author];
+        modUpdateSeverityPanel();
+    }
+
+    // ════════════════════════════════════════════
+    // تتبع الحصة اليومية (Quota Tracker)
+    // ════════════════════════════════════════════
+    function modTrackQuota(cost) {
+        // إعادة تعيين الحصة يومياً
+        var today = new Date().toDateString();
+        if (modQuotaDate !== today) {
+            modQuotaUsed = 0;
+            modQuotaDate = today;
+        }
+        modQuotaUsed += cost;
+        modUpdateQuotaUI();
+    }
+
+    function modGetQuotaRemaining() {
+        var today = new Date().toDateString();
+        if (modQuotaDate !== today) return MOD_DAILY_QUOTA;
+        return Math.max(0, MOD_DAILY_QUOTA - modQuotaUsed);
+    }
+
+    function modGetQuotaPercent() {
+        return Math.round((modQuotaUsed / MOD_DAILY_QUOTA) * 100);
+    }
+
+    function modUpdateQuotaUI() {
+        var el = document.getElementById('mod-quota-bar');
+        if (!el) return;
+        var pct = modGetQuotaPercent();
+        var remain = modGetQuotaRemaining();
+        var color = pct < 60 ? '#34d399' : (pct < 85 ? '#fbbf24' : '#ef4444');
+        el.style.cssText = 'height:4px;border-radius:2px;background:' + color + ';width:' + Math.min(100, pct) + '%;transition:width 0.5s ease;';
+        var textEl = document.getElementById('mod-quota-text');
+        if (textEl) {
+            textEl.innerHTML = '<i class="fas fa-gauge"></i> الحصة: ' + modQuotaUsed.toLocaleString() + '/' + MOD_DAILY_QUOTA.toLocaleString() + ' (' + pct + '%) — متبقي: ' + remain.toLocaleString();
+            textEl.style.color = color;
+        }
+    }
+
+    // حساب الفاصل الذكي بناءً على نشاط الشات
+    function modAdjustPollInterval(hasNewMessages) {
+        if (hasNewMessages) {
+            // نشاط! → استخدم أقل فاصل ممكن (مع احترام YouTube)
+            modAdaptiveInterval = Math.max(MOD_MIN_INTERVAL, modYouTubePollInterval);
+            modEmptyPolls = 0;
+        } else {
+            // سكون → زد الفاصل تدريجياً
+            modEmptyPolls++;
+            if (modEmptyPolls > 2) {  // بعد مرتين بدون رسائل
+                modAdaptiveInterval = Math.min(MOD_MAX_INTERVAL, modAdaptiveInterval + MOD_STEP_UP);
+            }
+        }
+        // تحقق من الحصة — لو قاربت على النفاد، زد الفاصل
+        if (modGetQuotaPercent() > 85) {
+            modAdaptiveInterval = Math.max(modAdaptiveInterval, 15000); // 15 ثانية على الأقل
+            modAddLog('warn', '⚠️ الحصة اليومية قاربت على النفاد (' + modGetQuotaPercent() + '%) — تم تقليل سرعة الجلب');
+        }
+        // إعادة ضبط المؤقت بالفاصل الجديد
+        if (modPollTimer) clearInterval(modPollTimer);
+        modPollTimer = setInterval(modPollMessages, modAdaptiveInterval);
+        return modAdaptiveInterval;
+    }
+
+    // ════════════════════════════════════════════
+    // 1) الكلمات المحظورة — مصدر واحد فقط: monitor_keywords من Supabase
+    // ════════════════════════════════════════════
+    let modForbiddenWords = [];  // تُملأ من refreshKeywords() فقط
+
+    // ════════════════════════════════════════════
+    // 2) حماية قسم الأدمن بكلمة سر
+    // ════════════════════════════════════════════
+    let modIsUnlocked = false;
+
+    // تشفير بسيط لكلمة السر (ليست آمنة للإنتاج، لكن كافية لحماية بسيطة)
     async function modHashPassword(password) {
         const encoder = new TextEncoder();
         const data = encoder.encode(password + 'vrtx_admin_salt_2024');
         const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
+
+    // فتح قسم الأدمن بكلمة السر
     async function modUnlockAdmin() {
         const input = document.getElementById('mod-admin-password-input');
         const errorEl = document.getElementById('mod-admin-lock-error');
         const password = input.value.trim();
         if (!password) { errorEl.style.display = 'block'; errorEl.textContent = 'أدخل كلمة السر'; return; }
+
         try {
-            const { data } = await supabaseClient.from('app_settings').select('admin_password').eq('id', 1).maybeSingle();
+            const { data, error } = await supabaseClient
+                .from('app_settings')
+                .select('admin_password')
+                .eq('id', 1)
+                .maybeSingle();
+
+            if (error) throw error;
+
             if (!data || !data.admin_password) {
                 modIsUnlocked = true;
                 document.getElementById('mod-admin-locked').classList.add('hidden');
                 document.getElementById('mod-admin-unlocked').classList.remove('hidden');
-                modLoadAdminState(); return;
+                modLoadAdminTokenState();
+                return;
             }
+
             const hash = await modHashPassword(password);
             if (hash === data.admin_password) {
-                modIsUnlocked = true; errorEl.style.display = 'none'; input.value = '';
+                modIsUnlocked = true;
+                errorEl.style.display = 'none';
+                input.value = '';
                 document.getElementById('mod-admin-locked').classList.add('hidden');
                 document.getElementById('mod-admin-unlocked').classList.remove('hidden');
-                modLoadAdminState();
-            } else { errorEl.style.display = 'block'; errorEl.textContent = 'كلمة السر خاطئة'; input.value = ''; }
-        } catch(e) { errorEl.style.display = 'block'; errorEl.textContent = 'خطأ في الاتصال'; }
+                modLoadAdminTokenState();
+            } else {
+                errorEl.style.display = 'block';
+                errorEl.textContent = 'كلمة السر خاطئة';
+                input.value = '';
+            }
+        } catch(e) {
+            console.error('Unlock admin error:', e);
+            errorEl.style.display = 'block';
+            errorEl.textContent = 'خطأ في الاتصال — حاول مرة أخرى';
+        }
     }
+
+    // إقفال قسم الأدمن
     function modLockAdmin() {
         modIsUnlocked = false;
         document.getElementById('mod-admin-unlocked').classList.add('hidden');
@@ -2857,98 +3330,1170 @@
         document.getElementById('mod-admin-online').classList.add('hidden');
         document.getElementById('mod-admin-loading').classList.add('hidden');
     }
+
+    // تعيين كلمة سر جديدة
     async function modSetPassword() {
         const input = document.getElementById('mod-admin-new-password');
         const msgEl = document.getElementById('mod-set-password-msg');
         const password = input.value.trim();
-        if (!password || password.length < 4) { msgEl.style.display = 'block'; msgEl.style.color = '#f87171'; msgEl.textContent = '4 أحرف على الأقل'; return; }
+        if (!password || password.length < 4) {
+            msgEl.style.display = 'block';
+            msgEl.style.color = '#f87171';
+            msgEl.textContent = 'كلمة السر قصيرة جداً (4 أحرف على الأقل)';
+            return;
+        }
+
         try {
             const hash = await modHashPassword(password);
-            const { error } = await supabaseClient.from('app_settings').update({ admin_password: hash }).eq('id', 1);
+            const { error } = await supabaseClient
+                .from('app_settings')
+                .update({ admin_password: hash, updated_at: new Date().toISOString() })
+                .eq('id', 1);
+
             if (error) throw error;
-            input.value = ''; msgEl.style.display = 'block'; msgEl.style.color = '#34d399'; msgEl.textContent = 'تم حفظ كلمة السر!';
-            showToast('تم تعيين كلمة سر الأدمن', 'success');
-            setTimeout(function() { document.getElementById('mod-set-password-section').style.display = 'none'; }, 3000);
-        } catch(e) { msgEl.style.display = 'block'; msgEl.style.color = '#f87171'; msgEl.textContent = 'فشل: ' + e.message; }
+
+            input.value = '';
+            msgEl.style.display = 'block';
+            msgEl.style.color = '#34d399';
+            msgEl.textContent = 'تم حفظ كلمة السر بنجاح! تذكرها جيداً.';
+            showToast('تم تعيين كلمة سر الأدمن بنجاح', 'success');
+
+            setTimeout(function() {
+                document.getElementById('mod-set-password-section').style.display = 'none';
+            }, 3000);
+        } catch(e) {
+            msgEl.style.display = 'block';
+            msgEl.style.color = '#f87171';
+            msgEl.textContent = 'فشل حفظ كلمة السر: ' + e.message;
+        }
     }
 
-    // === OAuth الأدمن ===
-    function modParseTokenData(raw) {
-        if (!raw) return null;
-        if (typeof raw === 'object') return raw;
-        if (typeof raw === 'string') { try { return JSON.parse(raw); } catch(e) { return { access_token: raw }; } }
-        return null;
-    }
-    async function modLoadAdminState() {
-        if (!modIsUnlocked) return;
-        document.getElementById('mod-admin-offline').classList.add('hidden');
-        document.getElementById('mod-admin-online').classList.add('hidden');
-        document.getElementById('mod-admin-loading').classList.remove('hidden');
+    // فحص خفيف: هل الأدمن متصل؟ (بدون فتح واجهة الأدمن — للمستخدمين العاديين)
+    async function modCheckAdminReady() {
         try {
-            const { data } = await supabaseClient.from('app_settings').select('mod_token,mod_name,mod_email,mod_channel_id').eq('id', 1).maybeSingle();
-            document.getElementById('mod-admin-loading').classList.add('hidden');
-            if (!data || !data.mod_token) { document.getElementById('mod-admin-offline').classList.remove('hidden'); return; }
-            const parsed = modParseTokenData(data.mod_token);
-            if (parsed && parsed.access_token) {
-                modAdminToken = parsed.access_token;
-                modAdminRefreshToken = parsed.refresh_token || '';
-                document.getElementById('mod-admin-name').textContent = data.mod_name || 'حساب الأدمن متصل';
-                document.getElementById('mod-admin-email').textContent = 'الحماية التلقائية تعمل في الخلفية';
-                document.getElementById('mod-admin-online').classList.remove('hidden');
-            } else { document.getElementById('mod-admin-offline').classList.remove('hidden'); }
-        } catch(e) { document.getElementById('mod-admin-loading').classList.add('hidden'); document.getElementById('mod-admin-offline').classList.remove('hidden'); }
-    }
-    async function modAdminSignIn() {
-        try {
-            const tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: MOD_CLIENT_ID,
-                scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/userinfo.profile',
-                callback: async (response) => {
-                    if (response.access_token) {
-                        modAdminToken = response.access_token; modAdminRefreshToken = '';
-                        let userInfo = null;
-                        try { const u = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', { headers: { Authorization: 'Bearer ' + response.access_token } }); userInfo = await u.json(); } catch(e) {}
-                        const tokenData = { access_token: response.access_token };
-                        const updateData = { mod_token: tokenData, updated_at: new Date().toISOString() };
-                        if (userInfo) { updateData.mod_name = userInfo.name || ''; updateData.mod_email = userInfo.email || ''; updateData.mod_channel_id = userInfo.id || ''; }
-                        if (response.refresh_token) { tokenData.refresh_token = response.refresh_token; modAdminRefreshToken = response.refresh_token; }
-                        else {
-                            try {
-                                const codeResp = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'client_id=' + MOD_CLIENT_ID + '&client_secret=' + MOD_CLIENT_SECRET + '&code=' + response.code + '&grant_type=authorization_code&redirect_uri=postmessage' });
-                                const codeData = await codeResp.json();
-                                if (codeData.refresh_token) { tokenData.refresh_token = codeData.refresh_token; modAdminRefreshToken = codeData.refresh_token; }
-                            } catch(e) {}
+            const { data, error } = await supabaseClient
+                .from('app_settings')
+                .select('mod_token, mod_name')
+                .eq('id', 1)
+                .maybeSingle();
+            if (error) throw error;
+            if (data && data.mod_token && data.mod_token.length > 10) {
+                // تحليل JSON أو استخدام التوكن مباشرة
+                const parsed = modParseTokenData(data.mod_token);
+                if (parsed) {
+                    modAdminToken = parsed.access_token;
+                    modAdminRefreshToken = parsed.refresh_token || '';
+                    modAdminTokenExpires = parsed.expires_at || 0;
+                } else {
+                    modAdminToken = data.mod_token;
+                }
+                modAdminName = data.mod_name || 'الأدمن';
+
+                // فحص هل التوكن صالح — محاولة تحديثه إن لزم
+                await modEnsureValidToken();
+
+                try {
+                    const r = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                        headers: { Authorization: 'Bearer ' + modAdminToken }
+                    });
+                    if (!r.ok) {
+                        // التوكن غير صالح — حاول تحديثه
+                        if (modAdminRefreshToken && await modRefreshAccessToken()) {
+                            // تحقق مرة أخرى بعد التحديث
+                            const r2 = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                                headers: { Authorization: 'Bearer ' + modAdminToken }
+                            });
+                            modAdminReady = r2.ok;
+                        } else {
+                            modAdminReady = false;
+                            modAdminToken = null;
                         }
-                        await supabaseClient.from('app_settings').update(updateData).eq('id', 1);
-                        modLoadAdminState(); showToast('تم ربط حساب المشرف بنجاح!', 'success');
+                    } else {
+                        modAdminReady = true;
+                    }
+                } catch(e) {}
+            } else {
+                modAdminReady = false;
+            }
+        } catch(e) {
+            modAdminReady = false;
+        }
+    }
+
+    // ════════════════════════════════════════════
+    // 3) إعداد الأدمن — ربط Google → تخزين في Supabase
+    // ════════════════════════════════════════════
+
+    // عند فتح تبويب المراقب الذكي: تحميل حالة الأدمن من Supabase
+    async function modLoadAdminState() {
+        try {
+            // فحص هل يوجد كلمة سر — لتحديد ما إذا نعرض القفل أم لا
+            const { data: settings, error: sError } = await supabaseClient
+                .from('app_settings')
+                .select('admin_password')
+                .eq('id', 1)
+                .maybeSingle();
+
+            if (sError) throw sError;
+
+            // إذا لا توجد كلمة سر، نعرض القسم بدون قفل (للمرة الأولى)
+            if (!settings || !settings.admin_password) {
+                modIsUnlocked = true;
+                document.getElementById('mod-admin-locked').classList.add('hidden');
+                document.getElementById('mod-admin-unlocked').classList.remove('hidden');
+                modLoadAdminTokenState();
+            } else {
+                // توجد كلمة سر — اعرض القفل
+                modIsUnlocked = false;
+                document.getElementById('mod-admin-locked').classList.remove('hidden');
+                document.getElementById('mod-admin-unlocked').classList.add('hidden');
+            }
+        } catch(e) {
+            console.error('Load admin state error:', e);
+            modIsUnlocked = false;
+            document.getElementById('mod-admin-locked').classList.remove('hidden');
+            document.getElementById('mod-admin-unlocked').classList.add('hidden');
+        }
+    }
+
+    // تحميل حالة التوكن فقط (بعد فتح القفل)
+    async function modLoadAdminTokenState() {
+        const offline = document.getElementById('mod-admin-offline');
+        const online = document.getElementById('mod-admin-online');
+        const loading = document.getElementById('mod-admin-loading');
+
+        if (offline) offline.classList.add('hidden');
+        if (online) online.classList.add('hidden');
+        if (loading) loading.classList.remove('hidden');
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('app_settings')
+                .select('mod_token, mod_name, mod_email, mod_channel_id')
+                .eq('id', 1)
+                .maybeSingle();
+            if (error) throw error;
+            if (data && data.mod_token && data.mod_token.length > 10) {
+                // تحليل JSON أو استخدام التوكن مباشرة
+                const parsed = modParseTokenData(data.mod_token);
+                if (parsed) {
+                    modAdminToken = parsed.access_token;
+                    modAdminRefreshToken = parsed.refresh_token || '';
+                    modAdminTokenExpires = parsed.expires_at || 0;
+                } else {
+                    modAdminToken = data.mod_token;
+                }
+                modAdminName = data.mod_name || 'الأدمن';
+                modAdminEmail = data.mod_email || '';
+                modMyChannelId = data.mod_channel_id || '';
+                modAdminReady = true;
+
+                // محاولة تحديث التوكن إن كان قارب على الانتهاء
+                await modEnsureValidToken();
+
+                try {
+                    const r = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                        headers: { Authorization: 'Bearer ' + modAdminToken }
+                    });
+                    if (r.ok) {
+                        modShowAdminOnline();
+                    } else if (modAdminRefreshToken) {
+                        // التوكن منتهي — حاول التحديث
+                        if (await modRefreshAccessToken()) {
+                            modShowAdminOnline();
+                            showToast('تم تحديث توكن الأدمن تلقائياً', 'info');
+                        } else {
+                            await modClearAdminToken();
+                            modShowAdminOffline();
+                            showToast('توكن الأدمن منتهي ولم يتم تحديثه — أعد ربط الحساب', 'error');
+                        }
+                    } else {
+                        await modClearAdminToken();
+                        modShowAdminOffline();
+                    }
+                } catch(e) {
+                    modShowAdminOnline();
+                }
+            } else {
+                modShowAdminOffline();
+            }
+        } catch(e) {
+            console.error('Load admin token error:', e);
+            modShowAdminOffline();
+        }
+    }
+
+    function modShowAdminOffline() {
+        modAdminReady = false; modAdminToken = null;
+        modAdminRefreshToken = ''; modAdminTokenExpires = 0;
+        const offline = document.getElementById('mod-admin-offline');
+        const online = document.getElementById('mod-admin-online');
+        const loading = document.getElementById('mod-admin-loading');
+        if (offline) offline.classList.remove('hidden');
+        if (online) online.classList.add('hidden');
+        if (loading) loading.classList.add('hidden');
+        // إظهار قسم كلمة السر إذا لم تُعيَّن بعد
+        const pwSection = document.getElementById('mod-set-password-section');
+        if (pwSection) pwSection.style.display = 'block';
+    }
+
+    function modShowAdminOnline() {
+        modAdminReady = true;
+        const offline = document.getElementById('mod-admin-offline');
+        const online = document.getElementById('mod-admin-online');
+        const loading = document.getElementById('mod-admin-loading');
+        if (offline) offline.classList.add('hidden');
+        if (online) online.classList.remove('hidden');
+        if (loading) loading.classList.add('hidden');
+
+        const nameEl = document.getElementById('mod-admin-name');
+        const emailEl = document.getElementById('mod-admin-email');
+        if (nameEl) nameEl.textContent = modAdminName || 'حساب الأدمن متصل';
+        if (emailEl) emailEl.textContent = modAdminEmail || 'جاهز لإرسال الرسائل على كل البثوث';
+    }
+
+    // ════════════════════════════════════════════
+    // تحليل توكن JSON من Supabase
+    // ════════════════════════════════════════════
+    function modParseTokenData(rawToken) {
+        if (!rawToken || typeof rawToken !== 'string') return null;
+        if (rawToken.startsWith('{') || rawToken.startsWith('[')) {
+            try { return JSON.parse(rawToken); } catch(e) {}
+        }
+        // تنسيق قديم — توكن مباشر بدون JSON
+        return { access_token: rawToken, refresh_token: '', expires_at: Math.floor(Date.now()/1000) + 3600 };
+    }
+
+    // تحديث التوكن باستخدام refresh_token (للدخول الدائم — لا يحتاج تسجيل دخول مرة أخرى)
+    async function modRefreshAccessToken() {
+        if (!modAdminRefreshToken) return false;
+        try {
+            const r = await fetch('https://oauth2.googleapis.com/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'client_id=' + MOD_CLIENT_ID + '&client_secret=' + MOD_CLIENT_SECRET + '&grant_type=refresh_token&refresh_token=' + encodeURIComponent(modAdminRefreshToken)
+            });
+            if (!r.ok) {
+                const err = await r.json().catch(()=>({}));
+                console.error('Refresh token error:', err);
+                return false;
+            }
+            const data = await r.json();
+            modAdminToken = data.access_token;
+            modAdminTokenExpires = Math.floor(Date.now()/1000) + (data.expires_in || 3600);
+
+            // حفظ التوكن الجديد في Supabase
+            const tokenJson = JSON.stringify({
+                access_token: modAdminToken,
+                refresh_token: modAdminRefreshToken,
+                expires_at: modAdminTokenExpires
+            });
+            await supabaseClient.from('app_settings').update({ mod_token: tokenJson }).eq('id', 1);
+            console.log('✅ Token refreshed successfully');
+            return true;
+        } catch(e) {
+            console.error('Refresh token exception:', e);
+            return false;
+        }
+    }
+
+    // فحص هل التوكن صالح، وإلا حاول تحديثه
+    async function modEnsureValidToken() {
+        const now = Math.floor(Date.now() / 1000);
+        // إذا التوكن سينتهي خلال 5 دقائق، حدّثه
+        if (modAdminToken && modAdminTokenExpires > 0 && now > (modAdminTokenExpires - 300)) {
+            if (modAdminRefreshToken) {
+                console.log('🔄 Token expiring soon, refreshing...');
+                return await modRefreshAccessToken();
+            }
+        }
+        return !!modAdminToken;
+    }
+
+    // تسجيل دخول الأدمن بـ Google — Authorization Code Flow مع access_type=offline
+    // هذا يعطي refresh_token دائم + access_token
+    function modAdminSignIn() {
+        const btn = document.querySelector('#mod-admin-offline .mod-btn');
+        if (!btn) return;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تحويلك لـ Google...';
+        try {
+            const redirectUri = window.location.origin + window.location.pathname;
+            const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+                'client_id=' + encodeURIComponent(MOD_CLIENT_ID) +
+                '&redirect_uri=' + encodeURIComponent(redirectUri) +
+                '&response_type=code' +
+                '&access_type=offline' +
+                '&prompt=consent' +
+                '&scope=' + encodeURIComponent(
+                    'https://www.googleapis.com/auth/youtube ' +
+                    'https://www.googleapis.com/auth/userinfo.profile ' +
+                    'https://www.googleapis.com/auth/userinfo.email'
+                ) +
+                '&state=vrtx_admin_auth';
+            window.location.href = authUrl;
+        } catch(e) {
+            showToast('خطأ: ' + e.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fab fa-google"></i> ربط حساب YouTube (أدمن)';
+        }
+    }
+
+    // معالجة رجوع Google بعد التفويض — استبدال الكود بالتوكنات
+    async function modHandleOAuthCallback() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const state = params.get('state');
+        if (!code || state !== 'vrtx_admin_auth') return;
+
+        // تنظيف URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        showToast('جاري استلام التوكنات...', 'info');
+        try {
+            const redirectUri = window.location.origin + window.location.pathname;
+            const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'code=' + encodeURIComponent(code) +
+                    '&client_id=' + encodeURIComponent(MOD_CLIENT_ID) +
+                    '&client_secret=' + encodeURIComponent(MOD_CLIENT_SECRET) +
+                    '&redirect_uri=' + encodeURIComponent(redirectUri) +
+                    '&grant_type=authorization_code'
+            });
+            const tokenData = await tokenResp.json();
+
+            if (tokenData.error) {
+                showToast('فشل الحصول على التوكن: ' + tokenData.error, 'error');
+                return;
+            }
+
+            if (!tokenData.refresh_token) {
+                showToast('لم يتم الحصول على refresh_token — أعد المحاولة', 'error');
+                return;
+            }
+
+            // جلب معلومات المستخدم
+            let userName = 'مستخدم';
+            let channelId = '';
+            try {
+                const infoResp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                    headers: { 'Authorization': 'Bearer ' + tokenData.access_token }
+                });
+                const info = await infoResp.json();
+                userName = info.name || 'مستخدم';
+            } catch(e) {}
+
+            // جلب channelId من YouTube
+            try {
+                const ytResp = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+                    headers: { 'Authorization': 'Bearer ' + tokenData.access_token }
+                });
+                const ytData = await ytResp.json();
+                if (ytData.items && ytData.items[0]) {
+                    channelId = ytData.items[0].id;
+                    userName = ytData.items[0].snippet.title || userName;
+                }
+            } catch(e) {}
+
+            // حفظ في Supabase
+            const { error } = await supabaseClient.from('app_settings').update({
+                mod_token: JSON.stringify({
+                    access_token: tokenData.access_token,
+                    refresh_token: tokenData.refresh_token
+                }),
+                mod_name: userName,
+                mod_channel_id: channelId
+            }).eq('id', 1);
+
+            if (error) {
+                showToast('فشل الحفظ: ' + error.message, 'error');
+                return;
+            }
+
+            modAdminToken = tokenData.access_token;
+            modAdminRefreshToken = tokenData.refresh_token;
+            modAdminName = userName;
+            modAdminChannelId = channelId;
+
+            showToast('تم ربط "' + userName + '" بنجاح! refresh_token محفوظ — دائم!', 'success');
+            modLoadAdminState();
+        } catch(e) {
+            showToast('خطأ: ' + e.message, 'error');
+        }
+    }
+
+    // حفظ توكن الأدمن في Supabase (كم JSON يشمل access_token + refresh_token + expires_at)
+    async function modSaveAdminToken(token) {
+        try {
+            // جلب معلومات المستخدم
+            const r = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                headers: { Authorization: 'Bearer ' + token }
+            });
+            const u = await r.json();
+            modAdminName = u.name || 'الأدمن';
+            modAdminEmail = u.email || '';
+            modAdminToken = token;
+            modAdminTokenExpires = Math.floor(Date.now()/1000) + 3600;
+
+            // جلب channel ID
+            let channelId = '';
+            try {
+                const cr = await fetch('https://www.googleapis.com/youtube/v3/channels?part=id&mine=true', {
+                    headers: { Authorization: 'Bearer ' + token }
+                });
+                const cd = await cr.json();
+                channelId = cd.items?.[0]?.id || '';
+            } catch(e) {}
+
+            // حفظ في Supabase كـ JSON (يدعم refresh_token إن وُجد)
+            const tokenJson = JSON.stringify({
+                access_token: token,
+                refresh_token: modAdminRefreshToken || '',
+                expires_at: modAdminTokenExpires
+            });
+            const { error: saveErr } = await supabaseClient
+                .from('app_settings')
+                .update({
+                    mod_token: tokenJson,
+                    mod_name: modAdminName,
+                    mod_email: modAdminEmail,
+                    mod_channel_id: channelId
+                })
+                .eq('id', 1);
+            if (saveErr) throw saveErr;
+
+            modAdminReady = true;
+            modShowAdminOnline();
+            showToast('تم ربط حساب "' + modAdminName + '" بنجاح! الآن أي مستخدم يستطيع طلب تعيين المشرف.', 'success');
+        } catch(e) {
+            showToast('فشل حفظ الحساب: ' + e.message, 'error');
+            modShowAdminOffline();
+        }
+    }
+
+    // فصل حساب الأدمن
+    async function modAdminDisconnect() {
+        try {
+            await supabaseClient
+                .from('app_settings')
+                .update({ mod_token: null, mod_name: null, mod_email: null, mod_channel_id: null })
+                .eq('id', 1);
+        } catch(e) {}
+
+        if (modIsMonitoring) modStopAutoModeration();
+        modAdminToken = null; modAdminRefreshToken = ''; modAdminTokenExpires = 0;
+        modAdminName = ''; modAdminEmail = ''; modMyChannelId = '';
+        modAdminReady = false; modIsModerator = false;
+
+        modShowAdminOffline();
+        document.getElementById('mod-s-icon').className = 'mod-status-icon waiting';
+        document.getElementById('mod-s-title').textContent = 'اضغط لجعل المشرف يحمي البث';
+        document.getElementById('mod-s-desc').textContent = 'سيتم إرسال رسالة من حساب الأدمن في محادثة البث';
+        document.getElementById('mod-s-badge').className = 'mod-badge offline';
+        document.getElementById('mod-s-badge').innerHTML = '<div class="mod-dot"></div> غير مفعّل';
+
+        showToast('تم فصل حساب الأدمن', 'info');
+    }
+
+    async function modClearAdminToken() {
+        try {
+            await supabaseClient
+                .from('app_settings')
+                .update({ mod_token: null, mod_channel_id: null })
+                .eq('id', 1);
+        } catch(e) {}
+        modAdminToken = null; modAdminRefreshToken = ''; modAdminTokenExpires = 0;
+        modAdminReady = false;
+    }
+
+    // ════════════════════════════════════════════
+    // 3) المستخدم يضغط "جعله مشرف" → إرسال رسالة من حساب الأدمن
+    // ════════════════════════════════════════════
+
+    async function modRequestModerator() {
+        if (!modAdminReady || !modAdminToken) {
+            showToast('حساب الأدمن غير متصل — يجب ربط حساب يوتيوب أولاً', 'error');
+            return;
+        }
+        if (!liveChatId) {
+            showToast('لا يوجد بث نشط مع غرفة محادثة — شغّل بث أولاً', 'error');
+            return;
+        }
+
+        // التأكد من صلاحية التوكن قبل الإرسال
+        const tokenValid = await modEnsureValidToken();
+        if (!tokenValid || !modAdminToken) {
+            showToast('توكن الأدمن غير صالح — يجب إعادة ربط الحساب', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('mod-assign-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال من حساب الأدمن...';
+
+        try {
+            // 1) جلب channelId للبث الحالي
+            let streamChannelId = '';
+            try {
+                const subCheck = await fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet&id=' + currentVideoId, {
+                    headers: { Authorization: 'Bearer ' + modAdminToken }
+                });
+                if (subCheck.ok) {
+                    const subData = await subCheck.json();
+                    streamChannelId = subData.items?.[0]?.snippet?.channelId || '';
+                }
+            } catch(e) {}
+
+            // 2) دالة إرسال الرسالة
+            async function modSendChatMessage(text) {
+                return await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + modAdminToken, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        snippet: { type: 'textMessageEvent', liveChatId: liveChatId, textMessageDetails: { messageText: text } }
+                    })
+                });
+            }
+
+            // 3) دالة الاشتراك في القناة
+            async function modSubscribeToChannel(chId) {
+                if (!chId) return false;
+                try {
+                    const sr = await fetch('https://www.googleapis.com/youtube/v3/subscriptions?part=snippet', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + modAdminToken, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ snippet: { resourceId: { kind: 'youtube#channel', channelId: chId } } })
+                    });
+                    if (sr.ok || sr.status === 409) {
+                        modAddLog('join', 'تم الاشتراك في قناة البث' + (sr.status === 409 ? ' (مسبقاً)' : ''));
+                        return true;
+                    }
+                    return false;
+                } catch(e) { return false; }
+            }
+
+            // 4) فحص حالة الإشراف
+            await modCheckModStatus();
+
+            // 5) إرسال رسالة الترحيب — مع محاولة الاشتراك إذا فشل
+            const greetingText = document.getElementById('mod-greeting-text').value.trim()
+                || 'السلام عليكم! أنا مساعدكم الذكي — أرجو تفعيلي كمشرف من YouTube Studio لحماية البث';
+
+            let r = await modSendChatMessage(greetingText);
+
+            // إذا فشل بـ 403 → اشترك ثم أعد الإرسال
+            if (r.status === 403 && streamChannelId) {
+                modAddLog('warn', 'فشل الإرسال (403) — جاري الاشتراك في القناة وإعادة المحاولة...');
+                showToast('جاري الاشتراك في القناة وإعادة المحاولة...', 'info');
+
+                const subscribed = await modSubscribeToChannel(streamChannelId);
+                if (subscribed) {
+                    // انتظر قليلاً ثم أعد الإرسال
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    r = await modSendChatMessage(greetingText);
+                }
+            }
+
+            if (r.ok) {
+                modAddGreetingToMonitor(greetingText);
+                modAddLog('join', 'تم إرسال رسالة الترحيب من حساب "' + modAdminName + '"');
+
+                // ✅ تحديث فوري لواجهة قسم المشرف — يظهر حالة "تم الإرسال — ينتظر"
+                document.getElementById('mod-s-icon').className = 'mod-status-icon waiting';
+                document.getElementById('mod-s-title').textContent = 'تم الإرسال — في انتظار تعيين المشرف';
+                document.getElementById('mod-s-desc').textContent = 'تم إرسال الرسالة من "' + modAdminName + '" — صاحب البث سيعينه مشرفاً من YouTube Studio';
+                document.getElementById('mod-s-badge').className = 'mod-badge waiting-badge';
+                document.getElementById('mod-s-badge').innerHTML = '<div class="mod-dot"></div> ينتظر';
+
+                // فحص فوري لحالة الإشراف (قبل بدء المراقبة)
+                await modCheckModStatus();
+
+                // بدء المراقبة التلقائية
+                modStartAutoModeration();
+
+                showToast('تم الإرسال بنجاح! صاحب البث سيعين حساب "' + modAdminName + '" مشرفاً', 'success');
+            } else if (r.status === 401) {
+                // التوكن منتهي الصلاحية — حاول التحديث
+                modAddLog('warn', 'توكن الأدمن منتهي — جاري التحديث...');
+                if (await modRefreshAccessToken()) {
+                    r = await modSendChatMessage(greetingText);
+                    if (r.ok) {
+                        modAddGreetingToMonitor(greetingText);
+                        modAddLog('join', 'تم الإرسال بعد تحديث التوكن');
+                        // تحديث فوري للواجهة
+                        document.getElementById('mod-s-icon').className = 'mod-status-icon waiting';
+                        document.getElementById('mod-s-title').textContent = 'تم الإرسال — في انتظار تعيين المشرف';
+                        document.getElementById('mod-s-desc').textContent = 'تم إرسال الرسالة من "' + modAdminName + '" — صاحب البث سيعينه مشرفاً من YouTube Studio';
+                        document.getElementById('mod-s-badge').className = 'mod-badge waiting-badge';
+                        document.getElementById('mod-s-badge').innerHTML = '<div class="mod-dot"></div> ينتظر';
+                        await modCheckModStatus();
+                        modStartAutoModeration();
+                        showToast('تم الإرسال بنجاح بعد تحديث التوكن!', 'success');
+                    } else {
+                        showToast('فشل الإرسال حتى بعد تحديث التوكن', 'error');
+                        modAddLog('warn', 'فشل الإرسال بعد التحديث: ' + r.status);
+                    }
+                } else {
+                    showToast('توكن الأدمن منتهي ولم يتم تحديثه — يجب إعادة ربط الحساب', 'error');
+                    await modClearAdminToken();
+                    modShowAdminOffline();
+                }
+            } else if (r.status === 403) {
+                const err = await r.json().catch(() => ({}));
+                modAddLog('warn', 'فشل الإرسال: صلاحيات غير كافية حتى بعد الاشتراك — ' + (err.error?.message || ''));
+                showToast('فشل: صلاحيات غير كافية — يجب إضافة حساب الأدمن كمشرف في YouTube Studio', 'error');
+            } else {
+                const err = await r.json().catch(() => ({}));
+                modAddLog('warn', 'فشل الإرسال: ' + (err.error?.message || 'خطأ'));
+                showToast('فشل: ' + (err.error?.message || 'خطأ'), 'error');
+            }
+        } catch(e) {
+            showToast('خطأ: ' + e.message, 'error');
+            modAddLog('warn', 'خطأ: ' + e.message);
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-user-plus"></i> إعادة إرسال رسالة للبث';
+    }
+
+    // ════════════════════════════════════════════
+    // 4) فحص حالة الإشراف + حذف تلقائي
+    // ════════════════════════════════════════════
+
+    async function modCheckModStatus() {
+        if (!modAdminToken || !liveChatId) return;
+        try {
+            // ⚠️ liveChat/moderators يتطلب صلاحية مالك القناة ويعطي 403 للمشرف
+            // الحل: جلب آخر الرسائل وفحص isChatModerator في رسالة الأدمن
+            const { data: settings } = await supabaseClient.from('app_settings').select('mod_channel_id,mod_name').eq('id', 1).maybeSingle();
+            const myId = settings?.mod_channel_id || '';
+            const myName = settings?.mod_name || '';
+
+            if (!myId) { modUpdateStatusUI(); return; }
+
+            // جلب آخر الرسائل وفحص isChatModerator لرسالة الأدمن
+            // (الطريقة الوحيدة الموثوقة — liveChat/moderators يتطلب صلاحية مالك القناة ويعطي 403 للمشرف)
+            try {
+                var checkUrl = 'https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=' + liveChatId + '&part=snippet,authorDetails&maxResults=50';
+                // جرب حتى 5 مفاتيح
+                var checkSuccess = false;
+                var maxCheck = Math.min(5, YOUTUBE_API_KEYS.length);
+                for (var ci = 0; ci < maxCheck && !checkSuccess; ci++) {
+                    var cki = (currentKeyIndex + ci) % YOUTUBE_API_KEYS.length;
+                    try {
+                        var cr = await fetch(checkUrl + '&key=' + YOUTUBE_API_KEYS[cki]);
+                        if (cr.ok) {
+                            var cd = await cr.json();
+                            currentKeyIndex = cki;
+                            checkSuccess = true;
+                            // ابحث عن رسالة من الأدمن وفحص isChatModerator
+                            if (cd.items) {
+                                for (var m = 0; m < cd.items.length; m++) {
+                                    var msgAuthor = cd.items[m].authorDetails;
+                                    if (msgAuthor && msgAuthor.channelId === myId) {
+                                        modIsModerator = msgAuthor.isChatModerator === true;
+                                        modUpdateStatusUI();
+                                        return;
+                                    }
+                                    // أيضاً فحص بالاسم كاحتياط
+                                    if (msgAuthor && msgAuthor.displayName && myName && msgAuthor.displayName === myName) {
+                                        modIsModerator = msgAuthor.isChatModerator === true;
+                                        modUpdateStatusUI();
+                                        return;
+                                    }
+                                }
+                            }
+                            // لم نجد رسالة للأدمن في آخر 50 رسالة
+                            // لا نغيّر الحالة — نبقي كما هي
+                        }
+                    } catch(ce) { continue; }
+                }
+            } catch(e2) { /* فشل البديل */ }
+        } catch(e) { modIsModerator = false; }
+        modUpdateStatusUI();
+    }
+
+    // حفظ حالة المشرف في Supabase + localStorage
+    async function modSaveModeratorStatus(isMod) {
+        try {
+            // حفظ في Supabase (للمشاركة بين الأجهزة)
+            if (currentVideoId) {
+                await supabaseClient.from('saved_streams').update({ stream_moderator: isMod ? modMyChannelId : null }).eq('stream_url', 'https://www.youtube.com/watch?v=' + currentVideoId);
+            }
+        } catch(e) { console.error('[MOD_STATUS] فشل الحفظ في Supabase:', e); }
+        try {
+            // حفظ في localStorage (للاسترجاع السريع)
+            localStorage.setItem('vrtx_mod_status_' + currentVideoId, isMod ? 'active' : 'inactive');
+        } catch(e) {}
+    }
+
+    // استعادة حالة المشرف المحفوظة عند فتح البث
+    async function modRestoreModeratorStatus() {
+        if (!currentVideoId || !modAdminToken) return;
+        try {
+            // فحص Supabase أولاً
+            const { data } = await supabaseClient.from('saved_streams').select('stream_moderator').eq('stream_url', 'https://www.youtube.com/watch?v=' + currentVideoId).maybeSingle();
+            if (data && data.stream_moderator && data.stream_moderator === modMyChannelId) {
+                // كان مشرفاً — تحقق إذا لا يزال مشرفاً
+                modAddLog('join', 'تم استعادة حالة الإشراف المحفوظة — جاري التحقق...');
+                await modCheckModStatus();
+            }
+        } catch(e) { console.error('[MOD_STATUS] فشل استعادة الحالة:', e); }
+    }
+
+    function modUpdateStatusUI() {
+        const icon = document.getElementById('mod-s-icon');
+        const title = document.getElementById('mod-s-title');
+        const desc = document.getElementById('mod-s-desc');
+        const badge = document.getElementById('mod-s-badge');
+        if (modIsModerator) {
+            icon.className = 'mod-status-icon active';
+            title.textContent = 'المشرف نشط — الحذف التلقائي مفعّل';
+            desc.textContent = 'يتم حذف الرسائل المحظورة فوراً بواسطة "' + modAdminName + '"';
+            badge.className = 'mod-badge online';
+            badge.innerHTML = '<div class="mod-dot"></div> مشرف نشط';
+            // تحديث الزر أيضاً
+            var assignBtn = document.getElementById('mod-assign-btn');
+            if (assignBtn) {
+                assignBtn.disabled = false;
+                assignBtn.innerHTML = '<i class="fas fa-check-circle" style="color:#0f0"></i> المشرف نشط — إعادة إرسال رسالة';
+                assignBtn.style.borderColor = '#0f0';
+                assignBtn.style.boxShadow = '0 0 12px rgba(0,255,0,0.3)';
+            }
+            // إشعار فوري — فقط عند أول مرة يتم التعيين فيها (من غير مشرف → مشرف)
+            if (!modLastNotifiedAsMod) {
+                modLastNotifiedAsMod = true;
+                showToast('تم تعيين "' + modAdminName + '" كمشرف بنجاح! — الحذف التلقائي مفعّل الآن', 'success');
+                modAddLog('join', 'المشرف نشط — "' + modAdminName + '" — الحذف التلقائي مفعّل');
+            }
+            // حفظ حالة الإشراف في Supabase
+            modSaveModeratorStatus(true);
+        } else if (modIsMonitoring) {
+            icon.className = 'mod-status-icon waiting';
+            title.textContent = 'في انتظار تعيين المشرف';
+            desc.textContent = 'تم إرسال الرسالة — صاحب البث سيعين "' + modAdminName + '" من YouTube Studio';
+            badge.className = 'mod-badge waiting-badge';
+            badge.innerHTML = '<div class="mod-dot"></div> ينتظر';
+            // إعادة تعيين علامة الإشعار لو فقد صلاحية الإشراف
+            if (modLastNotifiedAsMod) {
+                modLastNotifiedAsMod = false;
+                modAddLog('warn', 'تم سحب صلاحية الإشراف من "' + modAdminName + '"');
+                // حفظ حالة فقدان الإشراف
+                modSaveModeratorStatus(false);
+            }
+        }
+    }
+
+    // ════════════════════════════════════════════
+    // 5) المراقبة التلقائية
+    // ════════════════════════════════════════════
+
+    function modStartAutoModeration() {
+        modIsMonitoring = true;
+        modNextPageToken = null;
+        modStats = { total: 0, deleted: 0 };
+        modEmptyPolls = 0;
+        modAdaptiveInterval = modYouTubePollInterval || 5000;
+        // تحميل الكلمات المحظورة من Supabase (keyword_type='ban')
+        refreshKeywords();
+        // إعادة تعيين الحصة لو يوم جديد
+        var today = new Date().toDateString();
+        if (modQuotaDate !== today) { modQuotaUsed = 0; modQuotaDate = today; }
+
+        document.getElementById('mod-monitor-card').classList.remove('hidden');
+        document.getElementById('mod-log-card').classList.remove('hidden');
+        document.getElementById('mod-monitor-badge').className = 'mod-badge online';
+        document.getElementById('mod-monitor-badge').innerHTML = '<div class="mod-dot"></div> متصل';
+        document.getElementById('mod-monitor-area').innerHTML = '';
+
+        modPollMessages();
+        modPollTimer = setInterval(modPollMessages, modAdaptiveInterval);
+        modUpdateQuotaUI();
+
+        modUptimeSec = 0;
+        modUptimeTimer = setInterval(function() {
+            modUptimeSec++;
+            var m = Math.floor(modUptimeSec / 60), s = modUptimeSec % 60;
+            document.getElementById('mod-stat-uptime').textContent = m + ':' + String(s).padStart(2, '0');
+        }, 1000);
+
+        modUpdateStatusUI();
+        modAddLog('join', 'بدأت المراقبة الذكية — فاصل الجلب: ' + (modAdaptiveInterval/1000).toFixed(1) + ' ثانية — الحصة: ' + modGetQuotaRemaining().toLocaleString() + ' متبقي');
+
+        // استعادة حالة الإشراف المحفوظة
+        modRestoreModeratorStatus();
+
+        // فحص دوري لحالة الإشراف كل 20 ثانية
+        if (window._modStatusCheckInterval) clearInterval(window._modStatusCheckInterval);
+        window._modStatusCheckInterval = setInterval(function() {
+            if (modIsMonitoring && modAdminToken) modCheckModStatus();
+        }, 20000);
+
+        // تحديث تلقائي للتوكن كل 50 دقيقة (قبل انتهاء الـ access_token بساعة)
+        if (window._modRefreshInterval) clearInterval(window._modRefreshInterval);
+        window._modRefreshInterval = setInterval(function() {
+            if (modIsMonitoring && modAdminRefreshToken) modEnsureValidToken();
+        }, 3000000); // كل 50 دقيقة
+    }
+
+    function modStopAutoModeration() {
+        modIsMonitoring = false; modNextPageToken = null;
+        modPollInProgress = false;
+        modAbandonedPolls = 0;
+        modUserViolations = {};
+        modEmptyPolls = 0;
+        modUpdateSeverityPanel();
+        if (modPollTimer) { clearInterval(modPollTimer); modPollTimer = null; }
+        if (modUptimeTimer) { clearInterval(modUptimeTimer); modUptimeTimer = null; }
+        if (window._modRefreshInterval) { clearInterval(window._modRefreshInterval); window._modRefreshInterval = null; }
+        if (window._modStatusCheckInterval) { clearInterval(window._modStatusCheckInterval); window._modStatusCheckInterval = null; }
+        document.getElementById('mod-monitor-badge').className = 'mod-badge offline';
+        document.getElementById('mod-monitor-badge').innerHTML = '<div class="mod-dot"></div> غير متصل';
+    }
+
+    // متغير لمنع التكرار أثناء الجلب
+    let modPollInProgress = false;
+    // جلب الرسائل وفحص الكلمات المحظورة (مع نظام الجلب الذكي + دوران المفاتيح)
+    async function modPollMessages() {
+        if (!liveChatId || !modIsMonitoring) return;
+        if (modPollInProgress) return;
+        modPollInProgress = true;
+
+        // 🛡️ تأخير عشوائي ±1 ثا لمنع ظهور النمط كـ bot
+        var jitter = Math.floor(Math.random() * 2000) - 500; // -500ms إلى +1500ms
+        if (jitter > 0) await new Promise(r => setTimeout(r, jitter));
+
+        // تحقق من الحصة قبل كل طلب
+        if (modGetQuotaRemaining() <= 0) {
+            modAddLog('warn', 'نفدت الحصة اليومية! المراقبة متوقفة حتى الغد.');
+            modStopAutoModeration();
+            return;
+        }
+
+        try {
+            // جرب حتى 10 مفاتيح عند الفشل
+            let pollSuccess = false;
+            const maxModKeyTries = Math.min(10, YOUTUBE_API_KEYS.length);
+            for (let keyAttempt = 0; keyAttempt < maxModKeyTries && !pollSuccess; keyAttempt++) {
+                const modKeyIndex = (currentKeyIndex + keyAttempt) % YOUTUBE_API_KEYS.length;
+                var url = 'https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=' + liveChatId + '&part=snippet,authorDetails&maxResults=200&key=' + YOUTUBE_API_KEYS[modKeyIndex];
+                if (modNextPageToken) url += '&pageToken=' + modNextPageToken;
+                var r = await fetch(url);
+                var d = await r.json();
+
+                if (d.error) {
+                    // كشف انتهاء البث: لو الكل فشل → البث انتهى أو الـ chatId انتهى صلاحيته
+                    if (keyAttempt === maxModKeyTries - 1) {
+                        var errMsg = d.error.message || '';
+                        // إذا كان الخطأ عن انتهاء البث أو chatId غير موجود
+                        if (errMsg.includes('not found') || errMsg.includes('The live chat') || errMsg.includes('No live chat') || d.error.code === 404) {
+                            modAddLog('warn', '⚠️ البث انتهى أو غرفة المحادثة أُغلقت — تم إيقاف المراقبة تلقائياً');
+                            showToast('تم إيقاف المراقبة: البث انتهى أو غرفة المحادثة أُغلقت', 'info');
+                            modStopAutoModeration();
+                            modPollInProgress = false;
+                            return;
+                        }
+                    }
+                    // أي خطأ آخر → جرب المفتاح التالي
+                    currentKeyIndex = (modKeyIndex + 1) % YOUTUBE_API_KEYS.length;
+                    continue;
+                }
+
+                // نجاح → ثبت المفتاح الحالي
+                currentKeyIndex = modKeyIndex;
+                pollSuccess = true;
+
+                // تتبع الحصة — فقط عند النجاح
+                modTrackQuota(MOD_QUOTA_COST_LIST);
+
+                // احترم pollingIntervalMs من YouTube
+                if (d.pollingIntervalMs && d.pollingIntervalMs > 0) {
+                    modYouTubePollInterval = Math.max(MOD_MIN_INTERVAL, d.pollingIntervalMs);
+                }
+
+                modNextPageToken = d.nextPageToken || null;
+                var hasNewMessages = false;
+
+                if (d.items && d.items.length > 0) {
+                    hasNewMessages = true;
+                    for (var itemIdx = 0; itemIdx < d.items.length; itemIdx++) {
+                        var item = d.items[itemIdx];
+                        var msg = {
+                            id: item.id,
+                            author: item.authorDetails?.displayName || 'مجهول',
+                            text: item.snippet?.displayMessage || '',
+                            time: new Date(item.snippet?.publishedAt || Date.now()),
+                            isOwner: item.authorDetails?.isChatOwner || false,
+                            isMod: item.authorDetails?.isChatModerator || false
+                        };
+                        modStats.total++;
+                        modAddMsgToMonitor(msg);
+
+                        // ✅ تحديث حالة الإشراف تلقائياً من الرسائل (مجاني — بدون طلبات إضافية)
+                        // لو وجدنا رسالة من الأدمن → نعرف فوراً إذا هو مشرف أو لا
+                        if (item.authorDetails && item.authorDetails.channelId) {
+                            var msgChannelId = item.authorDetails.channelId;
+                            var msgIsMod = item.authorDetails.isChatModerator === true;
+                            // فحص بالـ channel ID (الأدق)
+                            if (msgChannelId === modMyChannelId) {
+                                if (msgIsMod && !modIsModerator) {
+                                    modIsModerator = true;
+                                    modUpdateStatusUI();
+                                } else if (!msgIsMod && modIsModerator) {
+                                    modIsModerator = false;
+                                    modUpdateStatusUI();
+                                }
+                            }
+                        }
+
+                        // حذف الكلمات المحظورة (فقط إذا الأدمن مشرف)
+                        if (modIsModerator && modAdminToken && !msg.isOwner && !msg.isMod) {
+                            var lower = msg.text.toLowerCase();
+                            // تحديث الكلمات المحظورة من Supabase كل 10 رسائل
+                            if (modStats.total % 10 === 0) refreshKeywords();
+                            var bannedWordFound = null;
+                            // فحص عادي
+                            for (var wi = 0; wi < modForbiddenWords.length; wi++) {
+                                if (lower.includes(modForbiddenWords[wi])) {
+                                    bannedWordFound = modForbiddenWords[wi];
+                                    break;
+                                }
+                            }
+                            // فحص متقدم: تجاوز الفلاتر (نقاط، مسافات) مثل ك.س أو ع.ير
+                            if (!bannedWordFound) {
+                                var cleaned = lower.replace(/[.\s\-_,;:!?]/g, '');
+                                for (var wi2 = 0; wi2 < modForbiddenWords.length; wi2++) {
+                                    var kwClean = modForbiddenWords[wi2].replace(/[.\s\-_,;:!?]/g, '');
+                                    if (kwClean.length >= 2 && cleaned.includes(kwClean)) {
+                                        bannedWordFound = modForbiddenWords[wi2];
+                                        break;
+                                    }
+                                }
+                            }
+                            if (bannedWordFound) {
+                                // تسجيل المخالفة وحساب الخطورة
+                                var newScore = modRecordViolation(msg.author, bannedWordFound);
+                                var severity = modCalculateSeverity(msg.author);
+                                // إظهار مؤشر الخطورة فوراً
+                                modMarkSeverity(msg.id, msg.author, newScore, severity);
+                                modAddLog('warn', 'مخالفة "' + msg.author + '" — كلمة: "' + bannedWordFound + '" — نقاط: ' + newScore + ' — مستوى: ' + severity.label);
+                                // حذف فوري — بدون تأخير
+                                var delMsgId = msg.id, delAuthor = msg.author, delWord = bannedWordFound;
+                                (async function() {
+                                    if (!modIsMonitoring || !modAdminToken) return;
+                                    await modDeleteMsgAndTrack(delMsgId, delAuthor, delWord);
+                                })();
+                            }
+                        }
+                    }
+                    modUpdateStats();
+                }
+
+                // ضبط الفاصل الذكي بناءً على النشاط
+                var newInterval = modAdjustPollInterval(hasNewMessages);
+                // تحديث عرض الفاصل
+                var intervalEl = document.getElementById('mod-poll-interval');
+                if (intervalEl) intervalEl.textContent = (newInterval / 1000).toFixed(1);
+            }
+        } catch(e) { console.error('Mod poll error:', e); }
+        modPollInProgress = false;
+    }
+
+    async function modDeleteMsg(id, author, word) {
+        try {
+            var r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?id=' + id, {
+                method: 'DELETE',
+                headers: { Authorization: 'Bearer ' + modAdminToken }
+            });
+            if (r.status === 204) {
+                modStats.deleted++;
+                modUpdateStats();
+                modMarkDeleted(id);
+                modAddLog('delete', 'حذف رسالة "' + author + '" — تحتوي: "' + word + '"');
+                return true;
+            } else if (r.status === 403) {
+                modIsModerator = false;
+                modUpdateStatusUI();
+                modAddLog('warn', 'فشل الحذف — الأدمن لم يُعَيَّن كمشرف بعد');
+            } else if (r.status === 401) {
+                // التوكن منتهي — حاول التحديث
+                if (await modRefreshAccessToken()) {
+                    var r2 = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?id=' + id, {
+                        method: 'DELETE',
+                        headers: { Authorization: 'Bearer ' + modAdminToken }
+                    });
+                    if (r2.status === 204) {
+                        modStats.deleted++;
+                        modUpdateStats();
+                        modMarkDeleted(id);
+                        modAddLog('delete', 'حذف رسالة "' + author + '" — تحتوي: "' + word + '" (بعد تحديث التوكن)');
+                        return true;
                     }
                 }
-            });
-            tokenClient.requestAccessToken();
-        } catch(e) { showToast('فشل ربط الحساب: ' + e.message, 'error'); }
+                modAddLog('warn', 'فشل الحذف — توكن منتهي (401)');
+            }
+        } catch(e) { console.error('Mod delete error:', e); }
+        return false;
     }
-    async function modAdminDisconnect() {
-        if (!confirm('هل تريد فصل حساب المشرف؟')) return;
-        try {
-            if (modAdminToken) { try { await fetch('https://accounts.google.com/o/oauth2/revoke?token=' + modAdminToken); } catch(e) {} }
-            await supabaseClient.from('app_settings').update({ mod_token: null, mod_name: null, mod_email: null, mod_channel_id: null }).eq('id', 1);
-            modAdminToken = null; modAdminRefreshToken = ''; modLoadAdminState(); showToast('تم فصل حساب المشرف', 'info');
-        } catch(e) { showToast('فشل الفصل', 'error'); }
-    }
-    // === حذف فوري للكلمات المحظورة ===
-    const DELETES_URL = SUPABASE_URL + '/functions/v1/archive-comments';
-    async function instantDeleteBanned(ytMsgId) {
-        try {
-            await fetch(DELETES_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPABASE_KEY },
-                body: JSON.stringify({ message_id: ytMsgId })
-            });
-            console.log('[BAN] تم استدعاء الحذف الفوري للرسالة:', ytMsgId);
-        } catch(e) { console.error('[BAN DELETE] فشل:', e); }
-    }
-    modLoadBanWords();
 
+    // حذف مع تتبع الحصة — يُستدعى من modPollMessages
+    async function modDeleteMsgAndTrack(id, author, word) {
+        var success = await modDeleteMsg(id, author, word);
+        if (success) {
+            modTrackQuota(MOD_QUOTA_COST_DELETE);
+            // تحقق من صلاحية التوكن قبل الحذف التالي
+            await modEnsureValidToken();
+        }
+        return success;
+    }
+
+    // ════════════════════════════════════════════
+    // 6) واجهة الشاشة المباشرة + السجل
+    // ════════════════════════════════════════════
+
+    function modEsc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function modFmtTime(d) { return d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+
+    function modAddMsgToMonitor(msg) {
+        var area = document.getElementById('mod-monitor-area');
+        if (!area) return;
+        var empty = area.querySelector('.empty-state'); if (empty) empty.remove();
+        var div = document.createElement('div');
+        div.className = 'mod-monitor-msg normal'; div.id = 'mod-msg-' + msg.id;
+        div.innerHTML = '<div class="msg-av"><i class="fas fa-user"></i></div>' +
+            '<div class="msg-body"><div class="msg-auth">' + modEsc(msg.author) + (msg.isOwner ? ' \uD83D\uDC51' : '') + (msg.isMod ? ' \uD83D\uDEE1\uFE0F' : '') + '</div>' +
+            '<div class="msg-txt">' + modEsc(msg.text) + '</div></div>' +
+            '<div class="msg-time">' + modFmtTime(msg.time) + '</div>';
+        area.appendChild(div); area.scrollTop = area.scrollHeight;
+    }
+
+    function modMarkDeleted(id) {
+        var el = document.getElementById('mod-msg-' + id);
+        if (el) {
+            el.className = 'mod-monitor-msg deleted';
+            el.querySelector('.msg-body').innerHTML += '<span class="del-badge"><i class="fas fa-trash"></i> حُذفت</span>';
+        }
+    }
+
+    function modMarkSeverity(id, author, score, severity) {
+        var el = document.getElementById('mod-msg-' + id);
+        if (!el) return;
+        var badge = document.createElement('span');
+        badge.className = 'severity-badge';
+        badge.style.cssText = 'font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:4px;background:' + severity.bg + ';color:' + severity.color + ';border:1px solid ' + severity.border + ';';
+        badge.innerHTML = '<i class="fas ' + severity.icon + '"></i> ' + score + 'pt';
+        el.querySelector('.msg-body').appendChild(badge);
+    }
+
+    function modAddGreetingToMonitor(text) {
+        var area = document.getElementById('mod-monitor-area');
+        if (!area) return;
+        var empty = area.querySelector('.empty-state'); if (empty) empty.remove();
+        var div = document.createElement('div');
+        div.className = 'mod-monitor-msg greeting-msg';
+        div.innerHTML = '<div class="msg-av" style="background:rgba(232,168,56,0.15);color:#e8a838;"><i class="fas fa-robot"></i></div>' +
+            '<div class="msg-body"><div class="msg-auth" style="color:#e8a838;">VRTX — المراقب الذكي (' + modEsc(modAdminName) + ')</div>' +
+            '<div class="msg-txt">' + modEsc(text) + '</div></div>' +
+            '<div class="msg-time">' + modFmtTime(new Date()) + '</div>';
+        area.appendChild(div); area.scrollTop = area.scrollHeight;
+    }
+
+    function modAddLog(type, message) {
+        var area = document.getElementById('mod-log-area');
+        if (!area) return;
+        var empty = area.querySelector('.empty-state'); if (empty) empty.remove();
+        var icons = { delete: 'fa-trash', join: 'fa-circle-check', warn: 'fa-triangle-exclamation' };
+        var cls = { delete: 'log-delete', join: 'log-join', warn: 'log-warn' };
+        var entry = document.createElement('div');
+        entry.className = 'mod-log-entry ' + (cls[type] || '');
+        entry.innerHTML = '<span class="log-icon"><i class="fas ' + (icons[type] || 'fa-info-circle') + '"></i></span>' +
+            '<span class="log-msg">' + modEsc(message) + '</span>' +
+            '<span class="log-time">' + modFmtTime(new Date()) + '</span>';
+        area.prepend(entry);
+        while (area.children.length > 50) area.lastChild.remove();
+    }
+
+    function modUpdateStats() {
+        var t = document.getElementById('mod-stat-total');
+        var d = document.getElementById('mod-stat-deleted');
+        if (t) t.textContent = modStats.total;
+        if (d) d.textContent = modStats.deleted;
+    }
+
+    function modUpdateSeverityPanel() {
+        var panel = document.getElementById('severity-panel');
+        if (!panel) return;
+        var users = Object.keys(modUserViolations).filter(function(name) {
+            return modUserViolations[name].score > 0;
+        });
+        // ترتيب حسب النقاط (الأعلى أولاً)
+        users.sort(function(a, b) { return modUserViolations[b].score - modUserViolations[a].score; });
+        if (users.length === 0) {
+            panel.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--text-muted); font-size: 11px;"><i class="fas fa-shield-halved"></i> لا توجد مخالفات مسجلة بعد</div>';
+            return;
+        }
+        var html = '';
+        users.forEach(function(name) {
+            var v = modUserViolations[name];
+            var severity = modCalculateSeverity(name);
+            // حساب نسبة التقدم (الحد الأقصى 20 نقطة)
+            var pct = Math.min(100, Math.round((v.score / 20) * 100));
+            // آخر 3 كلمات مسيئة
+            var recentWords = v.words.slice(-3).map(function(w) { return w.word; }).join('، ');
+            html += '<div style="padding: 8px 10px; border-radius: 8px; background: ' + severity.bg + '; border: 1px solid ' + severity.border + '; display: flex; align-items: center; gap: 8px;">' +
+                '<div style="width: 30px; height: 30px; border-radius: 6px; background: ' + severity.color + '; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">' +
+                '<i class="fas ' + severity.icon + '" style="font-size: 12px; color: #08080e;"></i></div>' +
+                '<div style="flex: 1; min-width: 0;">' +
+                '<div style="display: flex; align-items: center; gap: 6px;">' +
+                '<span style="font-size: 12px; font-weight: 700; color: ' + severity.color + ';">' + modEsc(name) + '</span>' +
+                '<span style="font-size: 10px; color: ' + severity.color + '; background: rgba(0,0,0,0.2); padding: 1px 5px; border-radius: 3px;">' + severity.label + '</span>' +
+                '</div>' +
+                '<div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">' + v.count + ' مخالفات — آخر: ' + modEsc(recentWords) + '</div>' +
+                '<div style="margin-top: 4px; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.05);">' +
+                '<div style="height: 100%; border-radius: 2px; background: ' + severity.color + '; width: ' + pct + '%; transition: width 0.5s ease;"></div></div>' +
+                '</div>' +
+                '<div style="text-align: center; flex-shrink: 0;">' +
+                '<div style="font-size: 16px; font-weight: 900; color: ' + severity.color + ';">' + v.score + '</div>' +
+                '<div style="font-size: 8px; color: var(--text-muted);">نقطة</div></div>' +
+                '<button onclick="modResetUserViolations(\'' + modEsc(name).replace(/'/g, "\\'") + '\')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 10px;" title="إعادة تعيين"><i class="fas fa-rotate-left"></i></button>' +
+                '</div>';
+        });
+        panel.innerHTML = html;
+    }
+
+
+
+
+    // ═══ كشف إغلاق الصفحة / التبديل بين التبويبات ═══
+    // عند إغلاق الصفحة → أوقف المراقبة
+    window.addEventListener('beforeunload', function() {
+        if (modIsMonitoring) modStopAutoModeration();
+    });
+
+    // عند إخفاء الصفحة (التبديل لتبويب آخر) → بطّئ الجلب جداً لتوفير الحصة
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            modPageHidden = true;
+            if (modIsMonitoring && modPollTimer) {
+                // عند إخفاء الصفحة → فاصل 60 ثانية بدل الفاصل الحالي
+                clearInterval(modPollTimer);
+                modPollTimer = setInterval(modPollMessages, 60000);
+            }
+        } else {
+            modPageHidden = false;
+            if (modIsMonitoring) {
+                // عند العودة → ارجع للفاصل الأصلي
+                if (modPollTimer) clearInterval(modPollTimer);
+                modPollTimer = setInterval(modPollMessages, modAdaptiveInterval);
+                // أعد فحص الإشراف
+                if (modAdminToken) modCheckModStatus();
+            }
+        }
+    });
+
+    // تعديل switchArchiveTab لتحميل حالة الأدمن عند فتح المراقب
+    const _origSwitchArchiveTab = window.switchArchiveTab || null;
 
     // === نظام المراقب الذكي الأصلي (إشعارات Supabase) ===
     // مودال الإشعارات يعرض السجل فقط. إدارة الكلمات أصبحت داخل شاشة الأرشيف (تبويب المراقب الذكي).
@@ -2968,10 +4513,12 @@
         if (tabName === 'monitor') {
             document.getElementById('monitor-tab-btn').classList.add('active');
             document.getElementById('monitor-pane').classList.add('active');
+            refreshKeywords();
             renderKeywords();
             // تحميل حالة الأدمن من Supabase عند فتح المراقب
             modLoadAdminState();
-            // فحص خفيف لتوكن الأدمن — نتحقق من وجوده فقط
+            // فحص خفيف لتوكن الأدمن حتى زر "جعله مشرف" يعمل للمستخدمين العاديين
+            modCheckAdminReady();
         } else {
             // default: archive
             document.getElementById('archive-tab-btn').classList.add('active');
@@ -2987,9 +4534,12 @@
         const input = document.getElementById('keyword-input');
         const kw = input.value.trim();
         if (!kw || !currentVideoId) return;
+        const typeSelect = document.getElementById('keyword-type-select');
+        const kwType = typeSelect ? typeSelect.value : 'monitor';
         try {
-            await supabaseClient.from('monitor_keywords').insert([{ stream_id: currentVideoId, keyword: kw }]);
+            await supabaseClient.from('monitor_keywords').insert([{ stream_id: currentVideoId, keyword: kw, keyword_type: kwType }]);
             input.value = '';
+            refreshKeywords();
             renderKeywords();
         } catch(e) { showToast('فشل إضافة الكلمة', 'error'); }
     }
@@ -2998,6 +4548,7 @@
         if (!currentVideoId) return;
         try {
             await supabaseClient.from('monitor_keywords').delete().eq('stream_id', currentVideoId).eq('keyword', kw);
+            refreshKeywords();
             renderKeywords();
         } catch(e) { showToast('فشل الحذف', 'error'); }
     }
@@ -3006,16 +4557,32 @@
         const container = document.getElementById('keywords-list');
         container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">جارٍ التحميل...</p>';
         if (!currentVideoId) return;
-        const { data } = await supabaseClient.from('monitor_keywords').select('keyword').eq('stream_id', currentVideoId);
+        const { data } = await supabaseClient.from('monitor_keywords').select('keyword, keyword_type').eq('stream_id', currentVideoId);
         container.innerHTML = '';
-        if (!data || data.length === 0) { container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">لا توجد كلمات مراقبة بعد.</p>'; return; }
+        if (!data || data.length === 0) { container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">لا توجد كلمات مفتاحية بعد.</p>'; return; }
         data.forEach(k => {
             const tag = document.createElement('div');
-            tag.className = 'flex items-center gap-2 px-3 py-1 rounded-full text-xs';
-            tag.style.background = 'rgba(239, 68, 68, 0.1)'; tag.style.border = '1px solid rgba(239, 68, 68, 0.2)'; tag.style.color = '#f87171';
-            tag.innerHTML = `<span>${escapeHtml(k.keyword)}</span><button onclick="removeKeyword('${k.keyword.replace(/'/g, "")}')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;">&times;</button>`;
+            const type = k.keyword_type || 'monitor';
+            const isMonitor = type === 'monitor';
+            tag.className = 'flex items-center gap-2 px-3 py-1 rounded-full text-xs ' + (isMonitor ? 'keyword-tag-monitor' : 'keyword-tag-ban');
+            const typeIcon = isMonitor ? 'fa-eye' : 'fa-ban';
+            const typeLabel = isMonitor ? 'مراقبة' : 'حظر';
+            const escapedKw = escapeHtml(k.keyword).replace(/'/g, "&#39;");
+            tag.innerHTML = `<i class="fas ${typeIcon}" style="font-size:10px;opacity:0.7;"></i><span>${escapedKw}</span><span style="opacity:0.5;font-size:9px;">${typeLabel}</span><button onclick="toggleKeywordType('${escapedKw}')" style="background:none;border:none;color:inherit;cursor:pointer;font-size:10px;opacity:0.5;" title="تبديل النوع"><i class="fas fa-repeat"></i></button><button onclick="removeKeyword('${escapedKw}')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;">&times;</button>`;
             container.appendChild(tag);
         });
+    }
+
+    async function toggleKeywordType(kw) {
+        if (!currentVideoId) return;
+        try {
+            const { data } = await supabaseClient.from('monitor_keywords').select('keyword_type').eq('stream_id', currentVideoId).eq('keyword', kw).maybeSingle();
+            if (!data) return;
+            const newType = (data.keyword_type || 'monitor') === 'monitor' ? 'ban' : 'monitor';
+            await supabaseClient.from('monitor_keywords').update({ keyword_type: newType }).eq('stream_id', currentVideoId).eq('keyword', kw);
+            refreshKeywords();
+            renderKeywords();
+        } catch(e) { showToast('فشل تبديل النوع', 'error'); }
     }
 
     async function renderNotifications() {
@@ -3212,6 +4779,8 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        // معالجة رجوع Google OAuth (إذا في ?code= في URL)
+        setTimeout(() => modHandleOAuthCallback(), 500);
         updateUserCircle(); const lastStream = localStorage.getItem('vrtx_last_stream'); if (lastStream) { startLiveStream(lastStream); }
         syncAdminPanelVisibility();
         // 🌐 بدء الجالب الشامل — يجلب كل البثوث كل 1.5 ثانية
@@ -3221,8 +4790,216 @@
         document.getElementById('admin-pass-input').addEventListener('keydown', e => { if (e.key === 'Enter') handleAdminDelete(); });
         document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
         document.getElementById('keyword-input').addEventListener('keydown', e => { if (e.key === 'Enter') addKeyword(); });
+        document.getElementById('mod-popup-kw-input').addEventListener('keydown', e => { if (e.key === 'Enter') modPopupAddKeyword(); });
         const container = document.getElementById('comments-container'); container.addEventListener('scroll', () => { isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100; });
     });
+
+    // ══════════════════════════════════════════════════
+    // نافذة المراقب الذكي المنبثقة
+    // ══════════════════════════════════════════════════
+    function openModeratorPopup() {
+        document.getElementById('mod-popup-overlay').classList.add('show');
+        modPopupCheckStatus();
+        modPopupRenderKeywords();
+    }
+    function closeModeratorPopup() {
+        document.getElementById('mod-popup-overlay').classList.remove('show');
+    }
+
+    async function modPopupCheckStatus() {
+        const box = document.getElementById('mod-popup-status');
+        const body = document.getElementById('mod-popup-status-body');
+        const btnArea = document.getElementById('mod-popup-btn-area');
+        box.className = 'mod-status-box checking';
+        body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon checking"><i class="fas fa-spinner fa-spin"></i></div><div><h4 style="font-size:14px;font-weight:700;">جارٍ التحقق...</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">نتحقق من حالة الإشراف</p></div></div>';
+        btnArea.innerHTML = '';
+
+        if (!currentVideoId) {
+            box.className = 'mod-status-box inactive';
+            body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon inactive"><i class="fas fa-video-slash"></i></div><div><h4 style="font-size:14px;">لا يوجد بث نشط</h4></div></div>';
+            return;
+        }
+
+        try {
+            // جلب بيانات الأدمن
+            const { data: settings } = await supabaseClient.from('app_settings').select('mod_name,mod_channel_id,mod_token').eq('id', 1).maybeSingle();
+            if (!settings || !settings.mod_token) {
+                box.className = 'mod-status-box inactive';
+                body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon inactive"><i class="fas fa-user-slash"></i></div><div><h4 style="font-size:14px;">حساب الأدمن غير مربوط</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">يجب ربط حساب يوتيوب أولاً من قسم الأدمن</p></div></div>';
+                return;
+            }
+
+            // جلب حالة الإشراف من Supabase
+            const { data: stream } = await supabaseClient.from('saved_streams').select('stream_moderator').eq('stream_url', 'https://www.youtube.com/watch?v=' + currentVideoId).maybeSingle();
+            const isModSaved = stream && stream.stream_moderator === settings.mod_channel_id;
+
+            // فحص فعلي من YouTube API (آخر 50 رسالة)
+            let isModYouTube = false;
+            if (liveChatId) {
+                try {
+                    for (let ki = 0; ki < Math.min(5, YOUTUBE_API_KEYS.length); ki++) {
+                        const kIdx = (currentKeyIndex + ki) % YOUTUBE_API_KEYS.length;
+                        const r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=' + liveChatId + '&part=authorDetails&maxResults=50&key=' + YOUTUBE_API_KEYS[kIdx]);
+                        if (!r.ok) continue;
+                        const d = await r.json();
+                        if (d.items) {
+                            for (const m of d.items) {
+                                const ad = m.authorDetails;
+                                if (ad && (ad.channelId === settings.mod_channel_id || ad.displayName === settings.mod_name)) {
+                                    isModYouTube = ad.isChatModerator === true;
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                } catch(e) {}
+            }
+
+            const isMod = isModYouTube;
+            // تحديث Supabase
+            if (isMod !== isModSaved) {
+                await supabaseClient.from('saved_streams').update({ stream_moderator: isMod ? settings.mod_channel_id : null }).eq('stream_url', 'https://www.youtube.com/watch?v=' + currentVideoId);
+            }
+
+            if (isMod) {
+                box.className = 'mod-status-box active';
+                body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon active"><i class="fas fa-shield-halved"></i></div><div style="flex:1;"><h4 style="font-size:14px;color:#34d399;">المشرف نشط</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + escapeHtml(settings.mod_name) + ' — الحذف التلقائي يعمل من السيرفر</p></div></div>';
+                btnArea.innerHTML = '';
+            } else {
+                box.className = 'mod-status-box inactive';
+                body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon inactive"><i class="fas fa-user-shield"></i></div><div style="flex:1;"><h4 style="font-size:14px;">غير مشرف حالياً</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + escapeHtml(settings.mod_name) + ' — يجب تعيينه من YouTube Studio</p></div></div>';
+                btnArea.innerHTML = '<button class="mod-btn-action mod-btn-gold" onclick="modPopupActivate()"><i class="fas fa-bolt"></i> إشراف — اشتراك + إرسال رسالة</button>' +
+                    '<div class="mod-steps"><h4><i class="fas fa-circle-info"></i> بعد الضغط، اذهب لـ YouTube Studio:</h4><ol><li>افتح YouTube Studio</li><li>اذهب للبث المباشر</li><li>إعدادات ← تعديل البث</li><li>أضف "' + escapeHtml(settings.mod_name) + '" كمشرف</li><li>بعد التعيين، الحذف يبدأ فوراً من السيرفر</li></ol></div>';
+            }
+        } catch(e) {
+            box.className = 'mod-status-box inactive';
+            body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon inactive"><i class="fas fa-exclamation-triangle"></i></div><div><h4 style="font-size:14px;">خطأ في التحقق</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">حاول مرة أخرى</p></div></div>';
+        }
+    }
+
+    async function modPopupActivate() {
+        const btn = document.querySelector('#mod-popup-btn-area .mod-btn-action');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإعداد...'; }
+
+        try {
+            const { data: settings } = await supabaseClient.from('app_settings').select('mod_token,mod_name,mod_channel_id').eq('id', 1).maybeSingle();
+            if (!settings || !settings.mod_token) { showToast('حساب الأدمن غير مربوط', 'error'); return; }
+
+            let token = settings.mod_token;
+            try { const p = JSON.parse(token); token = p.access_token || token; } catch(e) {}
+
+            if (!liveChatId) { showToast('لا يوجد بث نشط', 'error'); return; }
+
+            // 1) الاشتراك في القناة
+            let channelId = '';
+            try {
+                const vr = await fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet&id=' + currentVideoId + '&key=' + YOUTUBE_API_KEYS[0]);
+                if (vr.ok) { const vd = await vr.json(); channelId = vd.items?.[0]?.snippet?.channelId || ''; }
+            } catch(e) {}
+
+            if (channelId) {
+                try {
+                    await fetch('https://www.googleapis.com/youtube/v3/subscriptions?part=snippet', {
+                        method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ snippet: { resourceId: { kind: 'youtube#channel', channelId: channelId } } })
+                    });
+                } catch(e) {}
+            }
+
+            // 2) إرسال رسالة
+            const msgText = 'السلام عليكم! أنا مساعدكم الذكي — أرجو تفعيلي كمشرف من YouTube Studio لحماية البث';
+            const r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet', {
+                method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ snippet: { type: 'textMessageEvent', liveChatId: liveChatId, textMessageDetails: { messageText: msgText } } })
+            });
+
+            if (r.ok) {
+                showToast('تم الإرسال! اذهب لـ YouTube Studio وعين المشرف', 'success');
+                modPopupCheckStatus();
+            } else if (r.status === 403 && channelId) {
+                showToast('تم الاشتراك، أعد الضغط لإرسال الرسالة', 'info');
+                modPopupCheckStatus();
+            } else {
+                showToast('فشل: ' + r.status, 'error');
+                modPopupCheckStatus();
+            }
+        } catch(e) { showToast('خطأ: ' + e.message, 'error'); modPopupCheckStatus(); }
+    }
+
+    async function modPopupRenderKeywords() {
+        const list = document.getElementById('mod-popup-kw-list');
+        if (!currentVideoId) { list.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">لا يوجد بث نشط</p>'; return; }
+        try {
+            const { data } = await supabaseClient.from('monitor_keywords').select('keyword, keyword_type').eq('stream_id', currentVideoId);
+            if (!data || data.length === 0) { list.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">لا توجد كلمات بعد</p>'; return; }
+            list.innerHTML = data.map(k => {
+                const isBan = (k.keyword_type || 'monitor') === 'ban';
+                const cls = isBan ? 'ban' : 'monitor';
+                const icon = isBan ? 'fa-ban' : 'fa-eye';
+                const label = isBan ? 'حظر' : 'مراقبة';
+                const escaped = escapeHtml(k.keyword).replace(/'/g, '&#39;');
+                return '<span class="mod-kw-tag ' + cls + '"><i class="fas ' + icon + '" style="font-size:9px;"></i> ' + escaped + ' <span style="opacity:0.5;font-size:9px;">' + label + '</span> <button onclick="modPopupRemoveKeyword(\'' + escaped + '\')">&times;</button></span>';
+            }).join('');
+        } catch(e) { list.innerHTML = ''; }
+    }
+
+    async function modPopupAddKeyword() {
+        const input = document.getElementById('mod-popup-kw-input');
+        const select = document.getElementById('mod-popup-kw-type');
+        const kw = input.value.trim();
+        if (!kw || !currentVideoId) return;
+        const kwType = select ? select.value : 'ban';
+        try {
+            await supabaseClient.from('monitor_keywords').insert([{ stream_id: currentVideoId, keyword: kw, keyword_type: kwType }]);
+            input.value = '';
+            modPopupRenderKeywords();
+            showToast('تمت إضافة: ' + kw, 'success');
+        } catch(e) { showToast('فشل الإضافة', 'error'); }
+    }
+
+    async function modPopupRemoveKeyword(kw) {
+        if (!currentVideoId) return;
+        try {
+            await supabaseClient.from('monitor_keywords').delete().eq('stream_id', currentVideoId).eq('keyword', kw);
+            modPopupRenderKeywords();
+        } catch(e) {}
+    }
 </script>
+
+<!-- نافذة المراقب الذكي المنبثقة -->
+<div id="mod-popup-overlay" class="modal-overlay" onclick="if(event.target===this)closeModeratorPopup()">
+    <div class="modal-content mod-popup">
+        <div class="mod-popup-header">
+            <h3><i class="fas fa-shield-halved" style="color:var(--accent);"></i> المراقب الذكي</h3>
+            <button class="mod-popup-close" onclick="closeModeratorPopup()"><i class="fas fa-xmark"></i></button>
+        </div>
+
+        <!-- حالة الإشراف -->
+        <div id="mod-popup-status" class="mod-status-box checking">
+            <div id="mod-popup-status-body"></div>
+        </div>
+
+        <!-- زر الإشراف / الخطوات -->
+        <div id="mod-popup-btn-area"></div>
+
+        <!-- الكلمات المحظورة -->
+        <div class="mod-popup-section">
+            <h4><i class="fas fa-ban" style="color:#f87171;"></i> الكلمات المحظورة <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(يحذفها السيرفر فوراً)</span></h4>
+            <div class="mod-kw-input-row">
+                <input id="mod-popup-kw-input" type="text" class="input-field" placeholder="أضف كلمة..." style="font-size:13px;padding:10px 14px;" />
+                <select id="mod-popup-kw-type" style="padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.05);border:1.5px solid var(--border);color:var(--text);font-family:'Tajawal',sans-serif;font-size:12px;outline:none;">
+                    <option value="ban">حظر</option>
+                    <option value="monitor">مراقبة</option>
+                </select>
+                <button class="btn-primary" style="width:auto;padding:10px 16px;" onclick="modPopupAddKeyword()"><i class="fas fa-plus"></i></button>
+            </div>
+            <div id="mod-popup-kw-list" class="mod-kw-list"></div>
+        </div>
+
+        <p style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:8px;">الحذف يتم من السيرفر (Edge Function) كل 2 ثانية — أقل من ثانية من استلام الرسالة</p>
+    </div>
+</div>
+
 </body>
 </html>
