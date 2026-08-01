@@ -1697,6 +1697,73 @@
     let renderedChats = new Set();
 
     // ══════════════════════════════════════════════════════════════
+    // 🔄 جالب قاعدة البيانات — يعرض الرسائل الجديدة كل 1.5 ثانية
+    // ══════════════════════════════════════════════════════════════
+    // يقرأ من msgs_{videoId} عبر fn_get_stream_messages كل 1.5 ثانية
+    // ويُلحق فقط الرسائل الجديدة (لم تُعرض سابقاً)
+    // ══════════════════════════════════════════════════════════════
+    let dbPollTimer = null;
+    let dbPollRunning = false;
+    let lastDbMsgCount = 0;       // عدد الرسائل المعروضة آخر مرة
+    let dbPollInterval = 1500;    // 1.5 ثانية
+
+    function startDbPolling() {
+        stopDbPolling();
+        if (!currentVideoId) return;
+        lastDbMsgCount = 0;
+        console.log('[DB POLL] 🔄 بدء جلب DB كل 1.5 ثانية لـ', currentVideoId);
+        dbPollTimer = setInterval(() => pollDbForNewMessages(), dbPollInterval);
+        pollDbForNewMessages();
+    }
+
+    function stopDbPolling() {
+        if (dbPollTimer) { clearInterval(dbPollTimer); dbPollTimer = null; }
+        dbPollRunning = false;
+        lastDbMsgCount = 0;
+    }
+
+    async function pollDbForNewMessages() {
+        if (!currentVideoId || !supabaseClient || dbPollRunning) return;
+        dbPollRunning = true;
+        try {
+            const { data: allMessages, error } = await supabaseClient.rpc('fn_get_stream_messages', {
+                p_stream_id: currentVideoId,
+                p_limit: 2000
+            });
+            if (error) { console.error('[DB POLL] خطأ RPC:', error.message); return; }
+            if (!allMessages || allMessages.length === 0) {
+                if (lastDbMsgCount === 0 && commentsTotal === 0) {
+                    document.getElementById('comments-loading').style.display = 'none';
+                    document.getElementById('comments-empty').style.display = 'flex';
+                }
+                return;
+            }
+            document.getElementById('comments-loading').style.display = 'none';
+            document.getElementById('comments-empty').style.display = 'none';
+            document.getElementById('comments-error').style.display = 'none';
+            if (allMessages.length > lastDbMsgCount) {
+                const newMessages = allMessages.slice(lastDbMsgCount);
+                newMessages.forEach(msg => {
+                    addCommentToUI({
+                        stream_id: currentVideoId,
+                        author_name: msg.display_name || 'مجهول',
+                        comment_text: msg.message_text || '',
+                        published_at: msg.published_at
+                    }, true);
+                });
+                lastDbMsgCount = allMessages.length;
+                document.getElementById('comments-count').textContent = `${commentsTotal} تعليق`;
+            } else {
+                lastDbMsgCount = allMessages.length;
+            }
+        } catch(e) {
+            console.error('[DB POLL] استثناء:', e);
+        } finally {
+            dbPollRunning = false;
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════
     // 🌐 الجالب الشامل (Global Streamer) — يجلب كل البثوث كل 1.5 ثانية
     // ══════════════════════════════════════════════════════════════
     // يعمل في الخلفية بغض النظر عن أي بث تشاهده
@@ -2506,7 +2573,10 @@
 
         // === المرحلة 3: الخدمات الخلفية (غير حظرية) — فشل أي منها لا يغلق الجلسة ===
 
-        // 3أ: تحميل الأرشيف في الخلفية
+        // 3أ: بدء جلب قاعدة البيانات كل 1.5 ثانية
+        startDbPolling();
+
+        // 3ب: تحميل الأرشيف في الخلفية
         setEntryStep(1, 'active');
         loadExistingComments(effectiveVideoId)
             .then(count => {
@@ -2594,6 +2664,7 @@
 
     // === تنظيف الجلسة السابقة — يجب استدعاؤها قبل فتح جلسة جديدة ===
     function cleanupPreviousSession() {
+        stopDbPolling();
         stopYouTubePolling();
         if (leaderCheckTimer) { clearInterval(leaderCheckTimer); leaderCheckTimer = null; }
         if (youTubeReconnectTimer) { clearTimeout(youTubeReconnectTimer); youTubeReconnectTimer = null; }
@@ -2655,6 +2726,7 @@
                     published_at: item.published_at
                 }, true);
             });
+            lastDbMsgCount = allComments.length;
             return allComments.length;
         } catch(e) {
             console.error('Load existing error:', e);
@@ -4748,6 +4820,7 @@
         tempLoginData = null;
         entryTargetStreamData = null;
         // تنظيف كامل للموارد
+        stopDbPolling();
         cleanupPreviousSession();
         if (youTubeReconnectTimer) { clearTimeout(youTubeReconnectTimer); youTubeReconnectTimer = null; }
         // ملاحظة: الجالب الشامل (GS) يستمر — لا نوقفه عند الخروج من بث واحد
