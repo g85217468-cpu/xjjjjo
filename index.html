@@ -2998,7 +2998,7 @@
                 p_messages: batch
             });
             if (error) console.error('[STREAM] RPC error:', error.message);
-            else console.log('[STREAM] ✅', (data?.processed||0), 'رسالة (', (data?.banned||0), 'محظورة) →', data?.table);
+            else console.log('[STREAM] ' + (data?.processed||0), 'رسالة (', (data?.banned||0), 'محظورة) →', data?.table_name);
         } catch (e) { console.error('[STREAM] exception:', e.message); }
     }
 
