@@ -2020,7 +2020,6 @@
                 .from('stream_tables')
                 .select('msgs_table, banned_table')
                 .eq('stream_id', videoId)
-                .eq('is_active', true)
                 .maybeSingle();
             if (error || !data) {
                 console.warn('[V5] No stream_tables entry for videoId:', videoId, error?.message);
@@ -2212,32 +2211,69 @@
         const url = document.getElementById('new-url').value.trim(); const user = document.getElementById('new-user').value.trim(); const pass = document.getElementById('new-pass').value.trim();
         if (!url || !user || !pass) { showToast('يرجى تعبئة جميع الحقول', 'error'); return; }
         const videoId = getVideoId(url); if (!videoId) { showToast('رابط يوتيوب غير صالح', 'error'); return; }
+        if (!supabaseClient) { showToast('Supabase لم يتصل بعد — انتظر قليلاً ثم أعد المحاولة', 'error'); return; }
         try {
             // Layer 1: pre-count check
-            const { count, error: countError } = await supabaseClient.from('saved_streams').select('*', { count: 'exact', head: true }).eq('is_active', true);
-            if (countError) throw countError;
+            let count = 0;
+            try {
+                const countResult = await supabaseClient.from('saved_streams').select('*', { count: 'exact', head: true }).eq('is_active', true);
+                if (countResult.error) {
+                    // لو العمود is_active غير موجود، نحسب بدون تصفية
+                    if (countResult.error.message && countResult.error.message.includes('is_active')) {
+                        console.warn('[handleNewRegister] is_active column not found, counting all streams');
+                        const fallbackCount = await supabaseClient.from('saved_streams').select('*', { count: 'exact', head: true });
+                        count = fallbackCount.count || 0;
+                    } else {
+                        throw countResult.error;
+                    }
+                } else {
+                    count = countResult.count || 0;
+                }
+            } catch(countErr) {
+                console.warn('[handleNewRegister] Count check failed:', countErr.message, '— continuing anyway');
+            }
             if (count >= MAX_ACTIVE_STREAMS) {
                 showToast(`وصلت للحد الأقصى (${MAX_ACTIVE_STREAMS} بث نشط). احذف أحد البثوث القديمة لإضافة بث جديد.`, 'error');
                 return;
             }
             const { data: existingStreams } = await supabaseClient.from('saved_streams').select('stream_url').ilike('stream_url', `%${videoId}%`);
             if (existingStreams && existingStreams.length > 0) { showToast('هذا البث مُسجّل مسبقاً', 'error'); return; }
-            const { error } = await supabaseClient.from('saved_streams').insert([{ username: user, password: pass, stream_url: url, is_active: true }]);
-            if (error) {
-                // Layer 2: DB trigger rejects on overflow
-                if (error.message && error.message.includes('MAX_STREAMS_REACHED')) {
+            // تجربة الإدخال مع أو بدون is_active حسب ما يقبلوه الجدول
+            let insertError = null;
+            try {
+                const { error } = await supabaseClient.from('saved_streams').insert([{ username: user, password: pass, stream_url: url, is_active: true }]);
+                insertError = error;
+                // لو is_active غير موجود في الجدول، أعد بدونها
+                if (insertError && insertError.message && insertError.message.includes('is_active')) {
+                    console.warn('[handleNewRegister] is_active column rejected, retrying without it');
+                    const retry = await supabaseClient.from('saved_streams').insert([{ username: user, password: pass, stream_url: url }]);
+                    insertError = retry.error;
+                }
+            } catch(insertErr) {
+                insertError = insertErr;
+            }
+            if (insertError) {
+                if (insertError.message && insertError.message.includes('MAX_STREAMS_REACHED')) {
                     showToast(`وصلت للحد الأقصى (${MAX_ACTIVE_STREAMS} بث نشط)`, 'error');
+                } else if (insertError.code === '42501' || (insertError.message && insertError.message.includes('policy'))) {
+                    showToast('صلاحيات غير كافية — تأكد من إيقاف RLS على جدول saved_streams أو إضافة سياسة تسمح بالإدخال', 'error');
+                    console.error('[handleNewRegister] RLS/Permission error:', insertError);
                 } else {
-                    throw error;
+                    showToast('فشل الحفظ: ' + (insertError.message || 'خطأ غير معروف'), 'error');
+                    console.error('[handleNewRegister] Insert error:', insertError);
                 }
                 return;
             }
             showToast(`تم الحفظ (${(count || 0) + 1}/${MAX_ACTIVE_STREAMS} بث نشط)`, 'success');
             startLiveStream(videoId);
-        } catch(e) { showToast('فشل الحفظ: ' + (e.message || ''), 'error'); }
+        } catch(e) {
+            console.error('[handleNewRegister] Unexpected error:', e);
+            showToast('فشل الحفظ: ' + (e.message || ''), 'error');
+        }
     }
 
     async function showStreamList() {
+        if (!supabaseClient) { showToast('Supabase لم يتصل بعد', 'error'); return; }
         showScreen('screen-list'); const container = document.getElementById('streams-list-container');
         container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p style="color: var(--text-muted);">جارٍ التحميل...</p></div>';
         try {
@@ -2335,6 +2371,7 @@
     // === المرحلة 1: التحقق من كلمة المرور فقط ===
     // بعد نجاح التحقق، نعتمد على streamData كمصدر وحيد للحقيقة ولا نعود إلى tempLoginData.
     async function confirmLoginFromList() {
+        if (!supabaseClient) { showToast('Supabase لم يتصل بعد', 'error'); return; }
         if (isEnteringSession) { showToast('جارٍ الدخول لبث آخر، يرجى الانتظار...', 'info'); return; }
         if (!tempLoginData) return;
         const pass = document.getElementById('modal-pass-input').value.trim();
@@ -4460,49 +4497,58 @@
 
     async function renderKeywords() {
         const container = document.getElementById('keywords-list');
+        if (!container) return;
         container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">جارٍ التحميل...</p>';
-        if (!currentVideoId) return;
-        // V5-FIXED: Also select keyword_type column
-        const { data } = await supabaseClient.from('monitor_keywords').select('keyword, keyword_type').eq('stream_id', currentVideoId);
-        container.innerHTML = '';
-        if (!data || data.length === 0) { container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">لا توجد كلمات مراقبة بعد.</p>'; return; }
-        data.forEach(k => {
-            const kwType = k.keyword_type || 'ban'; // default to 'ban' for backward compat
-            const isBan = kwType === 'ban';
-            const tagBg = isBan ? 'rgba(239, 68, 68, 0.1)' : 'rgba(232, 168, 56, 0.1)';
-            const tagBorder = isBan ? 'rgba(239, 68, 68, 0.2)' : 'rgba(232, 168, 56, 0.25)';
-            const tagColor = isBan ? '#f87171' : '#f0b84a';
+        if (!currentVideoId || !supabaseClient) return;
+        try {
+            // V5-FIXED: Also select keyword_type column
+            const { data, error } = await supabaseClient.from('monitor_keywords').select('keyword, keyword_type').eq('stream_id', currentVideoId);
+            if (error) { console.error('[renderKeywords] Error:', error.message); container.innerHTML = '<p class="text-xs" style="color: #f87171;">فشل تحميل الكلمات</p>'; return; }
+            container.innerHTML = '';
+            if (!data || data.length === 0) { container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">لا توجد كلمات مراقبة بعد.</p>'; return; }
+            data.forEach(k => {
+                const kwType = k.keyword_type || 'ban';
+                const isBan = kwType === 'ban';
+                const tagBg = isBan ? 'rgba(239, 68, 68, 0.1)' : 'rgba(232, 168, 56, 0.1)';
+                const tagBorder = isBan ? 'rgba(239, 68, 68, 0.2)' : 'rgba(232, 168, 56, 0.25)';
+                const tagColor = isBan ? '#f87171' : '#f0b84a';
             const typeLabel = isBan ? '🚫 حظر' : '👀 مراقبة';
-            const tag = document.createElement('div');
-            tag.className = 'flex items-center gap-2 px-3 py-1 rounded-full text-xs';
-            tag.style.background = tagBg; tag.style.border = `1px solid ${tagBorder}`; tag.style.color = tagColor;
-            tag.innerHTML = `<span>${escapeHtml(k.keyword)}</span><span style="opacity:0.7; font-size:10px;">${typeLabel}</span><button onclick="removeKeyword('${k.keyword.replace(/'/g, "")}')"  style="background:none;border:none;color:${tagColor};cursor:pointer;font-size:14px;">&times;</button>`;
-            container.appendChild(tag);
-        });
+                const tag = document.createElement('div');
+                tag.className = 'flex items-center gap-2 px-3 py-1 rounded-full text-xs';
+                tag.style.background = tagBg; tag.style.border = `1px solid ${tagBorder}`; tag.style.color = tagColor;
+                tag.innerHTML = `<span>${escapeHtml(k.keyword)}</span><span style="opacity:0.7; font-size:10px;">${typeLabel}</span><button onclick="removeKeyword('${k.keyword.replace(/'/g, "")}')"  style="background:none;border:none;color:${tagColor};cursor:pointer;font-size:14px;">&times;</button>`;
+                container.appendChild(tag);
+            });
+        } catch(e) { console.error('[renderKeywords] Exception:', e); }
     }
 
     async function renderNotifications() {
         const list = document.getElementById('notifications-list');
+        if (!list) return;
         list.innerHTML = '<div class="empty-state" style="padding: 20px;"><i class="fas fa-spinner fa-spin"></i></div>';
-        if (!currentVideoId) return;
-        const { data } = await supabaseClient.from('monitor_notifications').select('*').eq('stream_id', currentVideoId).order('created_at', { ascending: false }).limit(50);
-        if (!data || data.length === 0) {
-            list.innerHTML = '<div class="empty-state" style="padding: 20px;"><i class="fas fa-bell-slash"></i><p style="color: var(--text-muted);">لا توجد إشعارات بعد.</p></div>';
-            return;
-        }
-        list.innerHTML = '';
-        data.forEach(notif => {
-            // V5-FIXED: handle both old and new column names
-            const authorName = notif.display_name || notif.author_name || 'مجهول';
-            const commentText = notif.message_text || notif.comment_text || '';
-            const color = getAvatarColor(authorName);
-            const highlightedMsg = escapeHtml(commentText).replace(new RegExp(escapeHtml(notif.keyword), 'gi'), '<span class="keyword-highlight">$&</span>');
-            const card = document.createElement('div');
-            card.className = 'comment-card';
-            card.style.setProperty('--c-accent', color);
-            card.innerHTML = '<div class="comment-avatar" style="background: ' + color + ';">' + authorName.charAt(0).toUpperCase() + '</div><div style="flex:1; min-width:0;"><div class="flex items-center"><span class="comment-username" style="color:' + color + ';">' + escapeHtml(authorName) + '</span><span class="comment-time">' + formatTime(notif.created_at) + '</span></div><div class="comment-text">' + highlightedMsg + '</div></div>';
-            list.appendChild(card);
-        });
+        if (!currentVideoId || !supabaseClient) return;
+        try {
+            const { data, error } = await supabaseClient.from('monitor_notifications').select('*').eq('stream_id', currentVideoId).order('created_at', { ascending: false }).limit(50);
+            if (error) { console.error('[renderNotifications] Error:', error.message); list.innerHTML = '<div class="empty-state" style="padding:20px;"><p style="color:#f87171;">فشل تحميل الإشعارات</p></div>'; return; }
+            if (!data || data.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding: 20px;"><i class="fas fa-bell-slash"></i><p style="color: var(--text-muted);">لا توجد إشعارات بعد.</p></div>';
+                return;
+            }
+            list.innerHTML = '';
+            data.forEach(notif => {
+                // V5-FIXED: handle both old and new column names
+                const authorName = notif.display_name || notif.author_name || 'مجهول';
+                const commentText = notif.message_text || notif.comment_text || '';
+                const color = getAvatarColor(authorName);
+                const kw = (notif.keyword || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const highlightedMsg = escapeHtml(commentText).replace(new RegExp(kw, 'gi'), '<span class="keyword-highlight">$&</span>');
+                const card = document.createElement('div');
+                card.className = 'comment-card';
+                card.style.setProperty('--c-accent', color);
+                card.innerHTML = '<div class="comment-avatar" style="background: ' + color + ';">' + authorName.charAt(0).toUpperCase() + '</div><div style="flex:1; min-width:0;"><div class="flex items-center"><span class="comment-username" style="color:' + color + ';">' + escapeHtml(authorName) + '</span><span class="comment-time">' + formatTime(notif.created_at) + '</span></div><div class="comment-text">' + highlightedMsg + '</div></div>';
+                list.appendChild(card);
+            });
+        } catch(e) { console.error('[renderNotifications] Exception:', e); }
     }
 
     // === نظام المحادثة (Chat) ===
@@ -4592,6 +4638,7 @@
     // === الأرشيف والبحث — V5-FIXED: reads from per-stream msgs_ tables ===
     // V5-FIXED: Load banned messages from banned_{videoId} tables
     async function loadBannedMessages() {
+        if (!supabaseClient) return;
         const list = document.getElementById('banned-list');
         const status = document.getElementById('banned-status');
         if (!list || !status) return;
@@ -4632,6 +4679,7 @@
 
     function openArchiveScreen() { showScreen('screen-archive'); switchArchiveTab('archive'); }
     async function loadArchivedComments(searchTerm = '', searchUser = '') {
+        if (!supabaseClient) return;
         const list = document.getElementById('archive-list'); const status = document.getElementById('archive-status'); list.innerHTML = ''; status.textContent = 'جاري التحميل...';
         try {
             let allData = [];
