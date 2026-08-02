@@ -45,6 +45,94 @@
 ║    stream_url TEXT NOT NULL, is_active BOOLEAN DEFAULT true, created_at TIMESTAMPTZ DEFAULT now()
 ║  );
 ║  ALTER TABLE saved_streams DISABLE ROW LEVEL SECURITY;
+║
+║  --- stream_tables registry ---
+║  CREATE TABLE IF NOT EXISTS stream_tables (
+║    stream_id TEXT PRIMARY KEY,
+║    msgs_table TEXT NOT NULL,
+║    banned_table TEXT NOT NULL,
+║    created_at TIMESTAMPTZ DEFAULT now()
+║  );
+║  ALTER TABLE stream_tables DISABLE ROW LEVEL SECURITY;
+║
+║  --- MASTER: Setup per-stream tables + registry (called from HTML on new stream) ---
+║  CREATE OR REPLACE FUNCTION fn_setup_stream(p_video_id text)
+║  RETURNS TABLE(msgs_table text, banned_table text)
+║  LANGUAGE plpgsql SECURITY DEFINER AS $$
+║  DECLARE
+║    v_msgs text := 'msgs_' || p_video_id;
+║    v_banned text := 'banned_' || p_video_id;
+║  BEGIN
+║    -- 1) Create per-stream messages table
+║    EXECUTE format('CREATE TABLE IF NOT EXISTS %I (
+║      id BIGSERIAL PRIMARY KEY,
+║      author TEXT,
+║      author_photo TEXT,
+║      message_text TEXT,
+║      message_id TEXT,
+║      published_at TIMESTAMPTZ DEFAULT now(),
+║      is_banned BOOLEAN DEFAULT false,
+║      ban_reason TEXT,
+║      created_at TIMESTAMPTZ DEFAULT now()
+║    )', v_msgs);
+║
+║    -- 2) Create per-stream banned/words table
+║    EXECUTE format('CREATE TABLE IF NOT EXISTS %I (
+║      id BIGSERIAL PRIMARY KEY,
+║      word TEXT NOT NULL UNIQUE,
+║      added_at TIMESTAMPTZ DEFAULT now()
+║    )', v_banned);
+║
+║    -- 3) Upsert registry (idempotent)
+║    INSERT INTO stream_tables (stream_id, msgs_table, banned_table)
+║    VALUES (p_video_id, v_msgs, v_banned)
+║    ON CONFLICT (stream_id) DO NOTHING;
+║
+║    -- 4) Return info
+║    RETURN QUERY SELECT v_msgs, v_banned;
+║  END;
+║  $$;
+║
+║  --- Add ban word to per-stream table ---
+║  CREATE OR REPLACE FUNCTION fn_add_ban_word(p_banned_table text, p_word text)
+║  RETURNS void
+║  LANGUAGE plpgsql SECURITY DEFINER AS $$
+║  BEGIN
+║    EXECUTE format('INSERT INTO %I (word) VALUES (%L) ON CONFLICT (word) DO NOTHING', p_banned_table, p_word);
+║  END;
+║  $$;
+║
+║  --- Remove ban word from per-stream table ---
+║  CREATE OR REPLACE FUNCTION fn_remove_ban_word(p_banned_table text, p_word text)
+║  RETURNS void
+║  LANGUAGE plpgsql SECURITY DEFINER AS $$
+║  BEGIN
+║    EXECUTE format('DELETE FROM %I WHERE word = %L', p_banned_table, p_word);
+║  END;
+║  $$;
+║
+║  --- Read ban words from per-stream table ---
+║  CREATE OR REPLACE FUNCTION fn_read_ban_words(p_banned_table text)
+║  RETURNS SETOF jsonb
+║  LANGUAGE plpgsql SECURITY DEFINER AS $$
+║  BEGIN
+║    RETURN QUERY EXECUTE format('SELECT row_to_json(t) FROM (SELECT word, added_at FROM %I ORDER BY added_at DESC) t', p_banned_table);
+║  END;
+║  $$;
+║
+║  --- Drop per-stream tables (called on admin delete) ---
+║  CREATE OR REPLACE FUNCTION fn_drop_stream_tables(p_video_id text)
+║  RETURNS void
+║  LANGUAGE plpgsql SECURITY DEFINER AS $$
+║  DECLARE
+║    v_msgs text := 'msgs_' || p_video_id;
+║    v_banned text := 'banned_' || p_video_id;
+║  BEGIN
+║    DELETE FROM stream_tables WHERE stream_id = p_video_id;
+║    EXECUTE 'DROP TABLE IF EXISTS ' || v_msgs;
+║    EXECUTE 'DROP TABLE IF EXISTS ' || v_banned;
+║  END;
+║  $$;
 ╚══════════════════════════════════════════════════════════════════════════╝
 -->
 <!DOCTYPE html>
@@ -2301,8 +2389,46 @@
         }
 
         showToast('تم حفظ البث بنجاح', 'success');
-        // === المرحلة 2: الدخول للبث (مستقل عن الحفظ) ===
+
+        // === المرحلة 2: إنشاء جداول البث (msgs_ + banned_ + stream_tables) ===
+        try {
+            const { data: setupData, error: setupErr } = await supabaseClient.rpc('fn_setup_stream', { p_video_id: videoId });
+            if (setupErr) {
+                console.warn('[handleNewRegister] fn_setup_stream failed:', setupErr.message);
+                // لا نمنع الدخول حتى لو إنشاء الجداول فشل
+            } else {
+                console.log('[handleNewRegister] Tables created:', setupData);
+                // تحديث الكاش
+                if (setupData && setupData[0]) {
+                    streamTableCache[videoId] = {
+                        msgs_table: setupData[0].msgs_table,
+                        banned_table: setupData[0].banned_table
+                    };
+                }
+                // === المرحلة 3: نقل الكلمات المحظورة الافتراضية لجدول البث ===
+                await syncDefaultBanWords(videoId);
+            }
+        } catch(setupEx) {
+            console.warn('[handleNewRegister] Setup tables exception:', setupEx.message);
+        }
+
+        // === المرحلة 4: الدخول للبث ===
         startLiveStream(videoId);
+    }
+
+    // مزامنة الكلمات المحظورة الافتراضية إلى جدول banned_{videoId}
+    async function syncDefaultBanWords(videoId) {
+        try {
+            const tableInfo = await getStreamTableInfo(videoId);
+            if (!tableInfo || !tableInfo.banned_table) return;
+            const defaultWords = ['سب', 'غبي', 'حمار', 'كلب'];
+            for (const w of defaultWords) {
+                await supabaseClient.rpc('fn_add_ban_word', { p_banned_table: tableInfo.banned_table, p_word: w });
+            }
+            console.log('[syncDefaultBanWords] Default words synced for', videoId);
+        } catch(e) {
+            console.warn('[syncDefaultBanWords] Failed:', e.message);
+        }
     }
 
     async function showStreamList() {
@@ -2360,23 +2486,29 @@
             if (videoId) {
                 showToast('جارٍ حذف بيانات البث...', 'info');
                 
-                const deleteResults = await Promise.allSettled([
+                const deleteOps = [
                     supabaseClient.from('archived_comments').delete().eq('stream_id', videoId),
                     supabaseClient.from('stream_messages').delete().eq('stream_id', videoId),
                     supabaseClient.from('monitor_keywords').delete().eq('stream_id', videoId),
                     supabaseClient.from('monitor_notifications').delete().eq('stream_id', videoId),
                     supabaseClient.from('stream_locks').delete().eq('stream_id', videoId),
-                ]);
+                    // ★ حذف الجداول الديناميكية msgs_ + banned_ + سجل stream_tables ★
+                    supabaseClient.rpc('fn_drop_stream_tables', { p_video_id: videoId }),
+                ];
+                
+                const deleteResults = await Promise.allSettled(deleteOps);
                 
                 // Log failures (non-blocking)
-                const tables = ['archived_comments', 'stream_messages', 'monitor_keywords', 'monitor_notifications', 'stream_locks'];
+                const tables = ['archived_comments', 'stream_messages', 'monitor_keywords', 'monitor_notifications', 'stream_locks', 'per-stream tables'];
                 const failedTables = deleteResults
                     .map((r, i) => r.status === 'rejected' ? tables[i] : null)
                     .filter(Boolean);
                 
                 if (failedTables.length > 0) {
-                    console.warn('Failed to delete tables:', failedTables);
+                    console.warn('Failed to delete:', failedTables);
                 }
+                // مسح الكاش
+                delete streamTableCache[videoId];
             }
             
             // 5) Finally: delete the stream itself from saved_streams
@@ -2646,6 +2778,24 @@
         document.getElementById('status-text').textContent = 'تم الاتصال — جارٍ تحميل الخدمات...';
 
         // === المرحلة 3: الخدمات الخلفية (غير حظرية) — فشل أي منها لا يغلق الجلسة ===
+
+        // 0: تأكد من وجود جداول البث الديناميكية (للبثوث القديمة التي لم تُنشئ جداول)
+        (async () => {
+            try {
+                const existing = await getStreamTableInfo(effectiveVideoId);
+                if (!existing) {
+                    console.log('[Entry] No stream_tables entry, running fn_setup_stream...');
+                    const { data } = await supabaseClient.rpc('fn_setup_stream', { p_video_id: effectiveVideoId });
+                    if (data && data[0]) {
+                        streamTableCache[effectiveVideoId] = {
+                            msgs_table: data[0].msgs_table,
+                            banned_table: data[0].banned_table
+                        };
+                        await syncDefaultBanWords(effectiveVideoId);
+                    }
+                }
+            } catch(e) { console.warn('[Entry] Auto-setup tables failed:', e.message); }
+        })();
 
         // 3أ: تحميل الأرشيف في الخلفية
         setEntryStep(1, 'active');
@@ -3336,17 +3486,49 @@
     let modForbiddenWords = [];
 
     // ════════════════════════════════════════════
-    // 1) الكلمات المحظورة (localStorage)
+    // 1) الكلمات المحظورة (DB أولاً، localStorage احتياطي)
     // ════════════════════════════════════════════
-    function modLoadSaved() {
+    async function modLoadSaved() {
+        // الأوّل: جرب تحميل الكلمات من جدول banned_{videoId} في DB
+        let dbWords = null;
         try {
-            const s = localStorage.getItem('vtrx_mod_forbidden');
-            if (s) modForbiddenWords = JSON.parse(s);
-            else modForbiddenWords = [...MOD_DEFAULT_WORDS];
-        } catch(e) { modForbiddenWords = [...MOD_DEFAULT_WORDS]; }
+            const tableInfo = await getStreamTableInfo(currentVideoId);
+            if (tableInfo && tableInfo.banned_table) {
+                const { data, error } = await supabaseClient.rpc('fn_read_ban_words', { p_banned_table: tableInfo.banned_table });
+                if (!error && data && data.length > 0) {
+                    dbWords = data.map(r => (r.word || '').toLowerCase()).filter(Boolean);
+                    console.log('[modLoadSaved] Loaded', dbWords.length, 'words from DB');
+                }
+            }
+        } catch(e) {
+            console.warn('[modLoadSaved] DB load failed, using localStorage:', e.message);
+        }
+
+        if (dbWords && dbWords.length > 0) {
+            modForbiddenWords = dbWords;
+        } else {
+            // احتياطي: localStorage
+            try {
+                const s = localStorage.getItem('vtrx_mod_forbidden');
+                if (s) modForbiddenWords = JSON.parse(s);
+                else modForbiddenWords = [...MOD_DEFAULT_WORDS];
+            } catch(e) { modForbiddenWords = [...MOD_DEFAULT_WORDS]; }
+        }
         modRenderWords();
     }
-    function modSaveWords() { localStorage.setItem('vtrx_mod_forbidden', JSON.stringify(modForbiddenWords)); }
+
+    // حفظ كلمة في DB + localStorage
+    async function modSaveWords() {
+        localStorage.setItem('vtrx_mod_forbidden', JSON.stringify(modForbiddenWords));
+        // مزامنة مع DB (غير حظرية)
+        try {
+            const tableInfo = await getStreamTableInfo(currentVideoId);
+            if (!tableInfo || !tableInfo.banned_table) return;
+            for (const w of modForbiddenWords) {
+                await supabaseClient.rpc('fn_add_ban_word', { p_banned_table: tableInfo.banned_table, p_word: w });
+            }
+        } catch(e) { /* non-blocking */ }
+    }
 
     function modRenderWords() {
         const c = document.getElementById('mod-words-list');
@@ -3361,7 +3543,7 @@
         ).join('');
     }
 
-    function modAddWord() {
+    async function modAddWord() {
         const i = document.getElementById('mod-new-word');
         const w = i.value.trim(); if (!w) return;
         const wl = w.toLowerCase();
@@ -3370,12 +3552,26 @@
         i.value = '';
         modRenderWords();
         modSaveWords();
+        // حفظ مباشر في DB
+        try {
+            const tableInfo = await getStreamTableInfo(currentVideoId);
+            if (tableInfo && tableInfo.banned_table) {
+                await supabaseClient.rpc('fn_add_ban_word', { p_banned_table: tableInfo.banned_table, p_word: wl });
+            }
+        } catch(e) { /* non-blocking */ }
     }
 
-    function modRemoveWord(w) {
+    async function modRemoveWord(w) {
         modForbiddenWords = modForbiddenWords.filter(x => x !== w);
         modRenderWords();
         modSaveWords();
+        // حذف من DB
+        try {
+            const tableInfo = await getStreamTableInfo(currentVideoId);
+            if (tableInfo && tableInfo.banned_table) {
+                await supabaseClient.rpc('fn_remove_ban_word', { p_banned_table: tableInfo.banned_table, p_word: w });
+            }
+        } catch(e) { /* non-blocking */ }
     }
 
     // ════════════════════════════════════════════
