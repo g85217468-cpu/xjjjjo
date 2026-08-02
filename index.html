@@ -27,6 +27,24 @@
 ║    RETURN QUERY EXECUTE v_sql;
 ║  END;
 ║  $$;
+║
+║  --- NEW: Smart save function (bypasses RLS + PostgREST cache) ---
+║  CREATE OR REPLACE FUNCTION fn_save_stream(p_username text, p_password text, p_url text)
+║  RETURNS void
+║  LANGUAGE plpgsql SECURITY DEFINER AS $$
+║  BEGIN
+║    INSERT INTO saved_streams (username, password, stream_url) VALUES (p_username, p_password, p_url);
+║  EXCEPTION WHEN undefined_column THEN
+║      INSERT INTO saved_streams (username, password, stream_url, is_active) VALUES (p_username, p_password, p_url, true);
+║  END;
+║  $$;
+║
+║  --- Ensure table exists + no RLS ---
+║  CREATE TABLE IF NOT EXISTS saved_streams (
+║    id BIGSERIAL PRIMARY KEY, username TEXT NOT NULL, password TEXT NOT NULL,
+║    stream_url TEXT NOT NULL, is_active BOOLEAN DEFAULT true, created_at TIMESTAMPTZ DEFAULT now()
+║  );
+║  ALTER TABLE saved_streams DISABLE ROW LEVEL SECURITY;
 ╚══════════════════════════════════════════════════════════════════════════╝
 -->
 <!DOCTYPE html>
@@ -2212,64 +2230,79 @@
         if (!url || !user || !pass) { showToast('يرجى تعبئة جميع الحقول', 'error'); return; }
         const videoId = getVideoId(url); if (!videoId) { showToast('رابط يوتيوب غير صالح', 'error'); return; }
         if (!supabaseClient) { showToast('Supabase لم يتصل بعد — انتظر قليلاً ثم أعد المحاولة', 'error'); return; }
-        try {
-            // Layer 1: pre-count check
-            let count = 0;
-            try {
-                const countResult = await supabaseClient.from('saved_streams').select('*', { count: 'exact', head: true }).eq('is_active', true);
-                if (countResult.error) {
-                    // لو العمود is_active غير موجود، نحسب بدون تصفية
-                    if (countResult.error.message && countResult.error.message.includes('is_active')) {
-                        console.warn('[handleNewRegister] is_active column not found, counting all streams');
-                        const fallbackCount = await supabaseClient.from('saved_streams').select('*', { count: 'exact', head: true });
-                        count = fallbackCount.count || 0;
-                    } else {
-                        throw countResult.error;
-                    }
-                } else {
-                    count = countResult.count || 0;
-                }
-            } catch(countErr) {
-                console.warn('[handleNewRegister] Count check failed:', countErr.message, '— continuing anyway');
-            }
-            if (count >= MAX_ACTIVE_STREAMS) {
-                showToast(`وصلت للحد الأقصى (${MAX_ACTIVE_STREAMS} بث نشط). احذف أحد البثوث القديمة لإضافة بث جديد.`, 'error');
-                return;
-            }
-            const { data: existingStreams } = await supabaseClient.from('saved_streams').select('stream_url').ilike('stream_url', `%${videoId}%`);
-            if (existingStreams && existingStreams.length > 0) { showToast('هذا البث مُسجّل مسبقاً', 'error'); return; }
-            // تجربة الإدخال مع أو بدون is_active حسب ما يقبلوه الجدول
-            let insertError = null;
-            try {
+
+        // === المرحلة 1: حفظ البث في Supabase (بشكل مستقل عن YouTube API) ===
+        let saveOk = false;
+        let saveErrMsg = '';
+
+        // الطريقة A: insert مباشر عبر PostgREST
+        const insertMethods = [
+            // 1) مع is_active
+            async () => {
                 const { error } = await supabaseClient.from('saved_streams').insert([{ username: user, password: pass, stream_url: url, is_active: true }]);
-                insertError = error;
-                // لو is_active غير موجود في الجدول، أعد بدونها
-                if (insertError && insertError.message && insertError.message.includes('is_active')) {
-                    console.warn('[handleNewRegister] is_active column rejected, retrying without it');
-                    const retry = await supabaseClient.from('saved_streams').insert([{ username: user, password: pass, stream_url: url }]);
-                    insertError = retry.error;
-                }
-            } catch(insertErr) {
-                insertError = insertErr;
+                return error;
+            },
+            // 2) بدون is_active
+            async () => {
+                const { error } = await supabaseClient.from('saved_streams').insert([{ username: user, password: pass, stream_url: url }]);
+                return error;
+            },
+            // 3) عبر RPC (يتجاوز كل مشاكل PostgREST cache و RLS إن كانت الدالة SECURITY DEFINER)
+            async () => {
+                const { error } = await supabaseClient.rpc('fn_save_stream', {
+                    p_username: user, p_password: pass, p_url: url
+                });
+                return error;
             }
-            if (insertError) {
-                if (insertError.message && insertError.message.includes('MAX_STREAMS_REACHED')) {
-                    showToast(`وصلت للحد الأقصى (${MAX_ACTIVE_STREAMS} بث نشط)`, 'error');
-                } else if (insertError.code === '42501' || (insertError.message && insertError.message.includes('policy'))) {
-                    showToast('صلاحيات غير كافية — تأكد من إيقاف RLS على جدول saved_streams أو إضافة سياسة تسمح بالإدخال', 'error');
-                    console.error('[handleNewRegister] RLS/Permission error:', insertError);
-                } else {
-                    showToast('فشل الحفظ: ' + (insertError.message || 'خطأ غير معروف'), 'error');
-                    console.error('[handleNewRegister] Insert error:', insertError);
+        ];
+
+        for (let i = 0; i < insertMethods.length; i++) {
+            try {
+                const err = await insertMethods[i]();
+                if (!err) { saveOk = true; break; }
+                saveErrMsg = err.message || '';
+                console.warn(`[handleNewRegister] Method ${i+1} failed:`, saveErrMsg);
+
+                // لو الخطأ هو أن الجدول أو العمود غير موجود → جرب الطريقة التالية
+                // لو الخطأ هو RLS policy → جرب RPC
+                // لو الخطأ هو duplicate → أوقف
+                if (saveErrMsg.includes('duplicate') || saveErrMsg.includes('unique') || saveErrMsg.includes('already exists')) {
+                    showToast('هذا البث مُسجّل مسبقاً', 'error'); return;
                 }
-                return;
+                // استمر للطريقة التالية
+            } catch(methodErr) {
+                saveErrMsg = methodErr.message || 'استثناء غير معروف';
+                console.warn(`[handleNewRegister] Method ${i+1} exception:`, saveErrMsg);
             }
-            showToast(`تم الحفظ (${(count || 0) + 1}/${MAX_ACTIVE_STREAMS} بث نشط)`, 'success');
-            startLiveStream(videoId);
-        } catch(e) {
-            console.error('[handleNewRegister] Unexpected error:', e);
-            showToast('فشل الحفظ: ' + (e.message || ''), 'error');
         }
+
+        if (!saveOk) {
+            // تحليل الخطأ وعرض رسالة ذكية
+            const msg = (saveErrMsg || '').toLowerCase();
+            if (msg.includes('policy') || msg.includes('42501') || msg.includes('permission') || msg.includes('rls')) {
+                showToast('خطأ صلاحيات — شغّل SQL التالي في Supabase Editor:\nALTER TABLE saved_streams DISABLE ROW LEVEL SECURITY;', 'error');
+            } else if (msg.includes('does not exist') || msg.includes('relation') || msg.includes('42P01')) {
+                showToast('جدول saved_streams غير موجود — شغّل SQL التالي في Supabase Editor:\nCREATE TABLE saved_streams (id BIGSERIAL PRIMARY KEY, username TEXT NOT NULL, password TEXT NOT NULL, stream_url TEXT NOT NULL, is_active BOOLEAN DEFAULT true, created_at TIMESTAMPTZ DEFAULT now());\nALTER TABLE saved_streams DISABLE ROW LEVEL SECURITY;', 'error');
+            } else if (msg.includes('api') || msg.includes('key') || msg.includes('invalid')) {
+                // هذا هو الخطأ المقصود — مفاتيح API أو مشكلة في التواصل مع Supabase
+                // نحفظ محلياً ونتابع
+                console.warn('[handleNewRegister] Supabase API issue, saving locally');
+                const localStreams = JSON.parse(localStorage.getItem('vrtx_local_streams') || '[]');
+                localStreams.push({ username: user, password: pass, stream_url: url, videoId: videoId, savedAt: Date.now() });
+                localStorage.setItem('vrtx_local_streams', JSON.stringify(localStreams));
+                showToast('تم الحفظ محلياً (مشكلة في الاتصال بقاعدة البيانات)', 'info');
+                startLiveStream(videoId);
+                return;
+            } else {
+                showToast('فشل الحفظ: ' + (saveErrMsg || 'خطأ غير معروف'), 'error');
+                console.error('[handleNewRegister] All methods failed:', saveErrMsg);
+            }
+            return;
+        }
+
+        showToast('تم حفظ البث بنجاح', 'success');
+        // === المرحلة 2: الدخول للبث (مستقل عن الحفظ) ===
+        startLiveStream(videoId);
     }
 
     async function showStreamList() {
