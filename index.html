@@ -1854,11 +1854,18 @@
         // تحميل البثوث النشطة من Supabase
         async loadStreams() {
             try {
-                const { data, error } = await supabaseClient
-                    .from('saved_streams')
-                    .select('id, stream_url, live_chat_id, next_page_token')
-                    .eq('is_active', true);
-                if (error) throw error;
+                let data = null;
+                // الطريقة 1: RPC
+                try {
+                    const res = await supabaseClient.rpc('fn_list_active_streams');
+                    if (!res.error && res.data) data = res.data;
+                } catch(e) { console.warn('[GS] RPC loadStreams failed:', e.message); }
+                // الطريقة 2: Direct fallback
+                if (!data) {
+                    const res = await supabaseClient.from('saved_streams').select('id, stream_url, live_chat_id, next_page_token').eq('is_active', true);
+                    if (res.error) throw res.error;
+                    data = res.data;
+                }
                 if (!data || data.length === 0) {
                     this.streams = [];
                     return;
@@ -2442,8 +2449,28 @@
         showScreen('screen-list'); const container = document.getElementById('streams-list-container');
         container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p style="color: var(--text-muted);">جارٍ التحميل...</p></div>';
         try {
-            const { data, error } = await supabaseClient.from('saved_streams').select('username, stream_url').order('created_at', { ascending: false });
-            if (error) throw error; if (!data || data.length === 0) { container.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i><p class="font-bold mt-4">لا توجد بثوث محفوظة بعد</p></div>'; return; }
+            // ★ الطريقة 1: RPC (يتجاوز PostgREST cache + RLS) ★
+            let data = null;
+            let rpcErr = null;
+            try {
+                const res = await supabaseClient.rpc('fn_list_streams');
+                if (res.error) throw res.error;
+                data = res.data;
+            } catch(e) { rpcErr = e.message; console.warn('[showStreamList] RPC failed:', rpcErr); }
+
+            // ★ الطريقة 2: Direct query (fallback) ★
+            if (!data) {
+                try {
+                    const res = await supabaseClient.from('saved_streams').select('username, stream_url').order('id', { ascending: false });
+                    if (res.error) throw res.error;
+                    data = res.data;
+                } catch(e2) {
+                    console.error('[showStreamList] Direct also failed:', e2.message);
+                    throw new Error('RPC: ' + rpcErr + ' | Direct: ' + e2.message);
+                }
+            }
+
+            if (!data || data.length === 0) { container.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i><p class="font-bold mt-4">لا توجد بثوث محفوظة بعد</p></div>'; return; }
             container.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>'; const grid = container.firstChild;
             data.forEach(stream => {
                 const videoId = getVideoId(stream.stream_url); const card = document.createElement('div');
