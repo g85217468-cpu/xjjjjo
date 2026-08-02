@@ -9,7 +9,7 @@
 ║  LANGUAGE plpgsql SECURITY DEFINER AS $$
 ║  DECLARE
 ║    v_sql text;
-║  BEGINA
+║  BEGIN
 ║    v_sql := format('SELECT row_to_json(t) FROM (SELECT * FROM %I ORDER BY published_at DESC LIMIT %L) t', p_table, p_limit);
 ║    RETURN QUERY EXECUTE v_sql;
 ║  END;
