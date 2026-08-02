@@ -9,7 +9,7 @@
 ║  LANGUAGE plpgsql SECURITY DEFINER AS $$
 ║  DECLARE
 ║    v_sql text;
-║  BEGIN
+║  BEGINA
 ║    v_sql := format('SELECT row_to_json(t) FROM (SELECT * FROM %I ORDER BY published_at DESC LIMIT %L) t', p_table, p_limit);
 ║    RETURN QUERY EXECUTE v_sql;
 ║  END;
@@ -2117,26 +2117,32 @@
     // Cache for stream table names to avoid repeated lookups
     const streamTableCache = {}; // { videoId: { msgs_table, banned_table } }
 
-    // Look up the per-stream table name from stream_tables
+    // Look up the per-stream table name — يُنشئ الجداول تلقائياً إن لم تكن موجودة
     async function getStreamTableInfo(videoId) {
         if (!videoId) return null;
         if (streamTableCache[videoId]) return streamTableCache[videoId];
         try {
-            const { data, error } = await supabaseClient
-                .from('stream_tables')
-                .select('msgs_table, banned_table')
-                .eq('stream_id', videoId)
-                .maybeSingle();
-            if (error || !data) {
-                console.warn('[V5] No stream_tables entry for videoId:', videoId, error?.message);
-                return null;
+            // ★ fn_get_or_create_stream_tables يُرجع أو يُنشئ الجداول ★
+            const { data, error } = await supabaseClient.rpc('fn_get_or_create_stream_tables', { p_video_id: videoId });
+            if (error) {
+                console.warn('[V5] fn_get_or_create_stream_tables failed for', videoId, error.message);
+                // Fallback: بناء الاسم يدوياً
+                const fallback = { msgs_table: 'msgs_' + videoId, banned_table: 'banned_' + videoId };
+                streamTableCache[videoId] = fallback;
+                return fallback;
             }
-            streamTableCache[videoId] = data;
-            return data;
+            if (data && data[0]) {
+                const info = { msgs_table: data[0].msgs_table, banned_table: data[0].banned_table };
+                streamTableCache[videoId] = info;
+                return info;
+            }
         } catch(e) {
             console.error('[V5] getStreamTableInfo error:', e);
-            return null;
         }
+        // Fallback
+        const fallback = { msgs_table: 'msgs_' + videoId, banned_table: 'banned_' + videoId };
+        streamTableCache[videoId] = fallback;
+        return fallback;
     }
 
     // Read from a dynamic table via RPC (fn_read_msgs_asc) with fallback to .from()
