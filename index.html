@@ -1,3 +1,34 @@
+<!--
+╔══════════════════════════════════════════════════════════════════════════╗
+║  V5-FIXED — Per-Stream Tables + RPC Reading + Banned Messages Tab          ║
+║                                                                            ║
+║  ⚠️  IMPORTANT: Run this SQL in Supabase SQL Editor before using:          ║
+║                                                                            ║
+║  CREATE OR REPLACE FUNCTION fn_read_msgs(p_table text, p_limit int DEFAULT 100)
+║  RETURNS SETOF jsonb
+║  LANGUAGE plpgsql SECURITY DEFINER AS $$
+║  DECLARE
+║    v_sql text;
+║  BEGIN
+║    v_sql := format('SELECT row_to_json(t) FROM (SELECT * FROM %I ORDER BY published_at DESC LIMIT %L) t', p_table, p_limit);
+║    RETURN QUERY EXECUTE v_sql;
+║  END;
+║  $$;
+║
+║  Also create fn_read_msgs_asc for ascending order:
+║
+║  CREATE OR REPLACE FUNCTION fn_read_msgs_asc(p_table text, p_limit int DEFAULT 1000, p_offset int DEFAULT 0)
+║  RETURNS SETOF jsonb
+║  LANGUAGE plpgsql SECURITY DEFINER AS $$
+║  DECLARE
+║    v_sql text;
+║  BEGIN
+║    v_sql := format('SELECT row_to_json(t) FROM (SELECT * FROM %I ORDER BY published_at ASC LIMIT %L OFFSET %L) t', p_table, p_limit, p_offset);
+║    RETURN QUERY EXECUTE v_sql;
+║  END;
+║  $$;
+╚══════════════════════════════════════════════════════════════════════════╝
+-->
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -69,8 +100,7 @@
         .comments-container::-webkit-scrollbar { width: 5px; }
         .comments-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
 
-        .comment-card { display: flex; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.025); border-right: 3px solid var(--c-accent, #e8a838); margin-bottom: 8px; animation: commentSlide 0.35s ease; transition: background 0.2s ease, opacity 0.5s ease; }
-    .comment-card.deleting { background: rgba(239,68,68,0.08) !important; border-right-color: #f87171 !important; }
+        .comment-card { display: flex; gap: 12px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.025); border-right: 3px solid var(--c-accent, #e8a838); margin-bottom: 8px; animation: commentSlide 0.35s ease; transition: background 0.2s ease; }
         .comment-card:hover { background: rgba(255,255,255,0.04); }
         .comment-card.archived { background: rgba(255,255,255,0.015); border-right-color: #4a4a5e; }
         
@@ -97,40 +127,6 @@
         .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .modal-overlay.show { opacity: 1; pointer-events: all; }
         .modal-content { max-width: 500px; width: 100%; border-radius: 20px; padding: 28px; background: #12121a; border: 1px solid var(--border); }
-
-        /* نافذة المراقب الذكي المنبثقة */
-        .mod-popup { max-width: 440px; width: 100%; max-height: 90vh; overflow-y: auto; }
-        .mod-popup-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-        .mod-popup-header h3 { font-size: 18px; font-weight: 700; color: var(--text); }
-        .mod-popup-close { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .mod-popup-close:hover { color: #f87171; border-color: rgba(248,113,113,0.3); }
-        .mod-status-box { padding: 16px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 16px; }
-        .mod-status-box.checking { background: rgba(232,168,56,0.05); border-color: rgba(232,168,56,0.2); }
-        .mod-status-box.active { background: rgba(52,211,153,0.05); border-color: rgba(52,211,153,0.2); }
-        .mod-status-box.inactive { background: rgba(248,113,113,0.05); border-color: rgba(248,113,113,0.2); }
-        .mod-status-row { display: flex; align-items: center; gap: 12px; }
-        .mod-status-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-        .mod-status-icon.active { background: rgba(52,211,153,0.15); color: #34d399; }
-        .mod-status-icon.inactive { background: rgba(248,113,113,0.15); color: #f87171; }
-        .mod-status-icon.checking { background: rgba(232,168,56,0.15); color: #e8a838; }
-        .mod-btn-action { width: 100%; padding: 12px; border-radius: 12px; border: none; font-family: 'Tajawal', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .mod-btn-action:hover { transform: translateY(-1px); }
-        .mod-btn-action:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-        .mod-btn-green { background: linear-gradient(135deg, #34d399, #059669); color: #08080e; }
-        .mod-btn-gold { background: linear-gradient(135deg, #e8a838, #d4952e); color: #08080e; }
-        .mod-steps { margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); }
-        .mod-steps h4 { font-size: 12px; color: var(--accent); margin-bottom: 8px; }
-        .mod-steps ol { font-size: 11px; color: var(--text-muted); padding-right: 16px; line-height: 2; }
-        .mod-popup-section { margin-bottom: 16px; }
-        .mod-popup-section h4 { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-        .mod-kw-input-row { display: flex; gap: 8px; }
-        .mod-kw-input-row input { flex: 1; }
-        .mod-kw-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-        .mod-kw-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 12px; }
-        .mod-kw-tag.ban { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.2); color: #f87171; }
-        .mod-kw-tag.monitor { background: rgba(232,168,56,0.1); border: 1px solid rgba(232,168,56,0.2); color: #e8a838; }
-        .mod-kw-tag button { background: none; border: none; color: inherit; cursor: pointer; opacity: 0.6; font-size: 11px; padding: 0 2px; }
-        .mod-kw-tag button:hover { opacity: 1; }
 
         .back-btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: transparent; border: none; color: var(--text-muted); font-size: 14px; cursor: pointer; border-radius: 10px; }
         .back-btn:hover { color: var(--accent); background: var(--accent-glow); }
@@ -1068,12 +1064,6 @@
             box-shadow: 0 0 12px rgba(232, 168, 56, 0.08) !important;
         }
 
-    
-    .comment-card.deleting { opacity: 0; transform: translateX(40px); transition: all 0.6s ease; pointer-events: none; }
-    .keyword-tag-monitor { background: rgba(232,168,56,0.1); border: 1px solid rgba(232,168,56,0.25); color: #e8a838; }
-    .keyword-tag-ban { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #f87171; }
-    .mod-badge-stream { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 10px; background: rgba(52,211,153,0.1); color: #34d399; border: 1px solid rgba(52,211,153,0.2); margin-right: 6px; }
-
     </style>
 </head>
 <body>
@@ -1223,13 +1213,16 @@
             <div style="width: 38px;"></div>
         </header>
 
-        <!-- تبويبات الأرشيف: الأرشيف / المراقب الذكي -->
+        <!-- تبويبات الأرشيف: الأرشيف / المحظورة / المراقب الذكي -->
         <div class="archive-tabs">
             <button id="archive-tab-btn" class="archive-tab active" onclick="switchArchiveTab('archive')">
                 <i class="fas fa-archive"></i> الأرشيف
             </button>
+            <button id="banned-tab-btn" class="archive-tab" onclick="switchArchiveTab('banned')">
+                <i class="fas fa-ban"></i> المحظورة
+            </button>
             <button id="monitor-tab-btn" class="archive-tab" onclick="switchArchiveTab('monitor')">
-                <i class="fas fa-shield-halved"></i> المراقب الذكي
+                <i class="fas fa-eye"></i> المراقب الذكي
             </button>
         </div>
 
@@ -1246,6 +1239,13 @@
         </div>
 
         <!-- لوح المراقب الذكي المُحسّن: أدمن → تخزين التوكن → المستخدم يطلب تعيين -->
+        <div id="banned-pane" class="archive-pane">
+            <div class="w-full p-4 max-w-2xl mx-auto" style="flex-shrink: 0;">
+                <div id="banned-status" class="text-xs" style="color: var(--text-muted);">جارٍ تحميل الرسائل المحظورة...</div>
+            </div>
+            <div class="comments-container"><div id="banned-list"></div></div>
+        </div>
+
         <div id="monitor-pane" class="archive-pane">
             <div class="mod-section" style="overflow-y: auto; max-height: 100%;">
 
@@ -1358,24 +1358,31 @@
                     </div>
                 </div>
 
-
-
-                <!-- ═══ كلمات المراقبة والحظر (نظام مدمج) ═══ -->
-                <div class="mod-card">
-                    <div class="mod-card-title"><i class="fas fa-shield-halved"></i> كلمات المراقبة والحظر</div>
-                    <p class="text-xs mb-2" style="color: var(--text-muted);">
-                        <span style="color:#f0b84a;">مراقبة</span> = إشعار فقط &nbsp;|&nbsp; 
-                        <span style="color:#f87171;">حظر</span> = حذف فوري من يوتيوب + إخفاء من الواجهة
-                    </p>
+                <!-- الكلمات المحظورة (للحذف التلقائي) -->
+                <div class="mod-card" id="mod-words-card">
+                    <div class="mod-card-title"><i class="fas fa-ban"></i> الكلمات المحظورة (حذف تلقائي)</div>
+                    <p class="text-xs mb-2" style="color: var(--text-muted);">عند تعيين المشرف، أي رسالة تحتوي هذه الكلمات تُحذف فوراً.</p>
                     <div style="display: flex; gap: 8px;">
-                        <input id="keyword-input" type="text" class="input-field" placeholder="أضف كلمة..." style="text-align: right; flex: 1;" />
-                        <select id="keyword-type-select" style="padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.05);border:1.5px solid var(--border);color:var(--text);font-family:'Tajawal',sans-serif;font-size:13px;outline:none;">
-                            <option value="ban">حظر</option>
-                            <option value="monitor">مراقبة</option>
+                        <input type="text" class="mod-input" id="mod-new-word" placeholder="أضف كلمة مسيئة..." onkeydown="if(event.key==='Enter')modAddWord()" />
+                        <button class="mod-btn mod-btn-danger" onclick="modAddWord()" style="width: auto; padding: 10px 14px; flex-shrink: 0;"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div class="mod-words-container" id="mod-words-list"></div>
+                </div>
+
+                <!-- كلمات المراقبة الأصلية (إشعارات فقط) -->
+                <div class="mod-card">
+                    <div class="mod-card-title"><i class="fas fa-eye"></i> كلمات المراقبة (للإشعارات)</div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input id="keyword-input" type="text" class="input-field" placeholder="مثال: سؤال، هدية، تحدٍّ..." style="text-align: right; flex: 1;" />
+                        <!-- V5-FIXED: keyword type selector -->
+                        <select id="keyword-type-select" style="background: var(--hx-bg-soft); border: 1px solid var(--hx-border); color: var(--hx-fg); padding: 10px; border-radius: 10px; font-family: 'Tajawal'; font-size: 12px; outline: none;">
+                            <option value="ban" style="color:#f87171;">🚫 حظر</option>
+                            <option value="monitor" style="color:#f0b84a;">👀 مراقبة</option>
                         </select>
                         <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="addKeyword()"><i class="fas fa-plus"></i></button>
                     </div>
                     <div id="keywords-list" class="flex flex-wrap gap-2" style="margin-top: 8px;"></div>
+                    <p class="text-xs mt-2" style="color: var(--text-muted);">تطابق → إشارة على أيقونة الجرس <i class="fas fa-bell" style="color: var(--accent);"></i></p>
                 </div>
 
                 <!-- مراقبة البث المباشر -->
@@ -1555,10 +1562,45 @@
 
 <script>
     const SUPABASE_URL = 'https://jtwdanpxhkkqssjgnonp.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_9FjA5hRl_83m6zh5nbnZNQ_Ndu2ZX5k';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0d2RhbnB4aGtrcXNzamdub25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MTkxOTEsImV4cCI6MjEwMDQ5NTE5MX0.2oIMqoEhVz0GmKouRiS9zVVBlHe-3aT1NRJpFCTwJSw';
     
     const YOUTUBE_API_KEYS = [
-      // === المفاتيح العاملة (150) — تم نقلها للمقدمة ===
+      // === المفاتيح الأصلية (55) ===
+      'AIzaSyCzX3_-OPo7oiDpBNmUS5mLBdzBBSFDsfc', 'AIzaSyCGI4VMJvCnoHBNafvcV7F78_Q89zKp-sU',
+      'AIzaSyAGlgZQYCqH1G444RIGukYkAMAJ1v0q3_w', 'AIzaSyAxwIl9DH1QddmcUMHTZyhECw2uax5si-k',
+      'AIzaSyCUJ6GTpUWolRui1lLI5k3SjK_VU5A-2D8', 'AIzaSyBsw1AoUisoR4lZBtGOXToR_pZCZYXqeDs',
+      'AIzaSyBMR1BaijCNXV_x_pihYgQCjExdKQDUh7Q', 'AIzaSyAwr2ZbhttD4ULqw42PaBJumTTgAaFJKgU',
+      'AIzaSyC24ppt2DAqw_I1CBqK41naR0MbdQiXZkA', 'AIzaSyBwFvUqBawzQpORTPnPvlRvDg1PJcEDu6g',
+      'AIzaSyCbM4KBisBwOeXsNwCCIYhfJQqDtv8gmbM', 'AIzaSyCeehXFLZJ3CcgReTbd3V5qrqgyJOiMpc0',
+      'AIzaSyDkbMN-4Xu8HOKHgMzW6QzJFkemkOvBEJw', 'AIzaSyBBZt22Mo1aUAfATmz6r6ZBoxemWxLZBFk',
+      'AIzaSyDvDeRtB-LopQ5WhiMIrLy1UITNunJ5t3M', 'AIzaSyDlFf8toYcLG3nEIsWgmLirg7ALZLN6SF4',
+      'AIzaSyAqtG1TUBToZz_Wv-COtEGU-zf4jBKVryU', 'AIzaSyAq4dwYebVqiQGRkGaEjuGSX6vLaDtL_0w',
+      'AIzaSyB2cJs59JAjb-9aPvU2iJJZ5_YQvuBiUAA', 'AIzaSyDL0Pysw8xbrt4RsC4VChTbrRLa0EcoXd4',
+      'AIzaSyAvVkHWkHktYO_8BCYpRZ-mHBcd0quECTU', 'AIzaSyCR91s-QU1qoW4WhGkPrK13YfM37vkGon8',
+      'AIzaSyDiT6xru-D7qigGIZedLhize1NkvoHZzoU', 'AIzaSyBtaw-wKdp_M4NCfStuuU5Yv2vyyXVwWPo',
+      'AIzaSyCi1_7OyRBqkVXHPQ85QmJkEhEgSepacfY', 'AIzaSyDIG3FhSoh5KdSUG5e1iwurz9lSJy1mFBU',
+      'AIzaSyB1bqvtt2wW3lh1sZiM4zkGVZgc3A8BAxo', 'AIzaSyAfbfCrJGPNzGc5qEhp5gzFR8pIKhMHFKg',
+      'AIzaSyCmIn_MqhFRzhSXOy49nNTiDKOi4UI6pew', 'AIzaSyDWE3x7a-v5hJFKfrRzUXITpEHp7unOG8A',
+      'AIzaSyDGxiGVJMz8kP-d2zKaeSP4IH32B3fnl54', 'AIzaSyB3RzG0txVtmSldwmvLO5XuqoSUCZEMi_A',
+      'AIzaSyBUiFJ45xjzCuSrKSoTOM6z2yQYpnzQDSs', 'AIzaSyDKIvjAn-7FDHPvMKSVBrxDYOy7l24E7_w',
+      'AIzaSyB73eC1eMqnU9mv3kkKnWheuRkONrg3LB0', 'AIzaSyA6-nYOOcNBvPjJ4CSueWYkuiFayTY2M8I',
+      'AIzaSyBjwhSfL7dgAnB_19VMEd-RRSiBQRpANxA', 'AIzaSyAKSOVM9FtTlgYTfOCiM1Ydq7kNOIKzLw8',
+      'AIzaSyCKiwiLZpzptvxGZvTbDCx4KGd2hcikoiQ', 'AIzaSyD24XfFbwWZYuzhFeTD9cOn2on7CLjPYTk',
+      'AIzaSyCnKUv79SkgtAtHfmeyNBh9R8FPX4bgmic', 'AIzaSyDYAjKF7rd58ap2Pbh6wm5Z_a7GSGrwUY4',
+      'AIzaSyBSag1jDBGC_8D1SmZwbMedy1hk1EIbwtM', 'AIzaSyArqLUE6Z4bcwzRwAm9IYiwPfUsXJRyef4',
+      'AIzaSyCMe_CHwtM00ZFRfn5lZtR6OZF1umywL1w', 'AIzaSyDSyQ9LedGSGDJtbXmLr5H7vMo6iTjhS1I',
+      'AIzaSyBEyPTV5ze4OBWP8XOFU3UcRDQJR2bBVaE', 'AIzaSyDUMAPA3II3RPwIsdbXawX_DFZeahYBGi8',
+      'AIzaSyCj5eaRy4_IBj7UyhzWZ915cc_IJq0qdyo', 'AIzaSyB8X5oaEKzkN7452-4oRMLsFHWjKuZWXx8',
+      'AIzaSyBDd-Q9_jxKrvaBua1PnlJXdGB7e4ljGpI', 'AIzaSyAWhzU8PnQSctAoprp_h385kxaNoslx6Ek',
+      'AIzaSyBPpZ8OHnQ4co8-pZUyAdBGflYClrJSHJ0', 'AIzaSyDMjufpiZLlf_DAXKfo3So_6JciaSeUAc8',
+      'AIzaSyBLV8gPAwtYMU88Mm_qzvN19bkq4mrTgOk',
+      // === المفاتيح الجديدة (102) ===
+      'AIzaSyB9P3-3fCwNF-3ggGRxLVw1He1DekcYVk0', 'AIzaSyBhE-diJ84NoKyTdC2_o1nqSDBEl4YtnAM',
+      'AIzaSyBysAagECO2K-EXMPEcFKhQlOPBlaEu0dM', 'AIzaSyCxFkiQZxTWZ-jD_Q3W_dm1EtAR7xlTCrE',
+      'AIzaSyDfMwr_-zSXVZ9DXB68BfaZC5IDFnt-H3U', 'AIzaSyCdi3AN6sZKf5Q2xdlHAf9vIW9YfqyGRbg',
+      'AIzaSyBkoIKZnZZw4AFc6mEPjQJtir3yV1pPWes', 'AIzaSyBGiaEzqQfJdQSJFx1oMpveGjGz-3LX5Yo',
+      'AIzaSyBLvXiR3Ql327dlrUtLMsL-O1lAbPF4tHA', 'AIzaSyDIArpZVjYkUZGa9nomntGQ2gL353cVil8',
+      'AIzaSyAj4uOP0nw908soxurzmNTSN5lnJb1rRXE', 'AIzaSyDDUR7kUkSM7zGpkEBN1b1et3nqiKncZzM',
       'AIzaSyCvwzmPUF_zrRhN4Iv8823slIJkxLNscbc', 'AIzaSyBfqrd-64JM_Y0GyZXApkYr_C46kZHQ3oQ',
       'AIzaSyD4Bzow6c2ppB4Dc39aYItz3_Vzk9uBc7A', 'AIzaSyDZguIJ05Ldyxh5VHEAv09y4sj5GZ8ua5c',
       'AIzaSyBYisyKCMh7GDAllya6j5T0_7kl8M5ttwo', 'AIzaSyCGD0gVOkvvm7qG72sR_pr-8cD_QDAssHk',
@@ -1604,6 +1646,7 @@
       'AIzaSyCLFqCRy7efVwhoGHBeEZ_7zWjYwoipf6g', 'AIzaSyCexsWBL-CVEQLhf4lfk0gV_uU5s-vU0z8',
       'AIzaSyALvYACPGwULe3qXOPZymGaU2jlnfg0e0s', 'AIzaSyA3yiEIxKWaYBH9airJ5nUKEXS0jIhOuz0',
       'AIzaSyAC3Zf_rf8QjnKYquYRlleV-WYGW8olBOg', 'AIzaSyBqvlZ1PiS6lxkWZiRAseTAUPaCkoD3GVg',
+      // === المفاتيح الإضافية (60) ===
       'AIzaSyDtD5jDP0p8as8WpTVtLmYW80PJP4CF35c', 'AIzaSyAe9GDsx0HqX-M7hCw9PBrmOeHY6kYEU5A',
       'AIzaSyD-QD9Oo8mHgyLx-UG98bHHwO0zWgWXzug', 'AIzaSyDKemhsQfy25xwwi2k313219IqfINWvOco',
       'AIzaSyCgpPayEgPW-DRTNfrB1tF6HQ1cZ64eYlM', 'AIzaSyBz5QrvVA3FZBdcbfl38NmB6tAEdm7utbc',
@@ -1633,42 +1676,7 @@
       'AIzaSyAi7h6OOEoea6avxfhZR887QaLBSIjavD4', 'AIzaSyCw1_5vZMoRoRKiZ-UC5GyGghdygbNI4Tg',
       'AIzaSyCCYz6jpI7x1B-6NT8BlDjXg9L6c7at_Tk', 'AIzaSyCmQxNwRzixgKbjuT_-PoF49RPPaq0botA',
       'AIzaSyCNpUASI7x1iHK-tb-5hRqdPoe_r5cSqyM', 'AIzaSyBvASbJBcPhkQS6aRml9HUT06yQLFHjY3I',
-      'AIzaSyAKqkj1T1gMKd41LuC7imRCVEKQdhwQ9Do', 'AIzaSyAWtfTmUuEzhf0s4aFQKEkOpYYsm8vH02c',
-      // === المفاتيح المعلقة (67) — تم نقلها للنهاية ===
-      'AIzaSyCzX3_-OPo7oiDpBNmUS5mLBdzBBSFDsfc', 'AIzaSyCGI4VMJvCnoHBNafvcV7F78_Q89zKp-sU',
-      'AIzaSyAGlgZQYCqH1G444RIGukYkAMAJ1v0q3_w', 'AIzaSyAxwIl9DH1QddmcUMHTZyhECw2uax5si-k',
-      'AIzaSyCUJ6GTpUWolRui1lLI5k3SjK_VU5A-2D8', 'AIzaSyBsw1AoUisoR4lZBtGOXToR_pZCZYXqeDs',
-      'AIzaSyBMR1BaijCNXV_x_pihYgQCjExdKQDUh7Q', 'AIzaSyAwr2ZbhttD4ULqw42PaBJumTTgAaFJKgU',
-      'AIzaSyC24ppt2DAqw_I1CBqK41naR0MbdQiXZkA', 'AIzaSyBwFvUqBawzQpORTPnPvlRvDg1PJcEDu6g',
-      'AIzaSyCbM4KBisBwOeXsNwCCIYhfJQqDtv8gmbM', 'AIzaSyCeehXFLZJ3CcgReTbd3V5qrqgyJOiMpc0',
-      'AIzaSyDkbMN-4Xu8HOKHgMzW6QzJFkemkOvBEJw', 'AIzaSyBBZt22Mo1aUAfATmz6r6ZBoxemWxLZBFk',
-      'AIzaSyDvDeRtB-LopQ5WhiMIrLy1UITNunJ5t3M', 'AIzaSyDlFf8toYcLG3nEIsWgmLirg7ALZLN6SF4',
-      'AIzaSyAqtG1TUBToZz_Wv-COtEGU-zf4jBKVryU', 'AIzaSyAq4dwYebVqiQGRkGaEjuGSX6vLaDtL_0w',
-      'AIzaSyB2cJs59JAjb-9aPvU2iJJZ5_YQvuBiUAA', 'AIzaSyDL0Pysw8xbrt4RsC4VChTbrRLa0EcoXd4',
-      'AIzaSyAvVkHWkHktYO_8BCYpRZ-mHBcd0quECTU', 'AIzaSyCR91s-QU1qoW4WhGkPrK13YfM37vkGon8',
-      'AIzaSyDiT6xru-D7qigGIZedLhize1NkvoHZzoU', 'AIzaSyBtaw-wKdp_M4NCfStuuU5Yv2vyyXVwWPo',
-      'AIzaSyCi1_7OyRBqkVXHPQ85QmJkEhEgSepacfY', 'AIzaSyDIG3FhSoh5KdSUG5e1iwurz9lSJy1mFBU',
-      'AIzaSyB1bqvtt2wW3lh1sZiM4zkGVZgc3A8BAxo', 'AIzaSyAfbfCrJGPNzGc5qEhp5gzFR8pIKhMHFKg',
-      'AIzaSyCmIn_MqhFRzhSXOy49nNTiDKOi4UI6pew', 'AIzaSyDWE3x7a-v5hJFKfrRzUXITpEHp7unOG8A',
-      'AIzaSyDGxiGVJMz8kP-d2zKaeSP4IH32B3fnl54', 'AIzaSyB3RzG0txVtmSldwmvLO5XuqoSUCZEMi_A',
-      'AIzaSyBUiFJ45xjzCuSrKSoTOM6z2yQYpnzQDSs', 'AIzaSyDKIvjAn-7FDHPvMKSVBrxDYOy7l24E7_w',
-      'AIzaSyB73eC1eMqnU9mv3kkKnWheuRkONrg3LB0', 'AIzaSyA6-nYOOcNBvPjJ4CSueWYkuiFayTY2M8I',
-      'AIzaSyBjwhSfL7dgAnB_19VMEd-RRSiBQRpANxA', 'AIzaSyAKSOVM9FtTlgYTfOCiM1Ydq7kNOIKzLw8',
-      'AIzaSyCKiwiLZpzptvxGZvTbDCx4KGd2hcikoiQ', 'AIzaSyD24XfFbwWZYuzhFeTD9cOn2on7CLjPYTk',
-      'AIzaSyCnKUv79SkgtAtHfmeyNBh9R8FPX4bgmic', 'AIzaSyDYAjKF7rd58ap2Pbh6wm5Z_a7GSGrwUY4',
-      'AIzaSyBSag1jDBGC_8D1SmZwbMedy1hk1EIbwtM', 'AIzaSyArqLUE6Z4bcwzRwAm9IYiwPfUsXJRyef4',
-      'AIzaSyCMe_CHwtM00ZFRfn5lZtR6OZF1umywL1w', 'AIzaSyDSyQ9LedGSGDJtbXmLr5H7vMo6iTjhS1I',
-      'AIzaSyBEyPTV5ze4OBWP8XOFU3UcRDQJR2bBVaE', 'AIzaSyDUMAPA3II3RPwIsdbXawX_DFZeahYBGi8',
-      'AIzaSyCj5eaRy4_IBj7UyhzWZ915cc_IJq0qdyo', 'AIzaSyB8X5oaEKzkN7452-4oRMLsFHWjKuZWXx8',
-      'AIzaSyBDd-Q9_jxKrvaBua1PnlJXdGB7e4ljGpI', 'AIzaSyAWhzU8PnQSctAoprp_h385kxaNoslx6Ek',
-      'AIzaSyBPpZ8OHnQ4co8-pZUyAdBGflYClrJSHJ0', 'AIzaSyDMjufpiZLlf_DAXKfo3So_6JciaSeUAc8',
-      'AIzaSyBLV8gPAwtYMU88Mm_qzvN19bkq4mrTgOk', 'AIzaSyB9P3-3fCwNF-3ggGRxLVw1He1DekcYVk0',
-      'AIzaSyBhE-diJ84NoKyTdC2_o1nqSDBEl4YtnAM', 'AIzaSyBysAagECO2K-EXMPEcFKhQlOPBlaEu0dM',
-      'AIzaSyCxFkiQZxTWZ-jD_Q3W_dm1EtAR7xlTCrE', 'AIzaSyDfMwr_-zSXVZ9DXB68BfaZC5IDFnt-H3U',
-      'AIzaSyCdi3AN6sZKf5Q2xdlHAf9vIW9YfqyGRbg', 'AIzaSyBkoIKZnZZw4AFc6mEPjQJtir3yV1pPWes',
-      'AIzaSyBGiaEzqQfJdQSJFx1oMpveGjGz-3LX5Yo', 'AIzaSyBLvXiR3Ql327dlrUtLMsL-O1lAbPF4tHA',
-      'AIzaSyDIArpZVjYkUZGa9nomntGQ2gL353cVil8', 'AIzaSyAj4uOP0nw908soxurzmNTSN5lnJb1rRXE',
-      'AIzaSyDDUR7kUkSM7zGpkEBN1b1et3nqiKncZzM'
+      'AIzaSyAKqkj1T1gMKd41LuC7imRCVEKQdhwQ9Do', 'AIzaSyAWtfTmUuEzhf0s4aFQKEkOpYYsm8vH02c'
     ];
     let currentKeyIndex = 0;
 
@@ -1696,77 +1704,10 @@
     let renderedChats = new Set();
 
     // ══════════════════════════════════════════════════════════════
-    // 🔄 جالب قاعدة البيانات — يعرض الرسائل الجديدة كل 1.5 ثانية
-    // ══════════════════════════════════════════════════════════════
-    // يقرأ من msgs_{videoId} عبر fn_get_stream_messages كل 1.5 ثانية
-    // ويُلحق فقط الرسائل الجديدة (لم تُعرض سابقاً)
-    // ══════════════════════════════════════════════════════════════
-    let dbPollTimer = null;
-    let dbPollRunning = false;
-    let lastDbMsgCount = 0;       // عدد الرسائل المعروضة آخر مرة
-    let dbPollInterval = 1500;    // 1.5 ثانية
-
-    function startDbPolling() {
-        stopDbPolling();
-        if (!currentVideoId) return;
-        lastDbMsgCount = 0;
-        console.log('[DB POLL] 🔄 بدء جلب DB كل 1.5 ثانية لـ', currentVideoId);
-        dbPollTimer = setInterval(() => pollDbForNewMessages(), dbPollInterval);
-        pollDbForNewMessages();
-    }
-
-    function stopDbPolling() {
-        if (dbPollTimer) { clearInterval(dbPollTimer); dbPollTimer = null; }
-        dbPollRunning = false;
-        lastDbMsgCount = 0;
-    }
-
-    async function pollDbForNewMessages() {
-        if (!currentVideoId || !supabaseClient || dbPollRunning) return;
-        dbPollRunning = true;
-        try {
-            const { data: allMessages, error } = await supabaseClient.rpc('fn_get_stream_messages', {
-                p_stream_id: currentVideoId,
-                p_limit: 2000
-            });
-            if (error) { console.error('[DB POLL] خطأ RPC:', error.message); return; }
-            if (!allMessages || allMessages.length === 0) {
-                if (lastDbMsgCount === 0 && commentsTotal === 0) {
-                    document.getElementById('comments-loading').style.display = 'none';
-                    document.getElementById('comments-empty').style.display = 'flex';
-                }
-                return;
-            }
-            document.getElementById('comments-loading').style.display = 'none';
-            document.getElementById('comments-empty').style.display = 'none';
-            document.getElementById('comments-error').style.display = 'none';
-            if (allMessages.length > lastDbMsgCount) {
-                const newMessages = allMessages.slice(lastDbMsgCount);
-                newMessages.forEach(msg => {
-                    addCommentToUI({
-                        stream_id: currentVideoId,
-                        author_name: msg.display_name || 'مجهول',
-                        comment_text: msg.message_text || '',
-                        published_at: msg.published_at
-                    }, true);
-                });
-                lastDbMsgCount = allMessages.length;
-                document.getElementById('comments-count').textContent = `${commentsTotal} تعليق`;
-            } else {
-                lastDbMsgCount = allMessages.length;
-            }
-        } catch(e) {
-            console.error('[DB POLL] استثناء:', e);
-        } finally {
-            dbPollRunning = false;
-        }
-    }
-
-    // ══════════════════════════════════════════════════════════════
-    // 🌐 الجالب الشامل (Global Streamer) — يجلب كل البثوث كل 1.5 ثانية
+    // 🌐 الجالب الشامل (Global Streamer) — يجلب كل 15 بث كل 1.5 ثانية
     // ══════════════════════════════════════════════════════════════
     // يعمل في الخلفية بغض النظر عن أي بث تشاهده
-    // يخزن التعليقات في جداول البث (msgs_{videoId}) عبر fn_gs_archive_to_stream
+    // يخزن كل التعليقات في archived_comments فتصل لكل المشاهدين عبر Realtime
     // ══════════════════════════════════════════════════════════════
     const GS = {
         timer: null,           // مؤقت الدورة
@@ -1903,26 +1844,24 @@
 
                 if (allNewComments.length > 0) {
                     try {
-                        // حفظ في جداول البث عبر RPC (بنية per-stream)
-                        for (const vid of Object.keys(this.chatIds)) {
-                            const vidComments = allNewComments.filter(c => c.stream_id === vid);
-                            if (vidComments.length > 0) {
-                                const { error: rpcErr } = await supabaseClient.rpc('fn_gs_archive_to_stream', {
-                                    p_stream_id: vid,
-                                    p_comments: vidComments
-                                });
-                                if (rpcErr) console.error('[GS] خطأ حفظ ' + vid + ':', rpcErr.message);
-                            }
-                        }
-                        this.totalArchived += allNewComments.length;
-                        // تحديث nextPageToken في saved_streams لكل بث
-                        for (const vid of Object.keys(this.tokens)) {
-                            const stream = this.streams.find(s => getVideoId(s.stream_url) === vid);
-                            if (stream && this.tokens[vid] !== stream.next_page_token) {
-                                supabaseClient.from('saved_streams')
-                                    .update({ next_page_token: this.tokens[vid] })
-                                    .eq('id', stream.id)
-                                    .then(() => {}).catch(() => {});
+                        const { error } = await supabaseClient
+                            .from('archived_comments')
+                            .upsert(allNewComments, {
+                                onConflict: 'stream_id,author_name,published_at,comment_text',
+                                ignoreDuplicates: true
+                            });
+                        if (error) console.error('[GS] خطأ حفظ:', error.message);
+                        else {
+                            this.totalArchived += allNewComments.length;
+                            // تحديث nextPageToken في saved_streams لكل بث
+                            for (const vid of Object.keys(this.tokens)) {
+                                const stream = this.streams.find(s => getVideoId(s.stream_url) === vid);
+                                if (stream && this.tokens[vid] !== stream.next_page_token) {
+                                    supabaseClient.from('saved_streams')
+                                        .update({ next_page_token: this.tokens[vid] })
+                                        .eq('id', stream.id)
+                                        .then(() => {}).catch(() => {});
+                                }
                             }
                         }
                     } catch(e) {
@@ -2064,6 +2003,83 @@
 
     function showScreen(screenId) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); const target = document.getElementById(screenId); if (target) target.classList.add('active'); }
     function showToast(message, type = 'info') { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); const icons = { success: 'check-circle', error: 'exclamation-circle', info: 'info-circle' }; toast.className = `toast toast-${type}`; toast.innerHTML = `<i class="fas fa-${icons[type] || 'info-circle'}"></i><span>${message}</span>`; container.appendChild(toast); requestAnimationFrame(() => toast.classList.add('show')); setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 350); }, 3500); }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // V5-FIXED: Helper functions for per-stream dynamic table reading
+    // ══════════════════════════════════════════════════════════════════════
+
+    // Cache for stream table names to avoid repeated lookups
+    const streamTableCache = {}; // { videoId: { msgs_table, banned_table } }
+
+    // Look up the per-stream table name from stream_tables
+    async function getStreamTableInfo(videoId) {
+        if (!videoId) return null;
+        if (streamTableCache[videoId]) return streamTableCache[videoId];
+        try {
+            const { data, error } = await supabaseClient
+                .from('stream_tables')
+                .select('msgs_table, banned_table')
+                .eq('stream_id', videoId)
+                .eq('is_active', true)
+                .maybeSingle();
+            if (error || !data) {
+                console.warn('[V5] No stream_tables entry for videoId:', videoId, error?.message);
+                return null;
+            }
+            streamTableCache[videoId] = data;
+            return data;
+        } catch(e) {
+            console.error('[V5] getStreamTableInfo error:', e);
+            return null;
+        }
+    }
+
+    // Read from a dynamic table via RPC (fn_read_msgs_asc) with fallback to .from()
+    async function readFromDynamicTable(tableName, limit = 1000, offset = 0, ascending = true) {
+        if (!supabaseClient || !tableName) return [];
+        const rpcName = ascending ? 'fn_read_msgs_asc' : 'fn_read_msgs';
+        const rpcParams = ascending
+            ? { p_table: tableName, p_limit: limit, p_offset: offset }
+            : { p_table: tableName, p_limit: limit };
+
+        // Try RPC first (for dynamic tables not in PostgREST cache)
+        try {
+            const { data, error } = await supabaseClient.rpc(rpcName, rpcParams);
+            if (!error && data) {
+                // RPC returns array of jsonb objects — parse if needed
+                const rows = Array.isArray(data) ? data : (data.data ? data.data : []);
+                console.log(`[V5] RPC ${rpcName}('${tableName}') returned ${rows.length} rows`);
+                return rows;
+            } else {
+                console.warn(`[V5] RPC ${rpcName} failed:`, error?.message, '→ falling back to .from()');
+            }
+        } catch(e) {
+            console.warn('[V5] RPC exception:', e.message, '→ falling back to .from()');
+        }
+
+        // Fallback: try .from() directly (works if table is in PostgREST cache)
+        try {
+            let query = supabaseClient.from(tableName).select('*');
+            if (ascending) {
+                query = query.order('published_at', { ascending: true }).range(offset, offset + limit - 1);
+            } else {
+                query = query.order('published_at', { ascending: false }).limit(limit);
+            }
+            const { data, error } = await query;
+            if (!error && data) {
+                console.log(`[V5] .from('${tableName}') fallback returned ${data.length} rows`);
+                return data;
+            } else {
+                console.warn(`[V5] .from('${tableName}') fallback failed:`, error?.message);
+            }
+        } catch(e) {
+            console.warn('[V5] .from() fallback exception:', e.message);
+        }
+
+        return [];
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
 
     // === نظام الملف الشخصي وتسجيل الدخول ===
     function updateUserCircle() {
@@ -2225,7 +2241,7 @@
         showScreen('screen-list'); const container = document.getElementById('streams-list-container');
         container.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p style="color: var(--text-muted);">جارٍ التحميل...</p></div>';
         try {
-            const { data, error } = await supabaseClient.from('saved_streams').select('username, stream_url, stream_moderator').order('created_at', { ascending: false });
+            const { data, error } = await supabaseClient.from('saved_streams').select('username, stream_url').order('created_at', { ascending: false });
             if (error) throw error; if (!data || data.length === 0) { container.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open"></i><p class="font-bold mt-4">لا توجد بثوث محفوظة بعد</p></div>'; return; }
             container.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>'; const grid = container.firstChild;
             data.forEach(stream => {
@@ -2235,12 +2251,6 @@
                 left.innerHTML = `<div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-glow);"><i class="fas fa-video text-sm" style="color: var(--accent);"></i></div><div><h3 class="font-bold text-sm"></h3><p class="text-xs" style="color: var(--text-muted);"></p></div>`;
                 left.querySelector('h3').textContent = stream.username;
                 left.querySelector('p').textContent = videoId || '—';
-                if (stream.stream_moderator) {
-                    const badge = document.createElement('span');
-                    badge.className = 'mod-badge-stream';
-                    badge.innerHTML = '<i class="fas fa-shield-halved" style="font-size:9px;"></i> مشرف';
-                    left.querySelector('div').appendChild(badge);
-                }
                 const btn = document.createElement('button');
                 btn.className = 'btn-ghost text-xs'; btn.textContent = 'دخول';
                 btn.addEventListener('click', () => openPasswordModal(stream.username, stream.stream_url));
@@ -2282,20 +2292,15 @@
                 showToast('جارٍ حذف بيانات البث...', 'info');
                 
                 const deleteResults = await Promise.allSettled([
+                    supabaseClient.from('archived_comments').delete().eq('stream_id', videoId),
+                    supabaseClient.from('stream_messages').delete().eq('stream_id', videoId),
                     supabaseClient.from('monitor_keywords').delete().eq('stream_id', videoId),
                     supabaseClient.from('monitor_notifications').delete().eq('stream_id', videoId),
                     supabaseClient.from('stream_locks').delete().eq('stream_id', videoId),
                 ]);
-
-                // حذف جداول البث الخاصة (msgs_{videoId} + banned_{videoId})
-                // ملاحظة: لا يمكن حذف جداول ديناميكية من العميل مباشرة
-                // ستحتاج لحذفها يدوياً من SQL Editor أو عبر Edge Function
-                try {
-                    await supabaseClient.from('stream_tables').delete().eq('stream_id', videoId);
-                } catch(e) { console.warn('حذف سجل stream_tables:', e); }
-
+                
                 // Log failures (non-blocking)
-                const tables = ['monitor_keywords', 'monitor_notifications', 'stream_locks', 'per-stream tables'];
+                const tables = ['archived_comments', 'stream_messages', 'monitor_keywords', 'monitor_notifications', 'stream_locks'];
                 const failedTables = deleteResults
                     .map((r, i) => r.status === 'rejected' ? tables[i] : null)
                     .filter(Boolean);
@@ -2572,10 +2577,7 @@
 
         // === المرحلة 3: الخدمات الخلفية (غير حظرية) — فشل أي منها لا يغلق الجلسة ===
 
-        // 3أ: بدء جلب قاعدة البيانات كل 1.5 ثانية
-        startDbPolling();
-
-        // 3ب: تحميل الأرشيف في الخلفية
+        // 3أ: تحميل الأرشيف في الخلفية
         setEntryStep(1, 'active');
         loadExistingComments(effectiveVideoId)
             .then(count => {
@@ -2591,10 +2593,8 @@
                 }
             });
 
-        // 3ب: تحميل الكلمات المفتاحية + إعداد قنوات Realtime في الخلفية
+        // 3ب: إعداد قنوات Realtime في الخلفية
         setEntryStep(2, 'active');
-        await refreshKeywords();
-        console.log('[BAN] modForbiddenWords جاهزة:', modForbiddenWords.length, 'كلمة محظورة');
         setupRealtimeChannels(effectiveVideoId, myToken)
             .then(() => {
                 if (myToken !== sessionToken) return;
@@ -2663,7 +2663,6 @@
 
     // === تنظيف الجلسة السابقة — يجب استدعاؤها قبل فتح جلسة جديدة ===
     function cleanupPreviousSession() {
-        stopDbPolling();
         stopYouTubePolling();
         if (leaderCheckTimer) { clearInterval(leaderCheckTimer); leaderCheckTimer = null; }
         if (youTubeReconnectTimer) { clearTimeout(youTubeReconnectTimer); youTubeReconnectTimer = null; }
@@ -2689,43 +2688,72 @@
         if (realtimeChannel) { try { supabaseClient.removeChannel(realtimeChannel); } catch(e) {} realtimeChannel = null; }
         if (notifChannel) { try { supabaseClient.removeChannel(notifChannel); } catch(e) {} notifChannel = null; }
 
-        // Realtime على archived_comments تمت إزالته — v7 يكتب في جداول per-stream
-        // التعليقات تظهر مباشرة من YouTube API polling (كل 2 ثانية)
+        realtimeChannel = supabaseClient.channel('public:archived_comments')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'archived_comments', filter: `stream_id=eq.${videoId}` }, payload => {
+                if (myToken !== sessionToken) return; // تجاهل الرسائل من جلسة قديمة
+                addCommentToUI(payload.new, true);
+            }).subscribe();
 
         notifChannel = supabaseClient.channel('public:monitor_notifications')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'monitor_notifications', filter: `stream_id=eq.${videoId}` }, payload => {
                 if (myToken !== sessionToken) return;
                 const notif = payload.new;
                 document.getElementById('notif-dot').classList.add('show');
-                showToast(`مراقبة: الكلمة "${notif.keyword}" في تعليق من ${notif.author_name}`, 'info');
+                // V5-FIXED: handle both old and new column names
+                const notifAuthor = notif.display_name || notif.author_name || '';
+                showToast('مراقبة: الكلمة "' + notif.keyword + '" في تعليق من ' + notifAuthor, 'info');
                 if (document.getElementById('notifications-modal').classList.contains('show')) renderNotifications();
             }).subscribe();
     }
 
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-    // === تحميل التعليقات المحفوظة من جداول البث (per-stream) ===
+    // === تحميل التعليقات المحفوظة — V5-FIXED: reads from per-stream msgs_ tables ===
     async function loadExistingComments(videoId) {
         if (!videoId) return 0;
         try {
-            const { data: allComments, error } = await supabaseClient.rpc('fn_get_stream_messages', {
-                p_stream_id: videoId,
-                p_limit: 2000
-            });
-            if (error) throw error;
-            if (!allComments || allComments.length === 0) return 0;
+            let allComments = [];
+
+            // V5-FIXED: Try per-stream table first
+            const tableInfo = await getStreamTableInfo(videoId);
+            if (tableInfo && tableInfo.msgs_table) {
+                console.log('[V5] loadExistingComments: reading from per-stream table:', tableInfo.msgs_table);
+                let page = 0;
+                let hasMore = true;
+                while (hasMore) {
+                    const offset = page * 1000;
+                    const rows = await readFromDynamicTable(tableInfo.msgs_table, 1000, offset, true);
+                    if (!rows || rows.length === 0) break;
+                    allComments = allComments.concat(rows);
+                    if (rows.length < 1000) hasMore = false;
+                    page++;
+                }
+            } else {
+                // Fallback: read from archived_comments (old approach)
+                console.log('[V5] loadExistingComments: falling back to archived_comments for videoId:', videoId);
+                let page = 0;
+                let hasMore = true;
+                while (hasMore) {
+                    const from = page * 1000;
+                    const to = from + 999;
+                    const { data, error } = await supabaseClient
+                        .from('archived_comments')
+                        .select('*')
+                        .eq('stream_id', videoId)
+                        .order('published_at', { ascending: true })
+                        .range(from, to);
+                    if (error) throw error;
+                    if (!data || data.length === 0) break;
+                    allComments = allComments.concat(data);
+                    if (data.length < 1000) hasMore = false;
+                    page++;
+                }
+            }
+
+            if (allComments.length === 0) return 0;
             document.getElementById('comments-loading').style.display = 'none';
             document.getElementById('comments-empty').style.display = 'none';
-            // تحويل الأعمدة الجديدة لتناسب addCommentToUI
-            allComments.forEach(item => {
-                addCommentToUI({
-                    stream_id: videoId,
-                    author_name: item.display_name || 'مجهول',
-                    comment_text: item.message_text || '',
-                    published_at: item.published_at
-                }, true);
-            });
-            lastDbMsgCount = allComments.length;
+            allComments.forEach(item => addCommentToUI(item, true));
             return allComments.length;
         } catch(e) {
             console.error('Load existing error:', e);
@@ -2998,24 +3026,8 @@
                         document.getElementById('comments-empty').style.display = 'none';
                         const sorted = [...data.items].sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt));
                         archiveCommentsToSupabase(sorted).catch(e => console.error('Archive bg error:', e));
-                        saveToStreamMessages(sorted).catch(e => console.error('stream_messages bg error:', e));
                         sorted.forEach(item => {
-                            const ytMsgId = item.id;
-                            const msgText = item.snippet?.displayMessage || '';
-                            const isOwner = !!item.authorDetails?.isChatOwner;
-                            const isMod = !!item.authorDetails?.isChatModerator;
-                            // كشف فوري بالكلمات المحظورة (modForbiddenWords يُملأ من refreshKeywords)
-                            let isBanned = false;
-                            if (!isOwner && !isMod && modForbiddenWords.length > 0) {
-                                const lo = msgText.toLowerCase();
-                                const st = msgText.replace(/[^\w\u0600-\u06FF]+/g, '').toLowerCase();
-                                isBanned = modForbiddenWords.some(w => {
-                                    const wClean = w.replace(/[^\w\u0600-\u06FF]+/g, '').toLowerCase();
-                                    return lo.includes(w) || (wClean.length >= 2 && st.includes(wClean));
-                                });
-                            }
-                            if (isBanned && ytMsgId) { instantDeleteBanned(ytMsgId); console.log('[BAN] حذف فوري:', msgText); return; }
-                            const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: msgText, published_at: item.snippet?.publishedAt || new Date().toISOString() };
+                            const newItem = { stream_id: currentVideoId, author_name: item.authorDetails?.displayName || 'مجهول', comment_text: item.snippet?.displayMessage || '', published_at: item.snippet?.publishedAt || new Date().toISOString() };
                             addCommentToUI(newItem, true);
                         });
                     }
@@ -3046,88 +3058,38 @@
         } catch(e) { console.error('Fetch error:', e); } finally { fetchInProgress = false; }
     }
 
-    // archiveCommentsToSupabase — تمت إزالته
-    // كل شيء يُخزّن الآن عبر saveToStreamMessages → fn_insert_messages (جداول per-stream)
-    async function archiveCommentsToSupabase(comments) { /* لا يعمل شيء — fn_insert_messages يكفي */ }
-
-    // === حفظ الرسائل في الجدول الخاص بالبث (msgs_{videoId}) ===
-    async function saveToStreamMessages(comments) {
+    async function archiveCommentsToSupabase(comments) {
         if (!supabaseClient || !currentVideoId) return;
-        const batch = comments.map(item => ({
-            yt_message_id: item.id || '',
-            user_id: item.authorDetails?.channelId || '',
-            display_name: item.authorDetails?.displayName || '',
-            username: item.authorDetails?.channelId || '',
-            message_text: item.snippet?.displayMessage || '',
+        const batchData = comments.map(item => ({
+            stream_id: currentVideoId,
+            author_name: item.authorDetails?.displayName || 'مجهول',
+            comment_text: item.snippet?.displayMessage || '',
             published_at: item.snippet?.publishedAt || new Date().toISOString()
-        })).filter(c => c.message_text !== '');
-        if (batch.length === 0) return;
+        })).filter(c => c.comment_text !== '');
+        if (batchData.length === 0) return;
         try {
-            const { data, error } = await supabaseClient.rpc('fn_insert_messages', {
-                p_stream_id: currentVideoId,
-                p_ban_words: modForbiddenWords,
-                p_messages: batch
-            });
-            if (error) console.error('[STREAM] RPC error:', error.message);
-            else console.log('[STREAM] ' + (data?.processed||0), 'رسالة (', (data?.banned||0), 'محظورة) →', data?.table_name);
-        } catch (e) { console.error('[STREAM] exception:', e.message); }
+            const { error } = await supabaseClient.from('archived_comments')
+                .upsert(batchData, { onConflict: 'stream_id,author_name,published_at,comment_text', ignoreDuplicates: true });
+            if (error) console.error('Archive upsert error:', error);
+        } catch (e) { console.error('Archive upsert exception:', e); }
     }
 
     function addCommentToUI(item, countIncrement = false) {
-        const uniqueId = item.stream_id + item.author_name + item.published_at + item.comment_text; if (renderedComments.has(uniqueId)) return; renderedComments.add(uniqueId);
-        const list = document.getElementById('comments-list'); const displayName = item.author_name || 'مجهول'; const message = item.comment_text || ''; const color = getAvatarColor(displayName);
+        // V5-FIXED: Handle both old column names (archived_comments) and new (per-stream msgs_ tables)
+        const displayName = item.display_name || item.author_name || 'مجهول';
+        const message = item.message_text || item.comment_text || '';
+        const streamId = item.stream_id || currentVideoId || '';
+        const publishedAt = item.published_at || item.created_at || '';
+        const uniqueId = streamId + displayName + publishedAt + message; if (renderedComments.has(uniqueId)) return; renderedComments.add(uniqueId);
+        const list = document.getElementById('comments-list'); const color = getAvatarColor(displayName);
         const card = document.createElement('div'); card.className = 'comment-card'; card.style.setProperty('--c-accent', color);
-        card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${escapeHtml(displayName.charAt(0).toUpperCase())}</div><div style="flex:1; min-width:0;"><div class="flex items-center" style="margin-bottom:2px;"><span class="comment-username" style="color:${color};">${escapeHtml(displayName)}</span><span class="comment-time">${formatTime(item.published_at)}</span></div><div class="comment-text">${escapeHtml(message)}</div></div>`;
+        card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${escapeHtml(displayName.charAt(0).toUpperCase())}</div><div style="flex:1; min-width:0;"><div class="flex items-center" style="margin-bottom:2px;"><span class="comment-username" style="color:${color};">${escapeHtml(displayName)}</span><span class="comment-time">${formatTime(publishedAt)}</span></div><div class="comment-text">${escapeHtml(message)}</div></div>`;
         list.appendChild(card); if (countIncrement) { commentsTotal++; document.getElementById('comments-count').textContent = `${commentsTotal} تعليق`; }
         // إخفاء حالات الـ loading/empty/error فور وصول أي تعليق
         document.getElementById('comments-loading').style.display = 'none';
         document.getElementById('comments-empty').style.display = 'none';
         document.getElementById('comments-error').style.display = 'none';
-        // فحص الكلمات المحظورة — إخفاء فوري من الواجهة (2 ثانية)
-        checkAndDeleteIfBanned(card, message);
         if (isAtBottom) list.parentElement.scrollTop = list.parentElement.scrollHeight;
-    }
-
-
-    // === نظام الكلمات المفتاحية المدمج (monitor_keywords مع keyword_type) ===
-    let _monitorKeywordsCache = [];
-    async function refreshKeywords() {
-        if (!currentVideoId) return;
-        try {
-            const { data } = await supabaseClient.from('monitor_keywords').select('keyword, keyword_type').eq('stream_id', currentVideoId);
-            _monitorKeywordsCache = (data || []).map(k => ({ keyword: k.keyword.toLowerCase(), keyword_type: k.keyword_type || 'monitor' }));
-            // مزامنة الكلمات المحظورة للحذف من يوتيوب — المصدر الوحيد هو Supabase
-            modForbiddenWords = (data || []).filter(k => (k.keyword_type || 'monitor') === 'ban').map(k => k.keyword.toLowerCase());
-            console.log('[KEYWORDS] تم تحديث الكلمات: ' + _monitorKeywordsCache.length + ' كلمة (' + modForbiddenWords.length + ' حظر)');
-        } catch(e) { console.error('[KEYWORDS] خطأ:', e); }
-    }
-
-    // فحص تعليق + حذف فوري من UI (2 ثانية) — يدعم تجاوز الفلاتر (نقاط، مسافات)
-    function checkAndDeleteIfBanned(commentEl, commentText) {
-        if (_monitorKeywordsCache.length === 0) return;
-        const lower = commentText.toLowerCase();
-        // فحص عادي أولاً
-        const matched = _monitorKeywordsCache.find(kw => lower.includes(kw.keyword));
-        if (matched) {
-            commentEl.classList.add('deleting');
-            commentEl.style.opacity = '0.3';
-            commentEl.style.transition = 'opacity 0.5s ease';
-            setTimeout(() => { if (commentEl.parentNode) commentEl.remove(); }, 2000);
-            return;
-        }
-        // فحص متقدم: إزالة النقاط والمسافات (للكلمات مثل ك.س أو ع.ير)
-        const cleaned = lower.replace(/[.\s\-_,;:!?]/g, '');
-        const banKws = _monitorKeywordsCache.filter(k => k.keyword_type === 'ban');
-        const bypassMatch = banKws.find(kw => {
-            const kwClean = kw.keyword.replace(/[.\s\-_,;:!?]/g, '');
-            return kwClean.length >= 2 && cleaned.includes(kwClean);
-        });
-        if (bypassMatch) {
-            commentEl.classList.add('deleting');
-            commentEl.style.opacity = '0.3';
-            commentEl.style.transition = 'opacity 0.5s ease';
-            setTimeout(() => { if (commentEl.parentNode) commentEl.remove(); }, 2000);
-        }
     }
 
     // === نظام المراقب الذكي المُحسّن — أدمن → Supabase → أي مستخدم يطلب التعيين ===
@@ -3188,41 +3150,6 @@
         { max: 12, label: 'مرتفع', color: '#f97316', icon: 'fa-circle-exclamation', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.15)' },
         { max: Infinity, label: 'خطر — يُنصح بالحظر', color: '#ef4444', icon: 'fa-skull-crossbones', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.15)' }
     ];
-
-    // === حذف فوري للكلمات المحظورة عبر Edge Function ===
-    const DELETES_URL = SUPABASE_URL + '/functions/v1/archive-comments';
-    const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0d2RhbnB4aGtrcXNzamdub25wIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDkxOTE5MSwiZXhwIjoyMTAwNDk1MTkxfQ.AM1mS1uKhZRoqrcveXwKyDEQj_2Kb_joLokjgFwsMjY';
-    let _instantDeleteInProgress = false;
-    let _instantDeleteQueue = [];
-    async function instantDeleteBanned(ytMsgId) {
-        _instantDeleteQueue.push(ytMsgId);
-        if (_instantDeleteInProgress) return;
-        _instantDeleteInProgress = true;
-        while (_instantDeleteQueue.length > 0) {
-            const batch = _instantDeleteQueue.splice(0, 10);
-            try {
-                const t0 = performance.now();
-                const resp = await fetch(DELETES_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SERVICE_ROLE_KEY },
-                    body: JSON.stringify(batch.length === 1 ? { message_id: batch[0] } : { message_ids: batch })
-                });
-                const result = await resp.json();
-                const ms = Math.round(performance.now() - t0);
-                if (result.deleted) {
-                    console.log(`[BAN] ✅ تم الحذف الفوري (${ms}ms):`, batch.join(', '));
-                    showToast(`تم حذف رسالة محظورة (${ms}ms)`, 'success');
-                } else {
-                    console.warn('[BAN] ❌ فشل الحذف:', result.error || 'سبب غير معروف');
-                    showToast('فشل حذف رسالة: ' + (result.error || 'خطأ'), 'error');
-                }
-            } catch(e) {
-                console.error('[BAN DELETE] فشل:', e);
-                showToast('خطأ في الحذف الفوري: ' + e.message, 'error');
-            }
-        }
-        _instantDeleteInProgress = false;
-    }
 
     function modGetWordWeight(word) {
         // لو الكلمة لها وزن محدد، استخدمه. وإلا وزن افتراضي = 3
@@ -3335,10 +3262,51 @@
         return modAdaptiveInterval;
     }
 
+    const MOD_DEFAULT_WORDS = ['سب', 'غبي', 'حمار', 'كلب'];
+    let modForbiddenWords = [];
+
     // ════════════════════════════════════════════
-    // 1) الكلمات المحظورة — مصدر واحد فقط: monitor_keywords من Supabase
+    // 1) الكلمات المحظورة (localStorage)
     // ════════════════════════════════════════════
-    let modForbiddenWords = [];  // تُملأ من refreshKeywords() فقط
+    function modLoadSaved() {
+        try {
+            const s = localStorage.getItem('vtrx_mod_forbidden');
+            if (s) modForbiddenWords = JSON.parse(s);
+            else modForbiddenWords = [...MOD_DEFAULT_WORDS];
+        } catch(e) { modForbiddenWords = [...MOD_DEFAULT_WORDS]; }
+        modRenderWords();
+    }
+    function modSaveWords() { localStorage.setItem('vtrx_mod_forbidden', JSON.stringify(modForbiddenWords)); }
+
+    function modRenderWords() {
+        const c = document.getElementById('mod-words-list');
+        if (!c) return;
+        if (modForbiddenWords.length === 0) {
+            c.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">لا توجد كلمات محظورة بعد.</p>';
+            return;
+        }
+        c.innerHTML = modForbiddenWords.map(w =>
+            '<span class="mod-word-tag">' + escapeHtml(w) +
+            '<button onclick="modRemoveWord(\'' + escapeHtml(w).replace(/'/g, "\\'") + '\')"><i class="fas fa-xmark"></i></button></span>'
+        ).join('');
+    }
+
+    function modAddWord() {
+        const i = document.getElementById('mod-new-word');
+        const w = i.value.trim(); if (!w) return;
+        const wl = w.toLowerCase();
+        if (modForbiddenWords.includes(wl)) { showToast('الكلمة موجودة مسبقاً', 'info'); return; }
+        modForbiddenWords.push(wl);
+        i.value = '';
+        modRenderWords();
+        modSaveWords();
+    }
+
+    function modRemoveWord(w) {
+        modForbiddenWords = modForbiddenWords.filter(x => x !== w);
+        modRenderWords();
+        modSaveWords();
+    }
 
     // ════════════════════════════════════════════
     // 2) حماية قسم الأدمن بكلمة سر
@@ -3687,116 +3655,35 @@
         return !!modAdminToken;
     }
 
-    // تسجيل دخول الأدمن بـ Google — Authorization Code Flow مع access_type=offline
-    // هذا يعطي refresh_token دائم + access_token
+    // تسجيل دخول الأدمن بـ Google (تحديث — يحفظ أيضاً refresh_token)
     function modAdminSignIn() {
         const btn = document.querySelector('#mod-admin-offline .mod-btn');
         if (!btn) return;
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تحويلك لـ Google...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري ربط الحساب...';
         try {
-            const redirectUri = window.location.origin + window.location.pathname;
-            const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
-                'client_id=' + encodeURIComponent(MOD_CLIENT_ID) +
-                '&redirect_uri=' + encodeURIComponent(redirectUri) +
-                '&response_type=code' +
-                '&access_type=offline' +
-                '&prompt=consent' +
-                '&scope=' + encodeURIComponent(
-                    'https://www.googleapis.com/auth/youtube ' +
-                    'https://www.googleapis.com/auth/userinfo.profile ' +
-                    'https://www.googleapis.com/auth/userinfo.email'
-                ) +
-                '&state=vrtx_admin_auth';
-            window.location.href = authUrl;
+            if (!google.accounts || !google.accounts.oauth2) throw new Error('Google Identity Services لم يُحمّل — انتظر وأعد المحاولة');
+            const tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: MOD_CLIENT_ID,
+                scope: 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+                callback: function(response) {
+                    if (response.error) {
+                        showToast('خطأ: ' + response.error, 'error');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fab fa-google"></i> ربط حساب YouTube (أدمن)';
+                        return;
+                    }
+                    // حفظ التوكن — ملاحظة: implicit flow لا يعطي refresh_token
+                    // لذلك نحفظ التوكن الحالي مع expires_in التقريبي
+                    modSaveAdminToken(response.access_token);
+                },
+            });
+            window._modTokenClient = tokenClient;
+            tokenClient.requestAccessToken({ prompt: 'consent' });
         } catch(e) {
             showToast('خطأ: ' + e.message, 'error');
             btn.disabled = false;
             btn.innerHTML = '<i class="fab fa-google"></i> ربط حساب YouTube (أدمن)';
-        }
-    }
-
-    // معالجة رجوع Google بعد التفويض — استبدال الكود بالتوكنات
-    async function modHandleOAuthCallback() {
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        const state = params.get('state');
-        if (!code || state !== 'vrtx_admin_auth') return;
-
-        // تنظيف URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-
-        showToast('جاري استلام التوكنات...', 'info');
-        try {
-            const redirectUri = window.location.origin + window.location.pathname;
-            const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'code=' + encodeURIComponent(code) +
-                    '&client_id=' + encodeURIComponent(MOD_CLIENT_ID) +
-                    '&client_secret=' + encodeURIComponent(MOD_CLIENT_SECRET) +
-                    '&redirect_uri=' + encodeURIComponent(redirectUri) +
-                    '&grant_type=authorization_code'
-            });
-            const tokenData = await tokenResp.json();
-
-            if (tokenData.error) {
-                showToast('فشل الحصول على التوكن: ' + tokenData.error, 'error');
-                return;
-            }
-
-            if (!tokenData.refresh_token) {
-                showToast('لم يتم الحصول على refresh_token — أعد المحاولة', 'error');
-                return;
-            }
-
-            // جلب معلومات المستخدم
-            let userName = 'مستخدم';
-            let channelId = '';
-            try {
-                const infoResp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-                    headers: { 'Authorization': 'Bearer ' + tokenData.access_token }
-                });
-                const info = await infoResp.json();
-                userName = info.name || 'مستخدم';
-            } catch(e) {}
-
-            // جلب channelId من YouTube
-            try {
-                const ytResp = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
-                    headers: { 'Authorization': 'Bearer ' + tokenData.access_token }
-                });
-                const ytData = await ytResp.json();
-                if (ytData.items && ytData.items[0]) {
-                    channelId = ytData.items[0].id;
-                    userName = ytData.items[0].snippet.title || userName;
-                }
-            } catch(e) {}
-
-            // حفظ في Supabase
-            const { error } = await supabaseClient.from('app_settings').update({
-                mod_token: JSON.stringify({
-                    access_token: tokenData.access_token,
-                    refresh_token: tokenData.refresh_token
-                }),
-                mod_name: userName,
-                mod_channel_id: channelId
-            }).eq('id', 1);
-
-            if (error) {
-                showToast('فشل الحفظ: ' + error.message, 'error');
-                return;
-            }
-
-            modAdminToken = tokenData.access_token;
-            modAdminRefreshToken = tokenData.refresh_token;
-            modAdminName = userName;
-            modAdminChannelId = channelId;
-
-            showToast('تم ربط "' + userName + '" بنجاح! refresh_token محفوظ — دائم!', 'success');
-            modLoadAdminState();
-        } catch(e) {
-            showToast('خطأ: ' + e.message, 'error');
         }
     }
 
@@ -4091,34 +3978,6 @@
         modUpdateStatusUI();
     }
 
-    // حفظ حالة المشرف في Supabase + localStorage
-    async function modSaveModeratorStatus(isMod) {
-        try {
-            // حفظ في Supabase (للمشاركة بين الأجهزة)
-            if (currentVideoId) {
-                await supabaseClient.from('saved_streams').update({ stream_moderator: isMod ? modMyChannelId : null }).eq('stream_url', 'https://www.youtube.com/watch?v=' + currentVideoId);
-            }
-        } catch(e) { console.error('[MOD_STATUS] فشل الحفظ في Supabase:', e); }
-        try {
-            // حفظ في localStorage (للاسترجاع السريع)
-            localStorage.setItem('vrtx_mod_status_' + currentVideoId, isMod ? 'active' : 'inactive');
-        } catch(e) {}
-    }
-
-    // استعادة حالة المشرف المحفوظة عند فتح البث
-    async function modRestoreModeratorStatus() {
-        if (!currentVideoId || !modAdminToken) return;
-        try {
-            // فحص Supabase أولاً
-            const { data } = await supabaseClient.from('saved_streams').select('stream_moderator').eq('stream_url', 'https://www.youtube.com/watch?v=' + currentVideoId).maybeSingle();
-            if (data && data.stream_moderator && data.stream_moderator === modMyChannelId) {
-                // كان مشرفاً — تحقق إذا لا يزال مشرفاً
-                modAddLog('join', 'تم استعادة حالة الإشراف المحفوظة — جاري التحقق...');
-                await modCheckModStatus();
-            }
-        } catch(e) { console.error('[MOD_STATUS] فشل استعادة الحالة:', e); }
-    }
-
     function modUpdateStatusUI() {
         const icon = document.getElementById('mod-s-icon');
         const title = document.getElementById('mod-s-title');
@@ -4126,15 +3985,15 @@
         const badge = document.getElementById('mod-s-badge');
         if (modIsModerator) {
             icon.className = 'mod-status-icon active';
-            title.textContent = 'المشرف نشط — الحذف التلقائي مفعّل';
-            desc.textContent = 'يتم حذف الرسائل المحظورة فوراً بواسطة "' + modAdminName + '"';
+            title.textContent = 'تم تعيين الأدمن كمشرف! — الحذف التلقائي مفعّل';
+            desc.textContent = 'يتم حذف الرسائل المحظورة تلقائياً الآن بواسطة "' + modAdminName + '"';
             badge.className = 'mod-badge online';
             badge.innerHTML = '<div class="mod-dot"></div> مشرف نشط';
             // تحديث الزر أيضاً
             var assignBtn = document.getElementById('mod-assign-btn');
             if (assignBtn) {
                 assignBtn.disabled = false;
-                assignBtn.innerHTML = '<i class="fas fa-check-circle" style="color:#0f0"></i> المشرف نشط — إعادة إرسال رسالة';
+                assignBtn.innerHTML = '<i class="fas fa-check-circle" style="color:#0f0"></i> تم التعيين كمشرف — إعادة إرسال رسالة';
                 assignBtn.style.borderColor = '#0f0';
                 assignBtn.style.boxShadow = '0 0 12px rgba(0,255,0,0.3)';
             }
@@ -4142,10 +4001,8 @@
             if (!modLastNotifiedAsMod) {
                 modLastNotifiedAsMod = true;
                 showToast('تم تعيين "' + modAdminName + '" كمشرف بنجاح! — الحذف التلقائي مفعّل الآن', 'success');
-                modAddLog('join', 'المشرف نشط — "' + modAdminName + '" — الحذف التلقائي مفعّل');
+                modAddLog('join', 'تم تعيين "' + modAdminName + '" كمشرف في البث — الحذف التلقائي مفعّل');
             }
-            // حفظ حالة الإشراف في Supabase
-            modSaveModeratorStatus(true);
         } else if (modIsMonitoring) {
             icon.className = 'mod-status-icon waiting';
             title.textContent = 'في انتظار تعيين المشرف';
@@ -4156,8 +4013,6 @@
             if (modLastNotifiedAsMod) {
                 modLastNotifiedAsMod = false;
                 modAddLog('warn', 'تم سحب صلاحية الإشراف من "' + modAdminName + '"');
-                // حفظ حالة فقدان الإشراف
-                modSaveModeratorStatus(false);
             }
         }
     }
@@ -4172,8 +4027,6 @@
         modStats = { total: 0, deleted: 0 };
         modEmptyPolls = 0;
         modAdaptiveInterval = modYouTubePollInterval || 5000;
-        // تحميل الكلمات المحظورة من Supabase (keyword_type='ban')
-        refreshKeywords();
         // إعادة تعيين الحصة لو يوم جديد
         var today = new Date().toDateString();
         if (modQuotaDate !== today) { modQuotaUsed = 0; modQuotaDate = today; }
@@ -4198,14 +4051,8 @@
         modUpdateStatusUI();
         modAddLog('join', 'بدأت المراقبة الذكية — فاصل الجلب: ' + (modAdaptiveInterval/1000).toFixed(1) + ' ثانية — الحصة: ' + modGetQuotaRemaining().toLocaleString() + ' متبقي');
 
-        // استعادة حالة الإشراف المحفوظة
-        modRestoreModeratorStatus();
-
-        // فحص دوري لحالة الإشراف كل 20 ثانية
-        if (window._modStatusCheckInterval) clearInterval(window._modStatusCheckInterval);
-        window._modStatusCheckInterval = setInterval(function() {
-            if (modIsMonitoring && modAdminToken) modCheckModStatus();
-        }, 20000);
+        // لا يوجد فحص دوري للإشراف — يتم تحديث الحالة تلقائياً من الرسائل الواردة
+        // (isChatModerator في بيانات كل رسالة = مجاني بدون طلبات إضافية)
 
         // تحديث تلقائي للتوكن كل 50 دقيقة (قبل انتهاء الـ access_token بساعة)
         if (window._modRefreshInterval) clearInterval(window._modRefreshInterval);
@@ -4224,7 +4071,6 @@
         if (modPollTimer) { clearInterval(modPollTimer); modPollTimer = null; }
         if (modUptimeTimer) { clearInterval(modUptimeTimer); modUptimeTimer = null; }
         if (window._modRefreshInterval) { clearInterval(window._modRefreshInterval); window._modRefreshInterval = null; }
-        if (window._modStatusCheckInterval) { clearInterval(window._modStatusCheckInterval); window._modStatusCheckInterval = null; }
         document.getElementById('mod-monitor-badge').className = 'mod-badge offline';
         document.getElementById('mod-monitor-badge').innerHTML = '<div class="mod-dot"></div> غير متصل';
     }
@@ -4327,40 +4173,22 @@
                         // حذف الكلمات المحظورة (فقط إذا الأدمن مشرف)
                         if (modIsModerator && modAdminToken && !msg.isOwner && !msg.isMod) {
                             var lower = msg.text.toLowerCase();
-                            // تحديث الكلمات المحظورة من Supabase كل 10 رسائل
-                            if (modStats.total % 10 === 0) refreshKeywords();
-                            var bannedWordFound = null;
-                            // فحص عادي
                             for (var wi = 0; wi < modForbiddenWords.length; wi++) {
                                 if (lower.includes(modForbiddenWords[wi])) {
-                                    bannedWordFound = modForbiddenWords[wi];
+                                    // تسجيل المخالفة وحساب الخطورة
+                                    var newScore = modRecordViolation(msg.author, modForbiddenWords[wi]);
+                                    var severity = modCalculateSeverity(msg.author);
+                                    // إظهار مؤشر الخطورة فوراً
+                                    modMarkSeverity(msg.id, msg.author, newScore, severity);
+                                    modAddLog('warn', 'مخالفة "' + msg.author + '" — كلمة: "' + modForbiddenWords[wi] + '" — نقاط: ' + newScore + ' — مستوى: ' + severity.label);
+                                    // تأخير 4 ثوان قبل الحذف — بدون حجب المعالجة
+                                    var delMsgId = msg.id, delAuthor = msg.author, delWord = modForbiddenWords[wi];
+                                    setTimeout(async function() {
+                                        if (!modIsMonitoring || !modAdminToken) return;
+                                        await modDeleteMsgAndTrack(delMsgId, delAuthor, delWord);
+                                    }, 4000);
                                     break;
                                 }
-                            }
-                            // فحص متقدم: تجاوز الفلاتر (نقاط، مسافات) مثل ك.س أو ع.ير
-                            if (!bannedWordFound) {
-                                var cleaned = lower.replace(/[.\s\-_,;:!?]/g, '');
-                                for (var wi2 = 0; wi2 < modForbiddenWords.length; wi2++) {
-                                    var kwClean = modForbiddenWords[wi2].replace(/[.\s\-_,;:!?]/g, '');
-                                    if (kwClean.length >= 2 && cleaned.includes(kwClean)) {
-                                        bannedWordFound = modForbiddenWords[wi2];
-                                        break;
-                                    }
-                                }
-                            }
-                            if (bannedWordFound) {
-                                // تسجيل المخالفة وحساب الخطورة
-                                var newScore = modRecordViolation(msg.author, bannedWordFound);
-                                var severity = modCalculateSeverity(msg.author);
-                                // إظهار مؤشر الخطورة فوراً
-                                modMarkSeverity(msg.id, msg.author, newScore, severity);
-                                modAddLog('warn', 'مخالفة "' + msg.author + '" — كلمة: "' + bannedWordFound + '" — نقاط: ' + newScore + ' — مستوى: ' + severity.label);
-                                // حذف فوري — بدون تأخير
-                                var delMsgId = msg.id, delAuthor = msg.author, delWord = bannedWordFound;
-                                (async function() {
-                                    if (!modIsMonitoring || !modAdminToken) return;
-                                    await modDeleteMsgAndTrack(delMsgId, delAuthor, delWord);
-                                })();
                             }
                         }
                     }
@@ -4539,8 +4367,8 @@
         panel.innerHTML = html;
     }
 
-
-
+    // تحميل الكلمات + حالة الأدمن عند فتح التبويب
+    modLoadSaved();
 
     // ═══ كشف إغلاق الصفحة / التبديل بين التبويبات ═══
     // عند إغلاق الصفحة → أوقف المراقبة
@@ -4590,17 +4418,18 @@
         if (tabName === 'monitor') {
             document.getElementById('monitor-tab-btn').classList.add('active');
             document.getElementById('monitor-pane').classList.add('active');
-            refreshKeywords();
             renderKeywords();
-            // تحميل حالة الأدمن من Supabase عند فتح المراقب
             modLoadAdminState();
-            // فحص خفيف لتوكن الأدمن حتى زر "جعله مشرف" يعمل للمستخدمين العاديين
             modCheckAdminReady();
+        } else if (tabName === 'banned') {
+            // V5-FIXED: banned messages tab
+            document.getElementById('banned-tab-btn').classList.add('active');
+            document.getElementById('banned-pane').classList.add('active');
+            loadBannedMessages();
         } else {
             // default: archive
             document.getElementById('archive-tab-btn').classList.add('active');
             document.getElementById('archive-pane').classList.add('active');
-            // إن لم يكن الأرشيف محمّلاً بعد، حمّله
             if (currentVideoId && !document.getElementById('archive-list').children.length) {
                 loadArchivedComments('', '');
             }
@@ -4611,12 +4440,12 @@
         const input = document.getElementById('keyword-input');
         const kw = input.value.trim();
         if (!kw || !currentVideoId) return;
+        // V5-FIXED: Determine keyword_type based on selected type
         const typeSelect = document.getElementById('keyword-type-select');
-        const kwType = typeSelect ? typeSelect.value : 'monitor';
+        const kwType = typeSelect ? typeSelect.value : 'ban';
         try {
             await supabaseClient.from('monitor_keywords').insert([{ stream_id: currentVideoId, keyword: kw, keyword_type: kwType }]);
             input.value = '';
-            refreshKeywords();
             renderKeywords();
         } catch(e) { showToast('فشل إضافة الكلمة', 'error'); }
     }
@@ -4625,7 +4454,6 @@
         if (!currentVideoId) return;
         try {
             await supabaseClient.from('monitor_keywords').delete().eq('stream_id', currentVideoId).eq('keyword', kw);
-            refreshKeywords();
             renderKeywords();
         } catch(e) { showToast('فشل الحذف', 'error'); }
     }
@@ -4634,32 +4462,23 @@
         const container = document.getElementById('keywords-list');
         container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">جارٍ التحميل...</p>';
         if (!currentVideoId) return;
+        // V5-FIXED: Also select keyword_type column
         const { data } = await supabaseClient.from('monitor_keywords').select('keyword, keyword_type').eq('stream_id', currentVideoId);
         container.innerHTML = '';
-        if (!data || data.length === 0) { container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">لا توجد كلمات مفتاحية بعد.</p>'; return; }
+        if (!data || data.length === 0) { container.innerHTML = '<p class="text-xs" style="color: var(--text-muted);">لا توجد كلمات مراقبة بعد.</p>'; return; }
         data.forEach(k => {
+            const kwType = k.keyword_type || 'ban'; // default to 'ban' for backward compat
+            const isBan = kwType === 'ban';
+            const tagBg = isBan ? 'rgba(239, 68, 68, 0.1)' : 'rgba(232, 168, 56, 0.1)';
+            const tagBorder = isBan ? 'rgba(239, 68, 68, 0.2)' : 'rgba(232, 168, 56, 0.25)';
+            const tagColor = isBan ? '#f87171' : '#f0b84a';
+            const typeLabel = isBan ? '🚫 حظر' : '👀 مراقبة';
             const tag = document.createElement('div');
-            const type = k.keyword_type || 'monitor';
-            const isMonitor = type === 'monitor';
-            tag.className = 'flex items-center gap-2 px-3 py-1 rounded-full text-xs ' + (isMonitor ? 'keyword-tag-monitor' : 'keyword-tag-ban');
-            const typeIcon = isMonitor ? 'fa-eye' : 'fa-ban';
-            const typeLabel = isMonitor ? 'مراقبة' : 'حظر';
-            const escapedKw = escapeHtml(k.keyword).replace(/'/g, "&#39;");
-            tag.innerHTML = `<i class="fas ${typeIcon}" style="font-size:10px;opacity:0.7;"></i><span>${escapedKw}</span><span style="opacity:0.5;font-size:9px;">${typeLabel}</span><button onclick="toggleKeywordType('${escapedKw}')" style="background:none;border:none;color:inherit;cursor:pointer;font-size:10px;opacity:0.5;" title="تبديل النوع"><i class="fas fa-repeat"></i></button><button onclick="removeKeyword('${escapedKw}')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;">&times;</button>`;
+            tag.className = 'flex items-center gap-2 px-3 py-1 rounded-full text-xs';
+            tag.style.background = tagBg; tag.style.border = `1px solid ${tagBorder}`; tag.style.color = tagColor;
+            tag.innerHTML = `<span>${escapeHtml(k.keyword)}</span><span style="opacity:0.7; font-size:10px;">${typeLabel}</span><button onclick="removeKeyword('${k.keyword.replace(/'/g, "")}')"  style="background:none;border:none;color:${tagColor};cursor:pointer;font-size:14px;">&times;</button>`;
             container.appendChild(tag);
         });
-    }
-
-    async function toggleKeywordType(kw) {
-        if (!currentVideoId) return;
-        try {
-            const { data } = await supabaseClient.from('monitor_keywords').select('keyword_type').eq('stream_id', currentVideoId).eq('keyword', kw).maybeSingle();
-            if (!data) return;
-            const newType = (data.keyword_type || 'monitor') === 'monitor' ? 'ban' : 'monitor';
-            await supabaseClient.from('monitor_keywords').update({ keyword_type: newType }).eq('stream_id', currentVideoId).eq('keyword', kw);
-            refreshKeywords();
-            renderKeywords();
-        } catch(e) { showToast('فشل تبديل النوع', 'error'); }
     }
 
     async function renderNotifications() {
@@ -4673,36 +4492,44 @@
         }
         list.innerHTML = '';
         data.forEach(notif => {
-            const color = getAvatarColor(notif.author_name);
-            const highlightedMsg = escapeHtml(notif.comment_text).replace(new RegExp(escapeHtml(notif.keyword), 'gi'), `<span class="keyword-highlight">$&</span>`);
+            // V5-FIXED: handle both old and new column names
+            const authorName = notif.display_name || notif.author_name || 'مجهول';
+            const commentText = notif.message_text || notif.comment_text || '';
+            const color = getAvatarColor(authorName);
+            const highlightedMsg = escapeHtml(commentText).replace(new RegExp(escapeHtml(notif.keyword), 'gi'), '<span class="keyword-highlight">$&</span>');
             const card = document.createElement('div');
             card.className = 'comment-card';
             card.style.setProperty('--c-accent', color);
-            card.innerHTML = `<div class="comment-avatar" style="background: ${color};">${notif.author_name.charAt(0).toUpperCase()}</div><div style="flex:1; min-width:0;"><div class="flex items-center"><span class="comment-username" style="color:${color};">${escapeHtml(notif.author_name)}</span><span class="comment-time">${formatTime(notif.created_at)}</span></div><div class="comment-text">${highlightedMsg}</div></div>`;
+            card.innerHTML = '<div class="comment-avatar" style="background: ' + color + ';">' + authorName.charAt(0).toUpperCase() + '</div><div style="flex:1; min-width:0;"><div class="flex items-center"><span class="comment-username" style="color:' + color + ';">' + escapeHtml(authorName) + '</span><span class="comment-time">' + formatTime(notif.created_at) + '</span></div><div class="comment-text">' + highlightedMsg + '</div></div>';
             list.appendChild(card);
         });
     }
 
     // === نظام المحادثة (Chat) ===
-    let chatPollingTimer = null;
     function openChatScreen() {
         if (!currentUser) { showToast('يجب تسجيل الدخول لاستخدام المحادثة', 'error'); openAuthModal(); return; }
         showScreen('screen-chat'); loadChatMessages();
-        // Realtime على stream_messages تمت إزالته — نستخدم polling بدلاً منه
-        if (chatPollingTimer) clearInterval(chatPollingTimer);
-        chatPollingTimer = setInterval(() => loadChatMessages(), 3000);
+        if (chatChannel) supabaseClient.removeChannel(chatChannel);
+        chatChannel = supabaseClient.channel('public:stream_messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stream_messages', filter: `stream_id=eq.${currentVideoId}` }, payload => { addChatMessageToUI(payload.new); }).subscribe();
     }
 
     async function loadChatMessages() {
-        if (!currentVideoId) return;
-        const list = document.getElementById('chat-list'); list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>';
+        const list = document.getElementById('chat-list'); list.innerHTML = '<div class="empty-state"><i class="fas fa-spinner fa-spin"></i></div>'; renderedChats.clear();
         try {
-            // قراءة من جداول البث عبر RPC
-            const { data: allMessages, error } = await supabaseClient.rpc('fn_get_stream_messages', {
-                p_stream_id: currentVideoId,
-                p_limit: 500
-            });
-            if (error) throw error;
+            // تحميل كل الرسائل بدون حد — Supabase يرجع حتى 1000 صف بالصفحة الواحدة تلقائياً
+            let allMessages = [];
+            let page = 0;
+            let hasMore = true;
+            while (hasMore) {
+                const from = page * 1000;
+                const to = from + 999;
+                const { data, error } = await supabaseClient.from('stream_messages').select('*').eq('stream_id', currentVideoId).order('created_at', { ascending: true }).range(from, to);
+                if (error) throw error;
+                if (!data || data.length === 0) break;
+                allMessages = allMessages.concat(data);
+                if (data.length < 1000) hasMore = false;
+                page++;
+            }
             list.innerHTML = '';
             if (allMessages.length === 0) { list.innerHTML = '<div class="empty-state"><i class="fas fa-comment-slash"></i><p style="color: var(--text-muted);">لا توجد رسائل بعد. كن أول من يبدأ الحديث!</p></div>'; return; }
             allMessages.forEach(msg => addChatMessageToUI(msg));
@@ -4743,21 +4570,17 @@
         if (!currentVideoId) { showToast('لا يوجد بث نشط', 'error'); return; }
         input.value = '';
         try {
-            // إرسال عبر RPC (جداول per-stream)
-            const { error } = await supabaseClient.rpc('fn_send_chat_message', {
-                p_stream_id: currentVideoId,
-                p_user_id: currentUser.id,
-                p_display_name: currentUser.display_name,
-                p_username: currentUser.username,
-                p_message_text: text
-            });
+            const { error } = await supabaseClient.from('stream_messages').insert([{
+                stream_id: currentVideoId,
+                user_id: currentUser.id,
+                display_name: currentUser.display_name,
+                username: currentUser.username,
+                message_text: text
+            }]);
             if (error) {
-                console.error('Chat RPC error:', error);
+                console.error('Chat insert error:', error);
                 showToast('فشل الإرسال: ' + (error.message || 'خطأ غير معروف'), 'error');
                 input.value = text;
-            } else {
-                // إعادة تحميل المحادثة لعرض الرسالة الجديدة
-                setTimeout(() => loadChatMessages(), 300);
             }
         } catch(e) {
             console.error('Chat send exception:', e);
@@ -4766,47 +4589,125 @@
         }
     }
 
-    // === الأرشيف والبحث ===
+    // === الأرشيف والبحث — V5-FIXED: reads from per-stream msgs_ tables ===
+    // V5-FIXED: Load banned messages from banned_{videoId} tables
+    async function loadBannedMessages() {
+        const list = document.getElementById('banned-list');
+        const status = document.getElementById('banned-status');
+        if (!list || !status) return;
+        list.innerHTML = '';
+        status.textContent = 'جارٍ التحميل...';
+        try {
+            const tableInfo = await getStreamTableInfo(currentVideoId);
+            if (!tableInfo || !tableInfo.banned_table) {
+                status.innerHTML = '<i class="fas fa-info-circle ml-1"></i> لا توجد جدول محظورة لهذا البث';
+                list.innerHTML = '<div class="empty-state"><i class="fas fa-check-circle" style="font-size:32px; opacity:0.3;"></i><p class="mt-3" style="color: var(--text-muted);">لا توجد رسائل محظورة</p></div>';
+                return;
+            }
+            console.log('[V5] loadBannedMessages: reading from:', tableInfo.banned_table);
+            const rows = await readFromDynamicTable(tableInfo.banned_table, 200, 0, false);
+            if (!rows || rows.length === 0) {
+                status.innerHTML = '<i class="fas fa-check-circle ml-1" style="color: var(--success);"></i> لا توجد رسائل محظورة';
+                list.innerHTML = '<div class="empty-state"><i class="fas fa-shield-alt" style="font-size:32px; opacity:0.3;"></i><p class="mt-3" style="color: var(--text-muted);">لا توجد رسائل محظورة — البث نظيف!</p></div>';
+                return;
+            }
+            status.innerHTML = '<i class="fas fa-ban ml-1" style="color: #f87171;"></i> ' + rows.length + ' رسالة محظورة';
+            rows.forEach(item => {
+                const authorName = item.display_name || item.username || 'مجهول';
+                const origMsg = item.original_message || item.message_text || '';
+                const matchedKw = item.matched_keyword || '';
+                const card = document.createElement('div');
+                card.className = 'comment-card archived';
+                card.style.setProperty('--c-accent', '#f87171');
+                card.style.borderRightColor = '#f87171';
+                card.style.opacity = '0.7';
+                card.innerHTML = '<div class="comment-avatar" style="background: rgba(248,113,113,0.2); color: #f87171;">🚫</div><div style="flex:1; min-width:0;"><div class="flex items-center" style="gap: 6px;"><span class="comment-username" style="color:#f87171;">' + escapeHtml(authorName) + '</span><span class="del-badge">' + escapeHtml(matchedKw) + '</span><span class="comment-time">' + (item.published_at ? new Date(item.published_at).toLocaleTimeString('ar-EG', {hour:'2-digit',minute:'2-digit'}) : '') + '</span></div><div class="comment-text" style="margin-top:3px; text-decoration: line-through; opacity: 0.6;">' + escapeHtml(origMsg) + '</div></div>';
+                list.appendChild(card);
+            });
+        } catch(e) {
+            console.error('[V5] loadBannedMessages error:', e);
+            status.innerHTML = '<i class="fas fa-exclamation-triangle ml-1" style="color:#f87171;"></i> فشل التحميل';
+        }
+    }
+
     function openArchiveScreen() { showScreen('screen-archive'); switchArchiveTab('archive'); }
     async function loadArchivedComments(searchTerm = '', searchUser = '') {
         const list = document.getElementById('archive-list'); const status = document.getElementById('archive-status'); list.innerHTML = ''; status.textContent = 'جاري التحميل...';
         try {
-            // قراءة من جداول البث عبر RPC (يدعم البحث)
-            const { data: allData, error } = await supabaseClient.rpc('fn_get_stream_messages', {
-                p_stream_id: currentVideoId,
-                p_search: searchTerm,
-                p_user_id: searchUser,
-                p_limit: 2000
-            });
-            if (error) throw error;
-            if (!allData || allData.length === 0) {
-                status.innerHTML = '<i class="fas fa-inbox ml-1"></i> لا توجد نتائج مطابقة';
+            let allData = [];
+
+            // V5-FIXED: Try per-stream table first
+            const tableInfo = await getStreamTableInfo(currentVideoId);
+            if (tableInfo && tableInfo.msgs_table) {
+                console.log('[V5] loadArchivedComments: reading from per-stream table:', tableInfo.msgs_table);
+                let page = 0;
+                let hasMore = true;
+                while (hasMore) {
+                    const offset = page * 1000;
+                    const rows = await readFromDynamicTable(tableInfo.msgs_table, 1000, offset, true);
+                    if (!rows || rows.length === 0) break;
+                    allData = allData.concat(rows);
+                    if (rows.length < 1000) hasMore = false;
+                    page++;
+                }
+            } else {
+                // Fallback: read from archived_comments (old approach)
+                console.log('[V5] loadArchivedComments: falling back to archived_comments');
+                let page = 0;
+                let hasMore = true;
+                while (hasMore) {
+                    const from = page * 1000;
+                    const to = from + 999;
+                    let query = supabaseClient.from('archived_comments').select('*').eq('stream_id', currentVideoId);
+                    if (searchTerm) query = query.ilike('comment_text', `%${searchTerm}%`); if (searchUser) query = query.ilike('author_name', `%${searchUser}%`);
+                    query = query.order('published_at', { ascending: true }).range(from, to);
+                    const { data, error } = await query; if (error) throw error;
+                    if (!data || data.length === 0) break;
+                    allData = allData.concat(data);
+                    if (data.length < 1000) hasMore = false;
+                    page++;
+                }
+            }
+
+            // Client-side filtering for per-stream data (RPC doesn't support ilike)
+            if ((searchTerm || searchUser) && allData.length > 0) {
+                const termLower = (searchTerm || '').toLowerCase();
+                const userLower = (searchUser || '').toLowerCase();
+                allData = allData.filter(item => {
+                    const name = (item.display_name || item.author_name || '').toLowerCase();
+                    const text = (item.message_text || item.comment_text || '').toLowerCase();
+                    const matchTerm = !searchTerm || text.includes(termLower);
+                    const matchUser = !searchUser || name.includes(userLower);
+                    return matchTerm && matchUser;
+                });
+            }
+
+            if (allData.length === 0) { 
+                status.innerHTML = '<i class="fas fa-inbox ml-1"></i> لا توجد نتائج مطابقة'; 
                 list.innerHTML = '<div class="empty-state"><i class="fas fa-folder-open" style="font-size:32px; opacity:0.3;"></i><p class="mt-3" style="color: var(--text-muted);">لا توجد تعليقات مؤرشفة تطابق بحثك</p></div>';
-                return;
+                return; 
             }
-            // فلترة حسب اسم المستخدم إن لم يكن فارغاً (RPC لا يدعم بحث display_name مباشرة)
-            let filtered = allData;
-            if (searchUser) {
-                const su = searchUser.toLowerCase();
-                filtered = allData.filter(m => (m.display_name || '').toLowerCase().includes(su));
-            }
-            status.innerHTML = `<i class="fas fa-list ml-1" style="color: var(--accent);"></i> ${filtered.length} تعليق مؤرشف`;
-            filtered.forEach(item => {
-                const color = getAvatarColor(item.display_name || 'مجهول');
-                const card = document.createElement('div');
-                card.className = 'comment-card archived';
-                card.style.setProperty('--c-accent', color);
+            status.innerHTML = `<i class="fas fa-list ml-1" style="color: var(--accent);"></i> ${allData.length} تعليق مؤرشف`;
+            allData.forEach(item => { 
+                // V5-FIXED: handle both old and new column names
+                const authorName = item.display_name || item.author_name || 'مجهول';
+                const commentText = item.message_text || item.comment_text || '';
+                const publishedAt = item.published_at || item.created_at || '';
+                const color = getAvatarColor(authorName); 
+                const card = document.createElement('div'); 
+                card.className = 'comment-card archived'; 
+                card.style.setProperty('--c-accent', color); 
                 card.innerHTML = `
-                    <div class="comment-avatar" style="background: ${color};">${(item.display_name || 'م').charAt(0).toUpperCase()}</div>
+                    <div class="comment-avatar" style="background: ${color};">${escapeHtml(authorName.charAt(0).toUpperCase())}</div>
                     <div style="flex:1; min-width:0;">
                         <div class="flex items-center" style="gap: 6px;">
-                            <span class="comment-username" style="color:${color};">${escapeHtml(item.display_name || 'مجهول')}</span>
-                            <span class="comment-time"><i class="far fa-clock ml-1" style="opacity:0.5;"></i>${new Date(item.published_at).toLocaleTimeString('ar-EG', {hour:'2-digit',minute:'2-digit'})}</span>
+                            <span class="comment-username" style="color:${color};">${escapeHtml(authorName)}</span>
+                            <span class="comment-time"><i class="far fa-clock ml-1" style="opacity:0.5;"></i>${new Date(publishedAt).toLocaleTimeString('ar-EG', {hour:'2-digit',minute:'2-digit'})}</span>
                         </div>
-                        <div class="comment-text" style="margin-top:3px;">${escapeHtml(item.message_text)}</div>
+                        <div class="comment-text" style="margin-top:3px;">${escapeHtml(commentText)}</div>
                     </div>
-                `;
-                list.appendChild(card);
+                `; 
+                list.appendChild(card); 
             });
         } catch(e) { status.innerHTML = '<i class="fas fa-exclamation-triangle ml-1" style="color:#f87171;"></i> فشل التحميل'; }
     }
@@ -4819,7 +4720,6 @@
         tempLoginData = null;
         entryTargetStreamData = null;
         // تنظيف كامل للموارد
-        stopDbPolling();
         cleanupPreviousSession();
         if (youTubeReconnectTimer) { clearTimeout(youTubeReconnectTimer); youTubeReconnectTimer = null; }
         // ملاحظة: الجالب الشامل (GS) يستمر — لا نوقفه عند الخروج من بث واحد
@@ -4854,8 +4754,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // معالجة رجوع Google OAuth (إذا في ?code= في URL)
-        setTimeout(() => modHandleOAuthCallback(), 500);
         updateUserCircle(); const lastStream = localStorage.getItem('vrtx_last_stream'); if (lastStream) { startLiveStream(lastStream); }
         syncAdminPanelVisibility();
         // 🌐 بدء الجالب الشامل — يجلب كل البثوث كل 1.5 ثانية
@@ -4865,216 +4763,8 @@
         document.getElementById('admin-pass-input').addEventListener('keydown', e => { if (e.key === 'Enter') handleAdminDelete(); });
         document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChatMessage(); });
         document.getElementById('keyword-input').addEventListener('keydown', e => { if (e.key === 'Enter') addKeyword(); });
-        document.getElementById('mod-popup-kw-input').addEventListener('keydown', e => { if (e.key === 'Enter') modPopupAddKeyword(); });
         const container = document.getElementById('comments-container'); container.addEventListener('scroll', () => { isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100; });
     });
-
-    // ══════════════════════════════════════════════════
-    // نافذة المراقب الذكي المنبثقة
-    // ══════════════════════════════════════════════════
-    function openModeratorPopup() {
-        document.getElementById('mod-popup-overlay').classList.add('show');
-        modPopupCheckStatus();
-        modPopupRenderKeywords();
-    }
-    function closeModeratorPopup() {
-        document.getElementById('mod-popup-overlay').classList.remove('show');
-    }
-
-    async function modPopupCheckStatus() {
-        const box = document.getElementById('mod-popup-status');
-        const body = document.getElementById('mod-popup-status-body');
-        const btnArea = document.getElementById('mod-popup-btn-area');
-        box.className = 'mod-status-box checking';
-        body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon checking"><i class="fas fa-spinner fa-spin"></i></div><div><h4 style="font-size:14px;font-weight:700;">جارٍ التحقق...</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">نتحقق من حالة الإشراف</p></div></div>';
-        btnArea.innerHTML = '';
-
-        if (!currentVideoId) {
-            box.className = 'mod-status-box inactive';
-            body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon inactive"><i class="fas fa-video-slash"></i></div><div><h4 style="font-size:14px;">لا يوجد بث نشط</h4></div></div>';
-            return;
-        }
-
-        try {
-            // جلب بيانات الأدمن
-            const { data: settings } = await supabaseClient.from('app_settings').select('mod_name,mod_channel_id,mod_token').eq('id', 1).maybeSingle();
-            if (!settings || !settings.mod_token) {
-                box.className = 'mod-status-box inactive';
-                body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon inactive"><i class="fas fa-user-slash"></i></div><div><h4 style="font-size:14px;">حساب الأدمن غير مربوط</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">يجب ربط حساب يوتيوب أولاً من قسم الأدمن</p></div></div>';
-                return;
-            }
-
-            // جلب حالة الإشراف من Supabase
-            const { data: stream } = await supabaseClient.from('saved_streams').select('stream_moderator').eq('stream_url', 'https://www.youtube.com/watch?v=' + currentVideoId).maybeSingle();
-            const isModSaved = stream && stream.stream_moderator === settings.mod_channel_id;
-
-            // فحص فعلي من YouTube API (آخر 50 رسالة)
-            let isModYouTube = false;
-            if (liveChatId) {
-                try {
-                    for (let ki = 0; ki < Math.min(5, YOUTUBE_API_KEYS.length); ki++) {
-                        const kIdx = (currentKeyIndex + ki) % YOUTUBE_API_KEYS.length;
-                        const r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=' + liveChatId + '&part=authorDetails&maxResults=50&key=' + YOUTUBE_API_KEYS[kIdx]);
-                        if (!r.ok) continue;
-                        const d = await r.json();
-                        if (d.items) {
-                            for (const m of d.items) {
-                                const ad = m.authorDetails;
-                                if (ad && (ad.channelId === settings.mod_channel_id || ad.displayName === settings.mod_name)) {
-                                    isModYouTube = ad.isChatModerator === true;
-                                    break;
-                                }
-                            }
-                        }
-                        break;
-                    }
-                } catch(e) {}
-            }
-
-            const isMod = isModYouTube;
-            // تحديث Supabase
-            if (isMod !== isModSaved) {
-                await supabaseClient.from('saved_streams').update({ stream_moderator: isMod ? settings.mod_channel_id : null }).eq('stream_url', 'https://www.youtube.com/watch?v=' + currentVideoId);
-            }
-
-            if (isMod) {
-                box.className = 'mod-status-box active';
-                body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon active"><i class="fas fa-shield-halved"></i></div><div style="flex:1;"><h4 style="font-size:14px;color:#34d399;">المشرف نشط</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + escapeHtml(settings.mod_name) + ' — الحذف التلقائي يعمل من السيرفر</p></div></div>';
-                btnArea.innerHTML = '';
-            } else {
-                box.className = 'mod-status-box inactive';
-                body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon inactive"><i class="fas fa-user-shield"></i></div><div style="flex:1;"><h4 style="font-size:14px;">غير مشرف حالياً</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + escapeHtml(settings.mod_name) + ' — يجب تعيينه من YouTube Studio</p></div></div>';
-                btnArea.innerHTML = '<button class="mod-btn-action mod-btn-gold" onclick="modPopupActivate()"><i class="fas fa-bolt"></i> إشراف — اشتراك + إرسال رسالة</button>' +
-                    '<div class="mod-steps"><h4><i class="fas fa-circle-info"></i> بعد الضغط، اذهب لـ YouTube Studio:</h4><ol><li>افتح YouTube Studio</li><li>اذهب للبث المباشر</li><li>إعدادات ← تعديل البث</li><li>أضف "' + escapeHtml(settings.mod_name) + '" كمشرف</li><li>بعد التعيين، الحذف يبدأ فوراً من السيرفر</li></ol></div>';
-            }
-        } catch(e) {
-            box.className = 'mod-status-box inactive';
-            body.innerHTML = '<div class="mod-status-row"><div class="mod-status-icon inactive"><i class="fas fa-exclamation-triangle"></i></div><div><h4 style="font-size:14px;">خطأ في التحقق</h4><p style="font-size:11px;color:var(--text-muted);margin-top:2px;">حاول مرة أخرى</p></div></div>';
-        }
-    }
-
-    async function modPopupActivate() {
-        const btn = document.querySelector('#mod-popup-btn-area .mod-btn-action');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإعداد...'; }
-
-        try {
-            const { data: settings } = await supabaseClient.from('app_settings').select('mod_token,mod_name,mod_channel_id').eq('id', 1).maybeSingle();
-            if (!settings || !settings.mod_token) { showToast('حساب الأدمن غير مربوط', 'error'); return; }
-
-            let token = settings.mod_token;
-            try { const p = JSON.parse(token); token = p.access_token || token; } catch(e) {}
-
-            if (!liveChatId) { showToast('لا يوجد بث نشط', 'error'); return; }
-
-            // 1) الاشتراك في القناة
-            let channelId = '';
-            try {
-                const vr = await fetch('https://www.googleapis.com/youtube/v3/videos?part=snippet&id=' + currentVideoId + '&key=' + YOUTUBE_API_KEYS[0]);
-                if (vr.ok) { const vd = await vr.json(); channelId = vd.items?.[0]?.snippet?.channelId || ''; }
-            } catch(e) {}
-
-            if (channelId) {
-                try {
-                    await fetch('https://www.googleapis.com/youtube/v3/subscriptions?part=snippet', {
-                        method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ snippet: { resourceId: { kind: 'youtube#channel', channelId: channelId } } })
-                    });
-                } catch(e) {}
-            }
-
-            // 2) إرسال رسالة
-            const msgText = 'السلام عليكم! أنا مساعدكم الذكي — أرجو تفعيلي كمشرف من YouTube Studio لحماية البث';
-            const r = await fetch('https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet', {
-                method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ snippet: { type: 'textMessageEvent', liveChatId: liveChatId, textMessageDetails: { messageText: msgText } } })
-            });
-
-            if (r.ok) {
-                showToast('تم الإرسال! اذهب لـ YouTube Studio وعين المشرف', 'success');
-                modPopupCheckStatus();
-            } else if (r.status === 403 && channelId) {
-                showToast('تم الاشتراك، أعد الضغط لإرسال الرسالة', 'info');
-                modPopupCheckStatus();
-            } else {
-                showToast('فشل: ' + r.status, 'error');
-                modPopupCheckStatus();
-            }
-        } catch(e) { showToast('خطأ: ' + e.message, 'error'); modPopupCheckStatus(); }
-    }
-
-    async function modPopupRenderKeywords() {
-        const list = document.getElementById('mod-popup-kw-list');
-        if (!currentVideoId) { list.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">لا يوجد بث نشط</p>'; return; }
-        try {
-            const { data } = await supabaseClient.from('monitor_keywords').select('keyword, keyword_type').eq('stream_id', currentVideoId);
-            if (!data || data.length === 0) { list.innerHTML = '<p style="font-size:11px;color:var(--text-muted);">لا توجد كلمات بعد</p>'; return; }
-            list.innerHTML = data.map(k => {
-                const isBan = (k.keyword_type || 'monitor') === 'ban';
-                const cls = isBan ? 'ban' : 'monitor';
-                const icon = isBan ? 'fa-ban' : 'fa-eye';
-                const label = isBan ? 'حظر' : 'مراقبة';
-                const escaped = escapeHtml(k.keyword).replace(/'/g, '&#39;');
-                return '<span class="mod-kw-tag ' + cls + '"><i class="fas ' + icon + '" style="font-size:9px;"></i> ' + escaped + ' <span style="opacity:0.5;font-size:9px;">' + label + '</span> <button onclick="modPopupRemoveKeyword(\'' + escaped + '\')">&times;</button></span>';
-            }).join('');
-        } catch(e) { list.innerHTML = ''; }
-    }
-
-    async function modPopupAddKeyword() {
-        const input = document.getElementById('mod-popup-kw-input');
-        const select = document.getElementById('mod-popup-kw-type');
-        const kw = input.value.trim();
-        if (!kw || !currentVideoId) return;
-        const kwType = select ? select.value : 'ban';
-        try {
-            await supabaseClient.from('monitor_keywords').insert([{ stream_id: currentVideoId, keyword: kw, keyword_type: kwType }]);
-            input.value = '';
-            modPopupRenderKeywords();
-            showToast('تمت إضافة: ' + kw, 'success');
-        } catch(e) { showToast('فشل الإضافة', 'error'); }
-    }
-
-    async function modPopupRemoveKeyword(kw) {
-        if (!currentVideoId) return;
-        try {
-            await supabaseClient.from('monitor_keywords').delete().eq('stream_id', currentVideoId).eq('keyword', kw);
-            modPopupRenderKeywords();
-        } catch(e) {}
-    }
 </script>
-
-<!-- نافذة المراقب الذكي المنبثقة -->
-<div id="mod-popup-overlay" class="modal-overlay" onclick="if(event.target===this)closeModeratorPopup()">
-    <div class="modal-content mod-popup">
-        <div class="mod-popup-header">
-            <h3><i class="fas fa-shield-halved" style="color:var(--accent);"></i> المراقب الذكي</h3>
-            <button class="mod-popup-close" onclick="closeModeratorPopup()"><i class="fas fa-xmark"></i></button>
-        </div>
-
-        <!-- حالة الإشراف -->
-        <div id="mod-popup-status" class="mod-status-box checking">
-            <div id="mod-popup-status-body"></div>
-        </div>
-
-        <!-- زر الإشراف / الخطوات -->
-        <div id="mod-popup-btn-area"></div>
-
-        <!-- الكلمات المحظورة -->
-        <div class="mod-popup-section">
-            <h4><i class="fas fa-ban" style="color:#f87171;"></i> الكلمات المحظورة <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(يحذفها السيرفر فوراً)</span></h4>
-            <div class="mod-kw-input-row">
-                <input id="mod-popup-kw-input" type="text" class="input-field" placeholder="أضف كلمة..." style="font-size:13px;padding:10px 14px;" />
-                <select id="mod-popup-kw-type" style="padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.05);border:1.5px solid var(--border);color:var(--text);font-family:'Tajawal',sans-serif;font-size:12px;outline:none;">
-                    <option value="ban">حظر</option>
-                    <option value="monitor">مراقبة</option>
-                </select>
-                <button class="btn-primary" style="width:auto;padding:10px 16px;" onclick="modPopupAddKeyword()"><i class="fas fa-plus"></i></button>
-            </div>
-            <div id="mod-popup-kw-list" class="mod-kw-list"></div>
-        </div>
-
-        <p style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:8px;">الحذف يتم من السيرفر (Edge Function) كل 2 ثانية — أقل من ثانية من استلام الرسالة</p>
-    </div>
-</div>
-
 </body>
 </html>
